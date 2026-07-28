@@ -57,7 +57,21 @@ export interface AdmissionApplication {
   state: string;
   pincode: string;
   
-  // Academic
+  // Admission Seeking Details
+  admissionYear: string; // e.g., 'First Year (1st Year)', 'Direct Second Year (2nd Year - Lateral Entry)', 'Third Year', 'Fourth Year'
+  admissionBranch: string; // e.g., 'B.Tech (Dairy Technology)'
+
+  // Previous Academic Qualification (12th, Diploma, Graduate)
+  previousQualification: '12th Science / HSC' | 'Diploma (Dairy Tech / Food Tech / Engg)' | 'Graduate (B.Sc / B.Tech)' | 'Other';
+  previousInstitute?: string;
+  previousBoardUniversity?: string;
+  previousPassingYear?: string;
+  previousStreamBranch?: string;
+  previousObtainedMarks?: number;
+  previousTotalMarks?: number;
+  previousPercentage?: number;
+
+  // HSC & PCM / Diploma Scores
   hscPcmMarks: number;
   hscTotalMarks: number;
   hscPercentage: number;
@@ -65,7 +79,7 @@ export interface AdmissionApplication {
   hscPassingYear: string;
   
   // Entrance Exam
-  entranceExam: 'MHT-CET' | 'ICAR AIEEA' | 'NEET' | 'JEE Main';
+  entranceExam: 'MHT-CET' | 'ICAR AIEEA' | 'NEET' | 'JEE Main' | 'Not Applicable (Lateral Entry)';
   entranceRollNo: string;
   entrancePercentile: number;
   
@@ -73,7 +87,7 @@ export interface AdmissionApplication {
   isAgriculturalist: boolean;
   isMaharashtraDomicile: boolean;
   
-  // Status
+  // Status & Attachments
   status: 'Submitted' | 'Under Review' | 'Verified' | 'Provisionally Selected' | 'Rejected';
   submissionDate: string;
   remarks?: string;
@@ -84,7 +98,16 @@ export interface AdmissionApplication {
     cetScoreCard: boolean;
     casteCertificate?: boolean;
     domicileCertificate: boolean;
+    agriculturalistCertificate?: boolean;
   };
+  attachedFiles?: {
+    id: string;
+    title: string;
+    fileName: string;
+    fileSize: string;
+    dataUrl?: string; // Base64 data URL for document preview
+    uploadedAt: string;
+  }[];
 }
 
 export interface CollegeEvent {

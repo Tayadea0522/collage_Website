@@ -263,6 +263,18 @@ export const initialApplications: AdmissionApplication[] = [
     district: "Buldhana",
     state: "Maharashtra",
     pincode: "443101",
+
+    admissionYear: "First Year (1st Year)",
+    admissionBranch: "B.Tech (Dairy Technology)",
+    previousQualification: "12th Science / HSC",
+    previousInstitute: "Malkapur High School & Junior College",
+    previousBoardUniversity: "Maharashtra State Board (MSBSHSE)",
+    previousPassingYear: "2026",
+    previousStreamBranch: "Science (PCM)",
+    previousObtainedMarks: 268,
+    previousTotalMarks: 300,
+    previousPercentage: 89.33,
+
     hscPcmMarks: 268,
     hscTotalMarks: 300,
     hscPercentage: 89.33,
@@ -282,8 +294,25 @@ export const initialApplications: AdmissionApplication[] = [
       hscMarksheet: true,
       cetScoreCard: true,
       casteCertificate: true,
-      domicileCertificate: true
-    }
+      domicileCertificate: true,
+      agriculturalistCertificate: true
+    },
+    attachedFiles: [
+      {
+        id: "att-1",
+        title: "12th Science Marksheet",
+        fileName: "rohan_hsc_marksheet.pdf",
+        fileSize: "1.4 MB",
+        uploadedAt: "2026-06-02"
+      },
+      {
+        id: "att-2",
+        title: "MHT-CET Score Card",
+        fileName: "cet_scorecard_2026.pdf",
+        fileSize: "850 KB",
+        uploadedAt: "2026-06-02"
+      }
+    ]
   },
   {
     id: "LSSCDT-2026-1088",
@@ -300,26 +329,47 @@ export const initialApplications: AdmissionApplication[] = [
     district: "Buldhana",
     state: "Maharashtra",
     pincode: "443101",
+
+    admissionYear: "Direct Second Year (2nd Year - Lateral Entry)",
+    admissionBranch: "B.Tech (Dairy Technology)",
+    previousQualification: "Diploma (Dairy Tech / Food Tech / Engg)",
+    previousInstitute: "Government Polytechnic College",
+    previousBoardUniversity: "MSBTE Mumbai",
+    previousPassingYear: "2025",
+    previousStreamBranch: "Diploma in Dairy Technology",
+    previousObtainedMarks: 880,
+    previousTotalMarks: 1000,
+    previousPercentage: 88.00,
+
     hscPcmMarks: 279,
     hscTotalMarks: 300,
     hscPercentage: 93.00,
     hscBoard: "CBSE",
     hscPassingYear: "2026",
-    entranceExam: "ICAR AIEEA",
-    entranceRollNo: "ICAR-88912",
-    entrancePercentile: 96.80,
+    entranceExam: "Not Applicable (Lateral Entry)",
+    entranceRollNo: "DIP-98421",
+    entrancePercentile: 88.00,
     isAgriculturalist: false,
     isMaharashtraDomicile: true,
     status: "Provisionally Selected",
     submissionDate: "2026-06-04",
-    remarks: "Seat allocated under Merit Quota.",
+    remarks: "Seat allocated under Direct 2nd Year Diploma Lateral Entry.",
     documentsUploaded: {
       photo: true,
       signature: true,
       hscMarksheet: true,
       cetScoreCard: true,
       domicileCertificate: true
-    }
+    },
+    attachedFiles: [
+      {
+        id: "att-3",
+        title: "Diploma Final Year Marksheet",
+        fileName: "diploma_marksheet_ananya.pdf",
+        fileSize: "2.1 MB",
+        uploadedAt: "2026-06-04"
+      }
+    ]
   }
 ];
 

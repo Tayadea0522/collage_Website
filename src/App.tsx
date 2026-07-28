@@ -23,6 +23,8 @@ import { Departments } from './components/Departments';
 import { Facilities } from './components/Facilities';
 import { Admissions } from './components/Admissions';
 import { AdminPanel } from './components/AdminPanel';
+import { SignIn } from './components/SignIn';
+import { SignUp } from './components/SignUp';
 
 import { 
   X, 
@@ -400,6 +402,14 @@ export default function App() {
               </form>
             </div>
           </div>
+        )}
+
+        {currentTab === 'signin' && (
+          <SignIn onNavigate={setCurrentTab} />
+        )}
+
+        {currentTab === 'signup' && (
+          <SignUp onNavigate={setCurrentTab} />
         )}
 
         {currentTab === 'admin' && (

@@ -1,0 +1,6 @@
+{
+  "name": "Late Shaktikumar Sancheti College of Dairy Technology",
+  "description": "Official portal for Late Shaktikumar Sancheti College of Dairy Technology featuring B.Tech Dairy Technology, online admissions, departments, experimental dairy plant, and complete admin management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

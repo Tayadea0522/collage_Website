@@ -1,0 +1,151 @@
+export interface Notice {
+  id: string;
+  title: string;
+  date: string;
+  category: 'Admission' | 'Academic' | 'Tender' | 'General' | 'Exam';
+  isNew?: boolean;
+  link?: string;
+  content?: string;
+}
+
+export interface FacultyMember {
+  id: string;
+  name: string;
+  designation: string;
+  department: string;
+  qualification: string;
+  experience: string;
+  specialization: string;
+  email: string;
+  phone?: string;
+  image: string;
+}
+
+export interface DepartmentInfo {
+  id: string;
+  name: string;
+  code: string;
+  head: string;
+  description: string;
+  labs: string[];
+  keySubjects: string[];
+  image: string;
+}
+
+export interface Facility {
+  id: string;
+  title: string;
+  category: 'Plant' | 'Lab' | 'Library' | 'Hostel' | 'Sports' | 'IT';
+  description: string;
+  features: string[];
+  image: string;
+}
+
+export interface AdmissionApplication {
+  id: string; // e.g. LSSCDT-2026-1042
+  fullName: string;
+  fatherName: string;
+  motherName: string;
+  dob: string;
+  gender: 'Male' | 'Female' | 'Other';
+  category: 'OPEN' | 'OBC' | 'SC' | 'ST' | 'EWS' | 'NT/VJ' | 'SBC';
+  email: string;
+  mobile: string;
+  aadharNumber: string;
+  address: string;
+  district: string;
+  state: string;
+  pincode: string;
+  
+  // Academic
+  hscPcmMarks: number;
+  hscTotalMarks: number;
+  hscPercentage: number;
+  hscBoard: string;
+  hscPassingYear: string;
+  
+  // Entrance Exam
+  entranceExam: 'MHT-CET' | 'ICAR AIEEA' | 'NEET' | 'JEE Main';
+  entranceRollNo: string;
+  entrancePercentile: number;
+  
+  // Quota & Certificates
+  isAgriculturalist: boolean;
+  isMaharashtraDomicile: boolean;
+  
+  // Status
+  status: 'Submitted' | 'Under Review' | 'Verified' | 'Provisionally Selected' | 'Rejected';
+  submissionDate: string;
+  remarks?: string;
+  documentsUploaded: {
+    photo: boolean;
+    signature: boolean;
+    hscMarksheet: boolean;
+    cetScoreCard: boolean;
+    casteCertificate?: boolean;
+    domicileCertificate: boolean;
+  };
+}
+
+export interface CollegeEvent {
+  id: string;
+  title: string;
+  date: string;
+  time?: string;
+  location?: string;
+  description: string;
+}
+
+export interface CollegeInfo {
+  name: string;
+  shortName: string;
+  tagline: string;
+  affiliation: string;
+  approval: string;
+  location: string;
+  address: string;
+  phone: string;
+  email: string;
+  admissionHelpline: string;
+  deanName: string;
+  deanDesignation: string;
+  deanMessage: string;
+  deanImage: string;
+  secretaryName: string;
+  secretaryDesignation: string;
+  secretaryMessage: string;
+  secretaryImage: string;
+  aboutText1: string;
+  aboutText2: string;
+  stats: {
+    placement: string;
+    labs: string;
+    dairyPlant: string;
+    faculty: string;
+  };
+  establishedYear: string;
+  campusArea: string;
+  vision: string;
+  mission: string[];
+  heroBanners: {
+    id: string;
+    title: string;
+    subtitle: string;
+    image: string;
+    ctaText: string;
+  }[];
+}
+
+export interface PlacementPartner {
+  name: string;
+  logo: string;
+  packageRange: string;
+}
+
+export interface GalleryItem {
+  id: string;
+  title: string;
+  category: 'Campus' | 'Dairy Plant' | 'Lab' | 'Events' | 'Sports';
+  image: string;
+  date: string;
+}

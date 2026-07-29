@@ -206,50 +206,88 @@ export const Home: React.FC<HomeProps> = ({
             <p className="text-xs text-slate-500">Guiding excellence in dairy science & technology</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {/* Dean Card */}
-            <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-4">
-              <p className="text-xs sm:text-sm text-slate-600 italic leading-relaxed">
-                "{collegeInfo.deanMessage}"
-              </p>
-              <div className="flex items-center gap-4 pt-2 border-t border-slate-100">
-                <img
-                  src={collegeInfo.deanImage}
-                  alt={collegeInfo.deanName}
-                  className="w-12 h-12 rounded-full object-cover border-2 border-[#0A2342] shrink-0"
-                />
-                <div>
-                  <div className="font-bold text-[#0A2342] text-sm sm:text-base font-serif">
-                    {collegeInfo.deanName}
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    {collegeInfo.deanDesignation}
+            <div className="bg-white p-6 sm:p-7 rounded-2xl border border-slate-100 border-t-4 border-t-[#0A2342] shadow-md hover:shadow-lg transition-shadow flex flex-col justify-between">
+              <div>
+                <div className="flex items-start gap-4">
+                  <img
+                    src={collegeInfo.deanImage}
+                    alt={collegeInfo.deanName}
+                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover shrink-0 bg-slate-100 shadow-sm border border-slate-200"
+                  />
+                  <div className="space-y-0.5">
+                    <h3 className="text-lg sm:text-xl font-bold font-serif text-[#0A2342]">
+                      Dean's Message
+                    </h3>
+                    <div className="text-slate-600 font-semibold text-xs sm:text-sm">
+                      {collegeInfo.deanName}
+                    </div>
+                    <div className="text-slate-500 text-xs leading-tight">
+                      {collegeInfo.deanDesignation}
+                    </div>
                   </div>
                 </div>
+                <p className="mt-5 sm:mt-6 text-slate-600 italic text-xs sm:text-sm leading-relaxed">
+                  "{collegeInfo.deanMessage}"
+                </p>
               </div>
             </div>
 
             {/* Secretary Card */}
-            <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-4">
-              <p className="text-xs sm:text-sm text-slate-600 italic leading-relaxed">
-                "{collegeInfo.secretaryMessage}"
-              </p>
-              <div className="flex items-center gap-4 pt-2 border-t border-slate-100">
-                <img
-                  src={collegeInfo.secretaryImage}
-                  alt={collegeInfo.secretaryName}
-                  className="w-12 h-12 rounded-full object-cover border-2 border-[#D97706] shrink-0"
-                />
-                <div>
-                  <div className="font-bold text-[#0A2342] text-sm sm:text-base font-serif">
-                    {collegeInfo.secretaryName}
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    {collegeInfo.secretaryDesignation}
+            <div className="bg-white p-6 sm:p-7 rounded-2xl border border-slate-100 border-t-4 border-t-[#D97706] shadow-md hover:shadow-lg transition-shadow flex flex-col justify-between">
+              <div>
+                <div className="flex items-start gap-4">
+                  <img
+                    src={collegeInfo.secretaryImage}
+                    alt={collegeInfo.secretaryName}
+                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover shrink-0 bg-slate-100 shadow-sm border border-slate-200"
+                  />
+                  <div className="space-y-0.5">
+                    <h3 className="text-lg sm:text-xl font-bold font-serif text-[#0A2342]">
+                      Secretary's Message
+                    </h3>
+                    <div className="text-slate-600 font-semibold text-xs sm:text-sm">
+                      {collegeInfo.secretaryName}
+                    </div>
+                    <div className="text-slate-500 text-xs leading-tight">
+                      {collegeInfo.secretaryDesignation}
+                    </div>
                   </div>
                 </div>
+                <p className="mt-5 sm:mt-6 text-slate-600 italic text-xs sm:text-sm leading-relaxed">
+                  "{collegeInfo.secretaryMessage}"
+                </p>
               </div>
             </div>
+
+            {/* Administrative Officer Card */}
+            <div className="bg-white p-6 sm:p-7 rounded-2xl border border-slate-100 border-t-4 border-t-emerald-700 shadow-md hover:shadow-lg transition-shadow flex flex-col justify-between md:col-span-2 lg:col-span-1">
+              <div>
+                <div className="flex items-start gap-4">
+                  <img
+                    src={collegeInfo.adminOfficerImage || "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=300&q=80"}
+                    alt={collegeInfo.adminOfficerName || "Shri. M. V. Kulkarni"}
+                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover shrink-0 bg-slate-100 shadow-sm border border-slate-200"
+                  />
+                  <div className="space-y-0.5">
+                    <h3 className="text-lg sm:text-xl font-bold font-serif text-[#0A2342]">
+                      Administrative Officer's Message
+                    </h3>
+                    <div className="text-slate-600 font-semibold text-xs sm:text-sm">
+                      {collegeInfo.adminOfficerName || "Shri. M. V. Kulkarni"}
+                    </div>
+                    <div className="text-slate-500 text-xs leading-tight">
+                      {collegeInfo.adminOfficerDesignation || "Administrative Officer, Late Shaktikumar Sancheti College of Dairy Technology"}
+                    </div>
+                  </div>
+                </div>
+                <p className="mt-5 sm:mt-6 text-slate-600 italic text-xs sm:text-sm leading-relaxed">
+                  "{collegeInfo.adminOfficerMessage || "Our administrative office is dedicated to providing seamless governance, student support, and operational excellence to foster a transparent and efficient academic environment."}"
+                </p>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>

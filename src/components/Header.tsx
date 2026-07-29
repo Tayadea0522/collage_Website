@@ -18,6 +18,8 @@ interface HeaderProps {
   setCurrentTab: (tab: string) => void;
   onOpenAdmin: () => void;
   isAdminLoggedIn: boolean;
+  currentAdminName?: string;
+  onLogoutAdmin?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -25,7 +27,9 @@ export const Header: React.FC<HeaderProps> = ({
   currentTab,
   setCurrentTab,
   onOpenAdmin,
-  isAdminLoggedIn
+  isAdminLoggedIn,
+  currentAdminName = 'Administrator',
+  onLogoutAdmin
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -64,22 +68,22 @@ export const Header: React.FC<HeaderProps> = ({
             </a>
           </div>
 
-          {/* Right Admin / User Status */}
+          {/* Right Admin Access Area (Website Sign In / Sign Up Removed) */}
           <div className="flex items-center gap-4 text-xs">
             {isAdminLoggedIn ? (
               <div className="flex items-center gap-3">
                 <span className="text-emerald-400 font-medium flex items-center gap-1">
-                  <User className="w-3.5 h-3.5" /> Welcome, Super Administrator
+                  <User className="w-3.5 h-3.5" /> Welcome, {currentAdminName}
                 </span>
                 <button
                   onClick={onOpenAdmin}
-                  className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-2.5 py-0.5 rounded text-[11px]"
+                  className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-2.5 py-0.5 rounded text-[11px] shadow-sm"
                 >
-                  Portal
+                  Admin Portal
                 </button>
                 <button
-                  onClick={onOpenAdmin}
-                  className="text-slate-300 hover:text-white flex items-center gap-1 text-[11px]"
+                  onClick={onLogoutAdmin}
+                  className="text-slate-300 hover:text-red-300 flex items-center gap-1 text-[11px] transition-colors"
                 >
                   <LogOut className="w-3 h-3" /> Logout
                 </button>
@@ -87,24 +91,11 @@ export const Header: React.FC<HeaderProps> = ({
             ) : (
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => handleNavClick('signin')}
-                  className="text-slate-300 hover:text-amber-400 font-medium transition-colors"
-                >
-                  Sign In
-                </button>
-                <span className="text-slate-600">|</span>
-                <button
-                  onClick={() => handleNavClick('signup')}
-                  className="text-slate-300 hover:text-amber-400 font-medium transition-colors"
-                >
-                  Sign Up
-                </button>
-                <span className="text-slate-600">|</span>
-                <button
                   onClick={onOpenAdmin}
-                  className="text-amber-400 font-semibold hover:underline flex items-center gap-1"
+                  className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold px-3 py-1 rounded-md border border-amber-400/30 hover:text-amber-200 transition-all flex items-center gap-1.5 shadow-sm"
                 >
-                  <Lock className="w-3 h-3" /> Admin Login
+                  <Lock className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Admin Login</span>
                 </button>
               </div>
             )}

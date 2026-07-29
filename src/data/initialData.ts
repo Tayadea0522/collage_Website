@@ -1,7 +1,7 @@
-import { CollegeInfo, DepartmentInfo, Facility, FacultyMember, Notice, AdmissionApplication, GalleryItem, CollegeEvent } from '../types';
+import { CollegeInfo, DepartmentInfo, Facility, FacultyMember, Notice, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser } from '../types';
 
 export const initialCollegeInfo: CollegeInfo = {
-  name: "Late Shaktikumar Sancheti",
+  name: "Late Shaktikumar Sancheti College of Dairy Technology",
   shortName: "LSSCDT",
   tagline: "College of Dairy Technology",
   affiliation: "Affiliated to Maharashtra Animal & Fishery Sciences University (MAFSU), Nagpur",
@@ -19,8 +19,16 @@ export const initialCollegeInfo: CollegeInfo = {
   
   secretaryName: "Suresh Kisanlal Sancheti",
   secretaryDesignation: "Secretary, Late Shaktikumar Sancheti College of Dairy Technology",
-  secretaryMessage: "It is our commitment to build an institution that not only imparts technical knowledge but also shapes the character and values of our students. LSSCDT stands as a symbol of our dedication to rural development and the dairy industry in India.",
+  secretaryMessage: "It is our commitment to build an institution that not only imparts technical knowledge but also shapes the character and values of our students. LSSCDT stands as a symbol of our dedication to rural development and the dairy industry of India.",
   secretaryImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80",
+  
+  adminOfficerName: "Shri. M. V. Kulkarni",
+  adminOfficerDesignation: "Administrative Officer, Late Shaktikumar Sancheti College of Dairy Technology",
+  adminOfficerMessage: "Our administrative department is dedicated to ensuring smooth operational management, transparent governance, student guidance, and providing a supportive ecosystem for academic and professional excellence.",
+  adminOfficerImage: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=300&q=80",
+  
+  shaktikumarImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+  shaktikumarMessage: "A visionary philanthropist and dedicated patron of education, Late Shri Shaktikumar Sancheti believed that knowledge is the greatest gift one can give to society. This institution stands as a lasting tribute to his unwavering commitment to rural development and the empowerment of India's dairy sector.",
   
   aboutText1: "Late Shaktikumar Sancheti College of Dairy Technology was established in memory of Late Shri Shaktikumar Sancheti, a visionary philanthropist who believed in the power of education. The college was founded with the mission to develop skilled dairy professionals.",
   aboutText2: "To provide quality education in dairy science and technology through innovative teaching methods, industry partnerships, and research activities.",
@@ -403,3 +411,43 @@ export const initialGallery: GalleryItem[] = [
     date: "2026-02-15"
   }
 ];
+
+export const initialAdminUsers: AdminUser[] = [
+  {
+    id: "admin-1",
+    name: "Dr. S. K. Deshmukh (Principal / Head)",
+    username: "admin",
+    email: "admin@lsscdt.ac.in",
+    password: "lsscdt2026",
+    role: "Super Admin",
+    mobile: "9822100001",
+    securityQuestion: "What is the college code?",
+    securityAnswer: "LSSCDT",
+    createdAt: "2026-01-01"
+  },
+  {
+    id: "admin-2",
+    name: "Prof. P. R. Patil (Admission Incharge)",
+    username: "admission_admin",
+    email: "admissions@lsscdt.ac.in",
+    password: "admin123",
+    role: "Admission Incharge",
+    mobile: "9822100002",
+    securityQuestion: "What city is the college located in?",
+    securityAnswer: "Malkapur",
+    createdAt: "2026-01-15"
+  },
+  {
+    id: "admin-3",
+    name: "Dr. A. V. Shinde (Academic Dean)",
+    username: "academic_admin",
+    email: "academic@lsscdt.ac.in",
+    password: "exam2026",
+    role: "Academic Admin",
+    mobile: "9822100003",
+    securityQuestion: "What degree program is offered?",
+    securityAnswer: "B.Tech Dairy",
+    createdAt: "2026-02-01"
+  }
+];
+

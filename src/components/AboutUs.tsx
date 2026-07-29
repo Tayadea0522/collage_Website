@@ -25,6 +25,28 @@ export const AboutUs: React.FC<AboutUsProps> = ({ collegeInfo }) => {
         </div>
       </div>
 
+      {/* In Memory Of Card */}
+      <div className="bg-[#F2F6FA] p-6 sm:p-8 md:p-10 rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm flex flex-col sm:flex-row items-center sm:items-center gap-6 sm:gap-10">
+        <div className="shrink-0">
+          <img
+            src={collegeInfo.shaktikumarImage || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80"}
+            alt="Late Shaktikumar Sancheti"
+            className="w-32 h-32 sm:w-40 sm:h-40 rounded-full object-cover border-4 border-[#D97706] shadow-md"
+          />
+        </div>
+        <div className="space-y-1.5 text-center sm:text-left">
+          <span className="text-xs sm:text-sm font-extrabold uppercase tracking-widest text-[#B45309] block">
+            IN MEMORY OF
+          </span>
+          <h2 className="text-2xl sm:text-3xl font-extrabold font-serif text-[#0A2342]">
+            Late Shaktikumar Sancheti
+          </h2>
+          <p className="text-slate-600 text-sm sm:text-base leading-relaxed max-w-3xl pt-1">
+            {collegeInfo.shaktikumarMessage || "A visionary philanthropist and dedicated patron of education, Late Shri Shaktikumar Sancheti believed that knowledge is the greatest gift one can give to society. This institution stands as a lasting tribute to his unwavering commitment to rural development and the empowerment of India's dairy sector."}
+          </p>
+        </div>
+      </div>
+
       {/* Overview & History */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <div className="lg:col-span-2 bg-[#F0F4F8] p-8 rounded-2xl border border-slate-200/80 space-y-6">
@@ -42,17 +64,6 @@ export const AboutUs: React.FC<AboutUsProps> = ({ collegeInfo }) => {
             <p>
               Spread across a lush <strong>{collegeInfo.campusArea}</strong>, the institution houses fully equipped pilot dairy processing plants, microbiology and chemistry quality control laboratories, a modern digital library, computer networks, and comfortable student residences.
             </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-300/80">
-            <div className="bg-white p-4 rounded-xl border border-slate-200">
-              <div className="text-xs font-bold text-slate-500 uppercase">Affiliation</div>
-              <div className="font-bold text-[#0A2342] text-sm mt-1">{collegeInfo.affiliation}</div>
-            </div>
-            <div className="bg-white p-4 rounded-xl border border-slate-200">
-              <div className="text-xs font-bold text-slate-500 uppercase">Approval & Accreditation</div>
-              <div className="font-bold text-[#0A2342] text-sm mt-1">{collegeInfo.approval}</div>
-            </div>
           </div>
         </div>
 
@@ -90,7 +101,36 @@ export const AboutUs: React.FC<AboutUsProps> = ({ collegeInfo }) => {
         </div>
       </div>
 
-      {/* Vision & Mission */}
+      {/* Recognition & Affiliation */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3 border-b border-slate-200 pb-3">
+          <Award className="w-7 h-7 text-[#D97706]" />
+          <h2 className="text-2xl sm:text-3xl font-bold font-serif text-[#0A2342]">
+            Recognition & Affiliation
+          </h2>
+        </div>
+
+        <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200/90 shadow-sm space-y-5">
+          <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
+            LSSCDT operates under strict academic and administrative guidelines ensuring the highest quality of education.
+          </p>
+
+          <ul className="space-y-3.5 text-slate-800 text-sm sm:text-base">
+            <li className="flex items-start gap-3">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#D97706] mt-2 shrink-0 shadow-sm" />
+              <span className="font-semibold text-slate-900">
+                Affiliated to Maharashtra Animal & Fishery Sciences University (MAFSU), Nagpur.
+              </span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#D97706] mt-2 shrink-0 shadow-sm" />
+              <span className="font-semibold text-slate-900">
+                Approved by the State Government of Maharashtra.
+              </span>
+            </li>
+          </ul>
+        </div>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Vision */}
         <div className="bg-[#0A2342] text-white p-8 rounded-2xl shadow space-y-4">
@@ -120,32 +160,7 @@ export const AboutUs: React.FC<AboutUsProps> = ({ collegeInfo }) => {
         </div>
       </div>
 
-      {/* Leadership Profile */}
-      <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-        <h2 className="text-2xl font-bold font-serif text-[#0A2342] border-b border-slate-200 pb-3">
-          Institutional Leadership
-        </h2>
-        <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
-          <img
-            src={collegeInfo.deanImage}
-            alt={collegeInfo.deanName}
-            className="w-48 h-60 object-cover rounded-2xl shadow-md border-4 border-[#D97706] shrink-0"
-          />
-          <div className="space-y-4 text-slate-700 text-sm leading-relaxed">
-            <div>
-              <h3 className="text-xl font-bold text-[#0A2342] font-serif">{collegeInfo.deanName}</h3>
-              <p className="text-sm font-semibold text-[#D97706]">{collegeInfo.deanDesignation}</p>
-              <p className="text-xs text-slate-500 font-mono">Ph.D. (Dairy Technology) - National Dairy Research Institute (NDRI)</p>
-            </div>
-            <p>
-              Dr. Deshmukh brings over two decades of distinguished experience in dairy technology education, research, and pilot plant commissioning. He has guided dozens of post-graduate scholars, published research papers in international journals of food science, and spearheaded technology transfers for indigenous milk product automation.
-            </p>
-            <div className="bg-[#F0F4F8] p-4 rounded-xl border-l-4 border-[#D97706] italic text-slate-800 font-serif">
-              "{collegeInfo.deanMessage}"
-            </div>
-          </div>
-        </div>
-      </div>
+
 
     </div>
   );

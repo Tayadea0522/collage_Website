@@ -138,6 +138,12 @@ export interface CollegeInfo {
   secretaryDesignation: string;
   secretaryMessage: string;
   secretaryImage: string;
+  adminOfficerName?: string;
+  adminOfficerDesignation?: string;
+  adminOfficerMessage?: string;
+  adminOfficerImage?: string;
+  shaktikumarImage?: string;
+  shaktikumarMessage?: string;
   aboutText1: string;
   aboutText2: string;
   stats: {
@@ -171,4 +177,17 @@ export interface GalleryItem {
   category: 'Campus' | 'Dairy Plant' | 'Lab' | 'Events' | 'Sports';
   image: string;
   date: string;
+}
+
+export interface AdminUser {
+  id: string;
+  name: string;
+  username: string;
+  email: string;
+  password: string;
+  role: 'Super Admin' | 'Admission Incharge' | 'Academic Admin' | 'System Administrator';
+  mobile: string;
+  securityQuestion: string;
+  securityAnswer: string;
+  createdAt: string;
 }

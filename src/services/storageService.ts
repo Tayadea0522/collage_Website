@@ -1,5 +1,5 @@
-import { CollegeInfo, DepartmentInfo, Facility, FacultyMember, Notice, AdmissionApplication, GalleryItem, CollegeEvent } from '../types';
-import { initialCollegeInfo, initialDepartments, initialFacilities, initialFaculty, initialNotices, initialApplications, initialGallery, initialEvents } from '../data/initialData';
+import { CollegeInfo, DepartmentInfo, Facility, FacultyMember, Notice, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser } from '../types';
+import { initialCollegeInfo, initialDepartments, initialFacilities, initialFaculty, initialNotices, initialApplications, initialGallery, initialEvents, initialAdminUsers } from '../data/initialData';
 
 const KEYS = {
   COLLEGE_INFO: 'lsscdt_college_info_v2',
@@ -9,10 +9,47 @@ const KEYS = {
   DEPARTMENTS: 'lsscdt_departments_v2',
   FACILITIES: 'lsscdt_facilities_v2',
   APPLICATIONS: 'lsscdt_applications_v2',
-  GALLERY: 'lsscdt_gallery_v2'
+  GALLERY: 'lsscdt_gallery_v2',
+  ADMIN_USERS: 'lsscdt_admin_users_v2'
 };
 
 export const storageService = {
+  getAdminUsers: (): AdminUser[] => {
+    const data = localStorage.getItem(KEYS.ADMIN_USERS);
+    if (!data) {
+      localStorage.setItem(KEYS.ADMIN_USERS, JSON.stringify(initialAdminUsers));
+      return initialAdminUsers;
+    }
+    return JSON.parse(data);
+  },
+
+  saveAdminUsers: (users: AdminUser[]): void => {
+    localStorage.setItem(KEYS.ADMIN_USERS, JSON.stringify(users));
+  },
+
+  addAdminUser: (user: AdminUser): void => {
+    const users = storageService.getAdminUsers();
+    const updated = [...users, user];
+    storageService.saveAdminUsers(updated);
+  },
+
+  updateAdminPassword: (identifier: string, newPassword: string): boolean => {
+    const users = storageService.getAdminUsers();
+    const query = identifier.trim().toLowerCase();
+    let updated = false;
+    const newUsers = users.map(u => {
+      if (u.username.toLowerCase() === query || u.email.toLowerCase() === query || u.mobile === identifier.trim()) {
+        updated = true;
+        return { ...u, password: newPassword };
+      }
+      return u;
+    });
+    if (updated) {
+      storageService.saveAdminUsers(newUsers);
+    }
+    return updated;
+  },
+
   getCollegeInfo: (): CollegeInfo => {
     const data = localStorage.getItem(KEYS.COLLEGE_INFO);
     return data ? JSON.parse(data) : initialCollegeInfo;
@@ -96,5 +133,7 @@ export const storageService = {
     localStorage.setItem(KEYS.FACILITIES, JSON.stringify(initialFacilities));
     localStorage.setItem(KEYS.APPLICATIONS, JSON.stringify(initialApplications));
     localStorage.setItem(KEYS.GALLERY, JSON.stringify(initialGallery));
+    localStorage.setItem(KEYS.ADMIN_USERS, JSON.stringify(initialAdminUsers));
   }
 };
+

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
-import { CollegeInfo, Notice, DepartmentInfo, FacultyMember, AdmissionApplication, GalleryItem, CollegeEvent } from '../types';
+import { CollegeInfo, Notice, DepartmentInfo, FacultyMember, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser } from '../types';
 import { storageService } from '../services/storageService';
 import { 
   Lock, 
@@ -33,7 +33,11 @@ import {
   Sliders,
   Mail,
   MapPin,
-  ChevronRight
+  ChevronRight,
+  UserPlus,
+  KeyRound,
+  User,
+  Filter
 } from 'lucide-react';
 
 interface AdminPanelProps {
@@ -75,6 +79,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Admin Users management state
+  const [showAddAdminModal, setShowAddAdminModal] = useState(false);
+  const [newAdminForm, setNewAdminForm] = useState({
+    name: '',
+    username: '',
+    email: '',
+    mobile: '',
+    role: 'Admission Incharge' as AdminUser['role'],
+    securityQuestion: 'What is the college code?',
+    securityAnswer: 'LSSCDT',
+    password: ''
+  });
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -262,22 +279,114 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     showToast('Event removed.');
   };
 
-  // 4. Applications Manager State
+  // 4. Applications & Students Filter State
   const [appSearch, setAppSearch] = useState('');
+  const [appYearFilter, setAppYearFilter] = useState('All');
+  const [appDeptFilter, setAppDeptFilter] = useState('All');
+  const [appStatusFilter, setAppStatusFilter] = useState('All');
+
+  const [studentSearch, setStudentSearch] = useState('');
+  const [studentYearFilter, setStudentYearFilter] = useState('All');
+  const [studentDeptFilter, setStudentDeptFilter] = useState('All');
+  const [studentCategoryFilter, setStudentCategoryFilter] = useState('All');
+
   const [selectedApp, setSelectedApp] = useState<AdmissionApplication | null>(null);
   const [appStatusInput, setAppStatusInput] = useState<AdmissionApplication['status']>('Verified');
   const [appRemarksInput, setAppRemarksInput] = useState('');
 
-  const filteredApps = (applications || []).filter(a => 
-    a.id.toLowerCase().includes(appSearch.toLowerCase()) ||
-    a.fullName.toLowerCase().includes(appSearch.toLowerCase()) ||
-    a.mobile.includes(appSearch)
-  );
+  // Helper matcher for Year of Admission
+  const matchesYear = (app: AdmissionApplication, selectedYear: string) => {
+    if (!selectedYear || selectedYear === 'All') return true;
+    const target = selectedYear.toLowerCase();
+    const admYr = (app.admissionYear || '').toLowerCase();
+    const subYr = (app.submissionDate || '');
+    const passYr = (app.hscPassingYear || '');
+    
+    if (target.includes('first') || target.includes('1st')) {
+      return admYr.includes('first') || admYr.includes('1st');
+    }
+    if (target.includes('second') || target.includes('2nd') || target.includes('lateral')) {
+      return admYr.includes('second') || admYr.includes('2nd') || admYr.includes('lateral');
+    }
+    if (target.includes('third') || target.includes('3rd')) {
+      return admYr.includes('third') || admYr.includes('3rd');
+    }
+    if (target.includes('fourth') || target.includes('4th')) {
+      return admYr.includes('fourth') || admYr.includes('4th');
+    }
+    if (target.includes('2026')) {
+      return subYr.startsWith('2026') || admYr.includes('2026') || passYr === '2026';
+    }
+    if (target.includes('2025')) {
+      return subYr.startsWith('2025') || admYr.includes('2025') || passYr === '2025';
+    }
+    return admYr === target || admYr.includes(target);
+  };
+
+  // Helper matcher for Department / Course Branch
+  const matchesDept = (app: AdmissionApplication, selectedDept: string) => {
+    if (!selectedDept || selectedDept === 'All') return true;
+    const target = selectedDept.toLowerCase();
+    const branch = (app.admissionBranch || 'B.Tech (Dairy Technology)').toLowerCase();
+
+    if (target.includes('technology') || target.includes('tech')) {
+      return branch.includes('technology') || branch.includes('tech');
+    }
+    if (target.includes('engineering') || target.includes('engg')) {
+      return branch.includes('engineering') || branch.includes('engg');
+    }
+    if (target.includes('chemistry')) {
+      return branch.includes('chemistry');
+    }
+    if (target.includes('microbiology')) {
+      return branch.includes('microbiology');
+    }
+    if (target.includes('business') || target.includes('management')) {
+      return branch.includes('business') || branch.includes('management');
+    }
+    return branch.includes(target);
+  };
+
+  // Applications List with Filters
+  const filteredApps = (applications || []).filter(a => {
+    if (appSearch.trim()) {
+      const q = appSearch.toLowerCase().trim();
+      const matchName = a.fullName.toLowerCase().includes(q);
+      const matchId = a.id.toLowerCase().includes(q);
+      const matchMobile = a.mobile.includes(q);
+      const matchBranch = (a.admissionBranch || '').toLowerCase().includes(q);
+      if (!matchName && !matchId && !matchMobile && !matchBranch) return false;
+    }
+    if (appStatusFilter !== 'All' && a.status !== appStatusFilter) {
+      return false;
+    }
+    if (!matchesYear(a, appYearFilter)) return false;
+    if (!matchesDept(a, appDeptFilter)) return false;
+    return true;
+  });
 
   // Approved Students List
-  const approvedStudents = (applications || []).filter(a => 
+  const approvedStudentsAll = (applications || []).filter(a => 
     a.status === 'Provisionally Selected' || a.status === 'Verified'
   );
+
+  const filteredApprovedStudents = approvedStudentsAll.filter(a => {
+    if (studentSearch.trim()) {
+      const q = studentSearch.toLowerCase().trim();
+      const matchName = a.fullName.toLowerCase().includes(q);
+      const matchId = a.id.toLowerCase().includes(q);
+      const matchMobile = a.mobile.includes(q);
+      const matchAadhar = a.aadharNumber.includes(q);
+      const matchBranch = (a.admissionBranch || '').toLowerCase().includes(q);
+      if (!matchName && !matchId && !matchMobile && !matchAadhar && !matchBranch) return false;
+    }
+    if (studentCategoryFilter !== 'All' && a.category?.toUpperCase() !== studentCategoryFilter.toUpperCase()) {
+      return false;
+    }
+    if (!matchesYear(a, studentYearFilter)) return false;
+    if (!matchesDept(a, studentDeptFilter)) return false;
+    return true;
+  });
 
   const handleUpdateAppStatus = (e: React.FormEvent) => {
     e.preventDefault();
@@ -523,7 +632,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <UserCheck className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div className="text-3xl font-extrabold text-emerald-700 font-serif">
-                  {approvedStudents.length}
+                  {approvedStudentsAll.length}
                 </div>
                 <div className="text-xs text-slate-600">Provisionally Selected</div>
               </div>
@@ -639,7 +748,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         {/* TAB 2: ADMISSIONS / APPLICATIONS */}
         {activeTab === 'applications' && (
           <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
               <div>
                 <h2 className="text-xl font-bold font-serif text-[#0A2342]">
                   Admission Applications ({filteredApps.length})
@@ -647,23 +756,88 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <p className="text-xs text-slate-500">Review, verify and approve online admission candidates</p>
               </div>
 
-              <div className="flex items-center gap-3 w-full sm:w-auto">
-                <div className="relative flex-1 sm:w-64">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+              <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+                {/* Search */}
+                <div className="relative flex-1 sm:w-56">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
                   <input
                     type="text"
-                    placeholder="Search candidate name or ID..."
+                    placeholder="Search candidate, ID or mobile..."
                     value={appSearch}
                     onChange={(e) => setAppSearch(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 text-xs outline-none focus:ring-2 focus:ring-[#D97706]"
+                    className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-300 text-xs outline-none focus:ring-2 focus:ring-[#D97706]"
                   />
                 </div>
+
+                {/* Admission Year Filter */}
+                <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs">
+                  <Calendar className="w-3.5 h-3.5 text-[#0A2342]" />
+                  <select
+                    value={appYearFilter}
+                    onChange={(e) => setAppYearFilter(e.target.value)}
+                    className="bg-transparent font-medium text-xs text-slate-800 outline-none cursor-pointer"
+                  >
+                    <option value="All">All Years of Admission</option>
+                    <option value="First Year (1st Year)">First Year (1st Year)</option>
+                    <option value="Direct Second Year (2nd Year - Lateral Entry)">Direct Second Year (Lateral Entry)</option>
+                    <option value="Third Year (3rd Year)">Third Year (3rd Year)</option>
+                    <option value="Fourth Year (4th Year)">Fourth Year (4th Year)</option>
+                    <option value="2026 Batch">2026 Academic Batch</option>
+                    <option value="2025 Batch">2025 Academic Batch</option>
+                  </select>
+                </div>
+
+                {/* Department / Branch Filter */}
+                <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs">
+                  <Building2 className="w-3.5 h-3.5 text-[#0A2342]" />
+                  <select
+                    value={appDeptFilter}
+                    onChange={(e) => setAppDeptFilter(e.target.value)}
+                    className="bg-transparent font-medium text-xs text-slate-800 outline-none cursor-pointer"
+                  >
+                    <option value="All">All Departments / Branches</option>
+                    <option value="Department of Dairy Technology">Dairy Technology</option>
+                    <option value="Department of Dairy Engineering">Dairy Engineering</option>
+                    <option value="Department of Dairy Chemistry">Dairy Chemistry</option>
+                    <option value="Department of Dairy Microbiology">Dairy Microbiology</option>
+                    <option value="Department of Dairy Business Management">Dairy Business Management</option>
+                  </select>
+                </div>
+
+                {/* Status Filter */}
+                <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2 py-1 text-xs">
+                  <Filter className="w-3.5 h-3.5 text-slate-500" />
+                  <select
+                    value={appStatusFilter}
+                    onChange={(e) => setAppStatusFilter(e.target.value)}
+                    className="bg-transparent font-medium text-xs text-slate-800 outline-none cursor-pointer"
+                  >
+                    <option value="All">All Statuses</option>
+                    <option value="Submitted">Submitted</option>
+                    <option value="Verified">Verified</option>
+                    <option value="Provisionally Selected">Provisionally Selected</option>
+                    <option value="Rejected">Rejected</option>
+                  </select>
+                </div>
+
+                {/* Reset Filters */}
+                {(appYearFilter !== 'All' || appDeptFilter !== 'All' || appStatusFilter !== 'All' || appSearch !== '') && (
+                  <button
+                    onClick={() => { setAppYearFilter('All'); setAppDeptFilter('All'); setAppStatusFilter('All'); setAppSearch(''); }}
+                    className="px-2 py-1.5 text-slate-500 hover:text-slate-800 bg-slate-200 hover:bg-slate-300 rounded-lg text-xs font-bold flex items-center gap-1"
+                    title="Clear Filters"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Reset</span>
+                  </button>
+                )}
+
                 <button
                   onClick={() => handleExportExcel(filteredApps, 'Filtered_Applications')}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-lg text-xs flex items-center gap-1.5 shrink-0 shadow"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shrink-0 shadow"
                 >
-                  <FileSpreadsheet className="w-4 h-4" />
-                  <span>Export Excel</span>
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  <span>Export</span>
                 </button>
               </div>
             </div>
@@ -835,48 +1009,181 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         {/* TAB 3: APPROVED STUDENTS LIST */}
         {activeTab === 'approved' && (
           <div className="space-y-6">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4">
               <div>
-                <h2 className="text-xl font-bold font-serif text-[#0A2342]">
-                  Provisionally Selected Candidates ({approvedStudents.length})
+                <h2 className="text-xl font-bold font-serif text-[#0A2342] flex items-center gap-2">
+                  <span>Enrolled & Selected Students</span>
+                  <span className="text-xs bg-[#0A2342] text-amber-400 font-mono px-2 py-0.5 rounded-full font-bold">
+                    {filteredApprovedStudents.length} / {approvedStudentsAll.length}
+                  </span>
                 </h2>
-                <p className="text-xs text-slate-500">Admitted candidates list ready for MAFSU University enrollment</p>
+                <p className="text-xs text-slate-500">Admitted candidates list filtered by Year of Admission, Department and Category</p>
               </div>
 
               <button
-                onClick={() => handleExportExcel(approvedStudents, 'Approved_Students_2026')}
+                onClick={() => handleExportExcel(filteredApprovedStudents, `Students_Filtered_${studentYearFilter}_${studentDeptFilter}`)}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-2 shadow"
               >
                 <FileSpreadsheet className="w-4 h-4" />
-                <span>Export Approved List</span>
+                <span>Export Filtered List ({filteredApprovedStudents.length})</span>
               </button>
             </div>
 
+            {/* Comprehensive Student Filter Bar */}
+            <div className="bg-[#F0F4F8] p-4 rounded-2xl border border-slate-200 space-y-3">
+              <div className="flex items-center justify-between text-xs font-bold text-[#0A2342]">
+                <div className="flex items-center gap-1.5">
+                  <Filter className="w-4 h-4 text-[#D97706]" />
+                  <span>Filter Students Directory</span>
+                </div>
+                {(studentYearFilter !== 'All' || studentDeptFilter !== 'All' || studentCategoryFilter !== 'All' || studentSearch !== '') && (
+                  <button
+                    onClick={() => {
+                      setStudentYearFilter('All');
+                      setStudentDeptFilter('All');
+                      setStudentCategoryFilter('All');
+                      setStudentSearch('');
+                    }}
+                    className="text-slate-500 hover:text-red-600 text-[11px] font-bold flex items-center gap-1 underline"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    Reset All Filters
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                {/* Search */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-600">Search Candidate</label>
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      placeholder="Name, ID, Mobile, Aadhar..."
+                      value={studentSearch}
+                      onChange={(e) => setStudentSearch(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-300 text-xs bg-white focus:ring-2 focus:ring-[#D97706]"
+                    />
+                  </div>
+                </div>
+
+                {/* Year of Admission Filter */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-600">Year of Admission</label>
+                  <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs">
+                    <Calendar className="w-3.5 h-3.5 text-[#0A2342]" />
+                    <select
+                      value={studentYearFilter}
+                      onChange={(e) => setStudentYearFilter(e.target.value)}
+                      className="w-full bg-transparent font-medium text-xs text-slate-800 outline-none cursor-pointer"
+                    >
+                      <option value="All">All Admission Years</option>
+                      <option value="First Year (1st Year)">First Year (1st Year)</option>
+                      <option value="Direct Second Year (2nd Year - Lateral Entry)">Direct Second Year (Lateral Entry)</option>
+                      <option value="Third Year (3rd Year)">Third Year (3rd Year)</option>
+                      <option value="Fourth Year (4th Year)">Fourth Year (4th Year)</option>
+                      <option value="2026 Batch">2026 Academic Batch</option>
+                      <option value="2025 Batch">2025 Academic Batch</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Department / Branch Filter */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-600">Department / Course Branch</label>
+                  <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs">
+                    <Building2 className="w-3.5 h-3.5 text-[#0A2342]" />
+                    <select
+                      value={studentDeptFilter}
+                      onChange={(e) => setStudentDeptFilter(e.target.value)}
+                      className="w-full bg-transparent font-medium text-xs text-slate-800 outline-none cursor-pointer text-ellipsis overflow-hidden"
+                    >
+                      <option value="All">All Departments / Branches</option>
+                      <option value="Department of Dairy Technology">Dairy Technology</option>
+                      <option value="Department of Dairy Engineering">Dairy Engineering</option>
+                      <option value="Department of Dairy Chemistry">Dairy Chemistry & QA</option>
+                      <option value="Department of Dairy Microbiology">Dairy Microbiology</option>
+                      <option value="Department of Dairy Business Management">Dairy Business Management</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Category Filter */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-600">Reservation Category</label>
+                  <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs">
+                    <Users className="w-3.5 h-3.5 text-slate-500" />
+                    <select
+                      value={studentCategoryFilter}
+                      onChange={(e) => setStudentCategoryFilter(e.target.value)}
+                      className="w-full bg-transparent font-medium text-xs text-slate-800 outline-none cursor-pointer"
+                    >
+                      <option value="All">All Categories</option>
+                      <option value="OPEN">OPEN (Unreserved)</option>
+                      <option value="OBC">OBC</option>
+                      <option value="SC">SC</option>
+                      <option value="ST">ST</option>
+                      <option value="VJ/NT">VJ / NT</option>
+                      <option value="EWS">EWS</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Students Table */}
             <div className="overflow-x-auto border border-slate-200 rounded-2xl">
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="bg-[#0A2342] text-white">
-                    <th className="p-3 font-semibold">Sr. No.</th>
+                    <th className="p-3 font-semibold">Sr.</th>
                     <th className="p-3 font-semibold">App ID</th>
                     <th className="p-3 font-semibold">Student Name</th>
-                    <th className="p-3 font-semibold">Father Name</th>
+                    <th className="p-3 font-semibold">Admission Year</th>
+                    <th className="p-3 font-semibold">Department / Branch</th>
                     <th className="p-3 font-semibold">Category</th>
                     <th className="p-3 font-semibold">HSC %</th>
-                    <th className="p-3 font-semibold">Aadhar Number</th>
+                    <th className="p-3 font-semibold">Contact & Aadhar</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-800">
-                  {approvedStudents.map((s, idx) => (
-                    <tr key={s.id} className="hover:bg-[#F0F4F8]">
-                      <td className="p-3 font-mono font-bold text-slate-400">{idx + 1}</td>
-                      <td className="p-3 font-mono font-bold text-[#D97706]">{s.id}</td>
-                      <td className="p-3 font-bold text-slate-900">{s.fullName}</td>
-                      <td className="p-3">{s.fatherName}</td>
-                      <td className="p-3">{s.category}</td>
-                      <td className="p-3 font-mono font-bold">{s.hscPercentage}%</td>
-                      <td className="p-3 font-mono">{s.aadharNumber}</td>
+                  {filteredApprovedStudents.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="p-8 text-center text-slate-500 font-medium">
+                        No students match the selected filter criteria. Try resetting filters.
+                      </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filteredApprovedStudents.map((s, idx) => (
+                      <tr key={s.id} className="hover:bg-[#F0F4F8]">
+                        <td className="p-3 font-mono font-bold text-slate-400">{idx + 1}</td>
+                        <td className="p-3 font-mono font-bold text-[#D97706]">{s.id}</td>
+                        <td className="p-3">
+                          <div className="font-bold text-slate-900">{s.fullName}</div>
+                          <div className="text-[11px] text-slate-500">Father: {s.fatherName}</div>
+                        </td>
+                        <td className="p-3 font-medium text-[#0A2342]">
+                          <span className="bg-blue-50 text-blue-900 font-bold px-2 py-0.5 rounded border border-blue-200 text-[11px]">
+                            {s.admissionYear || 'First Year (1st Year)'}
+                          </span>
+                        </td>
+                        <td className="p-3 font-medium text-slate-700">
+                          {s.admissionBranch || 'B.Tech (Dairy Technology)'}
+                        </td>
+                        <td className="p-3">
+                          <span className="bg-slate-100 font-bold px-2 py-0.5 rounded text-slate-700">
+                            {s.category}
+                          </span>
+                        </td>
+                        <td className="p-3 font-mono font-bold text-[#D97706]">{s.hscPercentage}%</td>
+                        <td className="p-3 font-mono text-[11px]">
+                          <div>Mob: {s.mobile}</div>
+                          <div className="text-slate-500">Aadhar: {s.aadharNumber}</div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -1274,14 +1581,32 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
 
               <div className="space-y-3 bg-[#F0F4F8] p-5 rounded-2xl border border-slate-200">
-                <h3 className="font-bold text-[#0A2342]">Dean Message</h3>
+                <h3 className="font-bold text-[#0A2342]">Dean Details</h3>
                 <div>
                   <label className="font-bold text-slate-700">Dean Name</label>
                   <input
                     type="text"
                     value={infoForm.deanName}
                     onChange={(e) => setInfoForm({ ...infoForm, deanName: e.target.value })}
-                    className="w-full p-2 rounded border border-slate-300 font-bold"
+                    className="w-full p-2 rounded border border-slate-300 font-bold bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700">Dean Designation</label>
+                  <input
+                    type="text"
+                    value={infoForm.deanDesignation}
+                    onChange={(e) => setInfoForm({ ...infoForm, deanDesignation: e.target.value })}
+                    className="w-full p-2 rounded border border-slate-300 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700">Dean Photo URL</label>
+                  <input
+                    type="text"
+                    value={infoForm.deanImage}
+                    onChange={(e) => setInfoForm({ ...infoForm, deanImage: e.target.value })}
+                    className="w-full p-2 rounded border border-slate-300 bg-white"
                   />
                 </div>
                 <div>
@@ -1290,7 +1615,89 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     rows={3}
                     value={infoForm.deanMessage}
                     onChange={(e) => setInfoForm({ ...infoForm, deanMessage: e.target.value })}
-                    className="w-full p-2 rounded border border-slate-300"
+                    className="w-full p-2 rounded border border-slate-300 bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3 bg-[#F0F4F8] p-5 rounded-2xl border border-slate-200">
+                <h3 className="font-bold text-[#0A2342]">Secretary Details</h3>
+                <div>
+                  <label className="font-bold text-slate-700">Secretary Name</label>
+                  <input
+                    type="text"
+                    value={infoForm.secretaryName}
+                    onChange={(e) => setInfoForm({ ...infoForm, secretaryName: e.target.value })}
+                    className="w-full p-2 rounded border border-slate-300 font-bold bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700">Secretary Designation</label>
+                  <input
+                    type="text"
+                    value={infoForm.secretaryDesignation}
+                    onChange={(e) => setInfoForm({ ...infoForm, secretaryDesignation: e.target.value })}
+                    className="w-full p-2 rounded border border-slate-300 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700">Secretary Photo URL</label>
+                  <input
+                    type="text"
+                    value={infoForm.secretaryImage}
+                    onChange={(e) => setInfoForm({ ...infoForm, secretaryImage: e.target.value })}
+                    className="w-full p-2 rounded border border-slate-300 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700">Secretary Message Quote</label>
+                  <textarea
+                    rows={3}
+                    value={infoForm.secretaryMessage}
+                    onChange={(e) => setInfoForm({ ...infoForm, secretaryMessage: e.target.value })}
+                    className="w-full p-2 rounded border border-slate-300 bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3 bg-[#F0F4F8] p-5 rounded-2xl border border-slate-200">
+                <h3 className="font-bold text-[#0A2342]">Administrative Officer Details</h3>
+                <div>
+                  <label className="font-bold text-slate-700">Admin Officer Name</label>
+                  <input
+                    type="text"
+                    value={infoForm.adminOfficerName || ''}
+                    onChange={(e) => setInfoForm({ ...infoForm, adminOfficerName: e.target.value })}
+                    className="w-full p-2 rounded border border-slate-300 font-bold bg-white"
+                    placeholder="Shri. M. V. Kulkarni"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700">Admin Officer Designation</label>
+                  <input
+                    type="text"
+                    value={infoForm.adminOfficerDesignation || ''}
+                    onChange={(e) => setInfoForm({ ...infoForm, adminOfficerDesignation: e.target.value })}
+                    className="w-full p-2 rounded border border-slate-300 bg-white"
+                    placeholder="Administrative Officer, LSSCDT"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700">Admin Officer Photo URL</label>
+                  <input
+                    type="text"
+                    value={infoForm.adminOfficerImage || ''}
+                    onChange={(e) => setInfoForm({ ...infoForm, adminOfficerImage: e.target.value })}
+                    className="w-full p-2 rounded border border-slate-300 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700">Admin Officer Message Quote</label>
+                  <textarea
+                    rows={3}
+                    value={infoForm.adminOfficerMessage || ''}
+                    onChange={(e) => setInfoForm({ ...infoForm, adminOfficerMessage: e.target.value })}
+                    className="w-full p-2 rounded border border-slate-300 bg-white"
                   />
                 </div>
               </div>
@@ -1332,34 +1739,241 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         )}
 
         {/* TAB 12: ADMIN USERS */}
-        {activeTab === 'admin_users' && (
-          <div className="space-y-6 max-w-xl">
-            <h2 className="text-xl font-bold font-serif text-[#0A2342]">Admin Account & Security</h2>
-            <div className="bg-[#F0F4F8] p-6 rounded-2xl border border-slate-200 space-y-4 text-xs">
-              <div className="flex items-center gap-3">
-                <Shield className="w-8 h-8 text-[#0A2342]" />
+        {activeTab === 'admin_users' && (() => {
+          const adminUsers = storageService.getAdminUsers();
+
+          const handleAddAdminPanelUser = (e: React.FormEvent) => {
+            e.preventDefault();
+            if (!newAdminForm.name || !newAdminForm.username || !newAdminForm.email || !newAdminForm.password) {
+              alert('Please fill in all required fields.');
+              return;
+            }
+            if (adminUsers.some(u => u.username.toLowerCase() === newAdminForm.username.trim().toLowerCase())) {
+              alert('An administrator with this username already exists.');
+              return;
+            }
+            const newUser: AdminUser = {
+              id: `admin-${Date.now()}`,
+              name: newAdminForm.name,
+              username: newAdminForm.username.trim(),
+              email: newAdminForm.email.trim(),
+              mobile: newAdminForm.mobile.trim() || '9822100000',
+              role: newAdminForm.role,
+              securityQuestion: newAdminForm.securityQuestion,
+              securityAnswer: newAdminForm.securityAnswer.trim() || 'LSSCDT',
+              password: newAdminForm.password,
+              createdAt: new Date().toISOString().split('T')[0]
+            };
+            storageService.addAdminUser(newUser);
+            showToast(`Administrator account for ${newUser.name} created!`);
+            setShowAddAdminModal(false);
+            setNewAdminForm({
+              name: '',
+              username: '',
+              email: '',
+              mobile: '',
+              role: 'Admission Incharge',
+              securityQuestion: 'What is the college code?',
+              securityAnswer: 'LSSCDT',
+              password: ''
+            });
+          };
+
+          const handleDeleteAdmin = (id: string, name: string) => {
+            if (adminUsers.length <= 1) {
+              alert('Cannot delete the last remaining administrator account.');
+              return;
+            }
+            if (window.confirm(`Are you sure you want to delete administrator "${name}"?`)) {
+              const updated = adminUsers.filter(u => u.id !== id);
+              storageService.saveAdminUsers(updated);
+              showToast(`Administrator account deleted.`);
+              onRefreshAll();
+            }
+          };
+
+          return (
+            <div className="space-y-6 max-w-4xl">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 pb-4">
                 <div>
-                  <div className="font-bold text-slate-900 text-sm">Super Administrator</div>
-                  <div className="text-slate-500">Full system read/write privileges</div>
+                  <h2 className="text-xl font-bold font-serif text-[#0A2342] flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-amber-600" />
+                    Administrator Accounts & Security Desk
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Manage multiple college administrator accounts, roles, recovery credentials & passwords.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setShowAddAdminModal(true)}
+                  className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs shadow flex items-center gap-1.5"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>Add New Administrator</span>
+                </button>
+              </div>
+
+              {/* Administrators List Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {adminUsers.map((u) => (
+                  <div key={u.id} className="bg-[#F0F4F8] p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3 relative">
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-full bg-[#0A2342] text-amber-400 font-bold flex items-center justify-center shrink-0 text-sm">
+                          {u.name.charAt(0)}
+                        </div>
+                        <div>
+                          <div className="font-bold text-slate-900 text-sm">{u.name}</div>
+                          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300/60">
+                            {u.role}
+                          </span>
+                        </div>
+                      </div>
+
+                      {adminUsers.length > 1 && (
+                        <button
+                          onClick={() => handleDeleteAdmin(u.id, u.name)}
+                          className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                          title="Delete Administrator Account"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="text-xs text-slate-600 space-y-1 bg-white p-3 rounded-xl border border-slate-200/80">
+                      <div><strong>Username:</strong> <code className="text-blue-900 font-bold font-mono">{u.username}</code></div>
+                      <div><strong>Email:</strong> {u.email}</div>
+                      <div><strong>Mobile:</strong> {u.mobile}</div>
+                      <div><strong>Security Question:</strong> {u.securityQuestion}</div>
+                      <div className="text-[10px] text-slate-400 pt-1">Password: •••••••• (Security Recoverable)</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Quick System Actions */}
+              <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3 max-w-xl">
+                <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider text-slate-500">System Reset & Session Control</h3>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button
+                    onClick={handleResetDefaults}
+                    className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2.5 px-4 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 text-amber-700" /> Reset College Defaults
+                  </button>
+                  <button
+                    onClick={onLogout}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 shadow"
+                  >
+                    <LogOut className="w-3.5 h-3.5" /> Logout Session
+                  </button>
                 </div>
               </div>
-              <div className="pt-2 border-t border-slate-200 space-y-2">
-                <button
-                  onClick={handleResetDefaults}
-                  className="w-full bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2.5 rounded-lg transition-colors"
-                >
-                  Reset All College Data
-                </button>
-                <button
-                  onClick={onLogout}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-lg transition-colors"
-                >
-                  Logout Admin Session
-                </button>
-              </div>
+
+              {/* Add New Administrator Modal inside Panel */}
+              {showAddAdminModal && (
+                <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+                  <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-200 relative space-y-4">
+                    <button
+                      onClick={() => setShowAddAdminModal(false)}
+                      className="absolute top-4 right-4 p-1 text-slate-400 hover:text-slate-900 rounded-full"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+
+                    <div className="flex items-center gap-2 border-b pb-3">
+                      <UserPlus className="w-5 h-5 text-amber-600" />
+                      <h3 className="text-lg font-bold font-serif text-slate-900">Add New College Administrator</h3>
+                    </div>
+
+                    <form onSubmit={handleAddAdminPanelUser} className="space-y-3 text-xs">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Full Name *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Prof. S. N. Wankhede"
+                          value={newAdminForm.name}
+                          onChange={(e) => setNewAdminForm({ ...newAdminForm, name: e.target.value })}
+                          className="w-full p-2.5 rounded-lg border border-slate-300 outline-none"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block font-bold text-slate-700 mb-1">Username *</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="wankhede_admin"
+                            value={newAdminForm.username}
+                            onChange={(e) => setNewAdminForm({ ...newAdminForm, username: e.target.value })}
+                            className="w-full p-2.5 rounded-lg border border-slate-300 font-mono outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block font-bold text-slate-700 mb-1">Role *</label>
+                          <select
+                            value={newAdminForm.role}
+                            onChange={(e) => setNewAdminForm({ ...newAdminForm, role: e.target.value as AdminUser['role'] })}
+                            className="w-full p-2.5 rounded-lg border border-slate-300 bg-white font-bold"
+                          >
+                            <option value="Super Admin">Super Admin</option>
+                            <option value="Admission Incharge">Admission Incharge</option>
+                            <option value="Academic Admin">Academic Admin</option>
+                            <option value="System Administrator">System Administrator</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Email Address *</label>
+                        <input
+                          type="email"
+                          required
+                          placeholder="wankhede@lsscdt.ac.in"
+                          value={newAdminForm.email}
+                          onChange={(e) => setNewAdminForm({ ...newAdminForm, email: e.target.value })}
+                          className="w-full p-2.5 rounded-lg border border-slate-300 outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Password *</label>
+                        <input
+                          type="password"
+                          required
+                          placeholder="••••••••"
+                          value={newAdminForm.password}
+                          onChange={(e) => setNewAdminForm({ ...newAdminForm, password: e.target.value })}
+                          className="w-full p-2.5 rounded-lg border border-slate-300 font-mono outline-none"
+                        />
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowAddAdminModal(false)}
+                          className="px-4 py-2 text-slate-600 font-bold hover:bg-slate-100 rounded-lg"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-lg shadow"
+                        >
+                          Create Admin Account
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
 
       </main>
 

@@ -108,9 +108,9 @@ export const Footer: React.FC<FooterProps> = ({
                 { id: 'about', label: 'About College' },
                 { id: 'academics', label: 'Academics' },
                 { id: 'departments', label: 'Departments' },
-                { id: 'notices', label: 'Gallery' },
-                { id: 'admissions', label: 'Admissions' },
-                { id: 'signin', label: 'Student Portal' },
+                { id: 'facilities', label: 'College Facilities' },
+                { id: 'notices', label: 'Gallery & Notices' },
+                { id: 'admissions', label: 'Online Admissions' },
               ].map((link) => (
                 <li key={link.id}>
                   <button

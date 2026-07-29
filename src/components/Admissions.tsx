@@ -973,8 +973,8 @@ export const Admissions: React.FC<AdmissionsProps> = ({
                   
                   {/* Slip Header */}
                   <div className="border-b-2 border-slate-900 pb-4 text-center space-y-1">
-                    <h3 className="text-xl font-black font-serif text-slate-900 uppercase">
-                      {collegeInfo.name}
+                    <h3 className="text-xl sm:text-2xl font-black font-serif text-slate-900 uppercase tracking-tight">
+                      {collegeInfo.name.includes('College') ? collegeInfo.name : `${collegeInfo.name} ${collegeInfo.tagline || 'College of Dairy Technology'}`}
                     </h3>
                     <p className="text-xs text-slate-600">{collegeInfo.address}</p>
                     <p className="text-xs font-bold text-amber-700">{collegeInfo.affiliation}</p>

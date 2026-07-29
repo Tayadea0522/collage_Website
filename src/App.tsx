@@ -7,7 +7,8 @@ import {
   Facility, 
   AdmissionApplication, 
   GalleryItem,
-  CollegeEvent 
+  CollegeEvent,
+  AdminUser
 } from './types';
 import { storageService } from './services/storageService';
 
@@ -23,8 +24,7 @@ import { Departments } from './components/Departments';
 import { Facilities } from './components/Facilities';
 import { Admissions } from './components/Admissions';
 import { AdminPanel } from './components/AdminPanel';
-import { SignIn } from './components/SignIn';
-import { SignUp } from './components/SignUp';
+import { AdminAuthModal } from './components/AdminAuthModal';
 
 import { 
   X, 
@@ -55,12 +55,10 @@ export default function App() {
   const [applications, setApplications] = useState<AdmissionApplication[]>(storageService.getApplications());
   const [gallery, setGallery] = useState<GalleryItem[]>(storageService.getGallery());
 
-  // Admin Auth State
+  // Multi-Admin Auth State
+  const [currentAdminUser, setCurrentAdminUser] = useState<AdminUser | null>(null);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [adminModalOpen, setAdminModalOpen] = useState(false);
-  const [adminUsername, setAdminUsername] = useState('');
-  const [adminPassword, setAdminPassword] = useState('');
-  const [adminLoginError, setAdminLoginError] = useState('');
 
   // Notice Detail Modal State
   const [selectedNoticeModal, setSelectedNoticeModal] = useState<Notice | null>(null);
@@ -79,23 +77,9 @@ export default function App() {
     setGallery(storageService.getGallery());
   };
 
-  const handleAdminLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Default Credentials: admin / lsscdt2026 or admin
-    if (adminUsername.trim() === 'admin' && (adminPassword === 'lsscdt2026' || adminPassword === 'admin')) {
-      setIsAdminLoggedIn(true);
-      setAdminModalOpen(false);
-      setCurrentTab('admin');
-      setAdminLoginError('');
-      setAdminUsername('');
-      setAdminPassword('');
-    } else {
-      setAdminLoginError('Invalid Administrator credentials. Default: admin / lsscdt2026');
-    }
-  };
-
   const handleAdminLogout = () => {
     setIsAdminLoggedIn(false);
+    setCurrentAdminUser(null);
     setCurrentTab('home');
   };
 
@@ -115,6 +99,8 @@ export default function App() {
           }
         }}
         isAdminLoggedIn={isAdminLoggedIn}
+        currentAdminName={currentAdminUser?.name || 'Administrator'}
+        onLogoutAdmin={handleAdminLogout}
       />
 
       {/* Ticker for Latest Alerts */}
@@ -404,14 +390,6 @@ export default function App() {
           </div>
         )}
 
-        {currentTab === 'signin' && (
-          <SignIn onNavigate={setCurrentTab} />
-        )}
-
-        {currentTab === 'signup' && (
-          <SignUp onNavigate={setCurrentTab} />
-        )}
-
         {currentTab === 'admin' && (
           <AdminPanel
             collegeInfo={collegeInfo}
@@ -434,71 +412,16 @@ export default function App() {
         onOpenAdmin={() => setAdminModalOpen(true)}
       />
 
-      {/* ADMIN LOGIN MODAL */}
-      {adminModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-200 relative space-y-4">
-            <button
-              onClick={() => setAdminModalOpen(false)}
-              className="absolute top-4 right-4 p-1 text-slate-400 hover:text-slate-900 rounded-full"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="text-center space-y-1">
-              <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-600 mx-auto flex items-center justify-center font-bold">
-                <Lock className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold font-serif text-slate-900">Administrator Portal Login</h3>
-              <p className="text-xs text-slate-500">Access college CMS & admission applications desk</p>
-            </div>
-
-            <form onSubmit={handleAdminLogin} className="space-y-4 text-xs">
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Username</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="admin"
-                  value={adminUsername}
-                  onChange={(e) => setAdminUsername(e.target.value)}
-                  className="w-full p-2.5 rounded-lg border border-slate-300 font-mono outline-none focus:ring-2 focus:ring-amber-500"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Password</label>
-                <input
-                  type="password"
-                  required
-                  placeholder="••••••••"
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  className="w-full p-2.5 rounded-lg border border-slate-300 font-mono outline-none focus:ring-2 focus:ring-amber-500"
-                />
-              </div>
-
-              {adminLoginError && (
-                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-[11px] rounded-lg">
-                  {adminLoginError}
-                </div>
-              )}
-
-              <div className="bg-slate-50 p-3 rounded-lg text-[10px] text-slate-500 space-y-0.5 border">
-                <div><strong>Default Login:</strong> Username: <code className="text-blue-900 font-bold">admin</code></div>
-                <div>Password: <code className="text-blue-900 font-bold">lsscdt2026</code> (or <code className="text-blue-900 font-bold">admin</code>)</div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold py-3 rounded-lg text-xs shadow transition-colors"
-              >
-                Login to Admin Panel
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* MULTI-ADMIN AUTHENTICATION & RECOVERY MODAL */}
+      <AdminAuthModal
+        isOpen={adminModalOpen}
+        onClose={() => setAdminModalOpen(false)}
+        onLoginSuccess={(user: AdminUser) => {
+          setCurrentAdminUser(user);
+          setIsAdminLoggedIn(true);
+          setCurrentTab('admin');
+        }}
+      />
 
       {/* NOTICE DETAIL MODAL */}
       {selectedNoticeModal && (

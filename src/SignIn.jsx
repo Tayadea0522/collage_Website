@@ -1,11 +1,32 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "./supabaseClient.js";
 
-export function SignIn({ onNavigate }) {
-  const [email, setEmail] = useState("");
+export function SignIn({ onNavigate, initialEmail = "", successMessage = "" }) {
+  const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [successMsg, setSuccessMsg] = useState(successMessage);
+
+  useEffect(() => {
+    // Check if redirected from SignUp with stored email and message
+    const savedEmail = sessionStorage.getItem("signedUpEmail");
+    const savedSuccessMsg = sessionStorage.getItem("signUpSuccessMessage");
+
+    if (savedEmail) {
+      setEmail(savedEmail);
+      sessionStorage.removeItem("signedUpEmail");
+    } else if (initialEmail) {
+      setEmail(initialEmail);
+    }
+
+    if (savedSuccessMsg) {
+      setSuccessMsg(savedSuccessMsg);
+      sessionStorage.removeItem("signUpSuccessMessage");
+    } else if (successMessage) {
+      setSuccessMsg(successMessage);
+    }
+  }, [initialEmail, successMessage]);
 
   const handleSignIn = async (e) => {
     e.preventDefault();
@@ -41,6 +62,16 @@ export function SignIn({ onNavigate }) {
           <p className="text-xs text-slate-500">Welcome back! Please enter your details to sign in.</p>
         </div>
 
+        {/* Success message above the form when redirected from successful signup */}
+        {successMsg && (
+          <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-start gap-3 font-medium shadow-sm">
+            <svg className="w-5 h-5 shrink-0 text-emerald-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="leading-relaxed">{successMsg}</div>
+          </div>
+        )}
+
         <form className="mt-8 space-y-6" onSubmit={handleSignIn}>
           <div className="space-y-4 text-xs">
             <div>
@@ -69,8 +100,11 @@ export function SignIn({ onNavigate }) {
           </div>
 
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg">
-              {error}
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg flex items-center gap-2">
+              <svg className="w-4 h-4 shrink-0 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{error}</span>
             </div>
           )}
 
@@ -81,6 +115,17 @@ export function SignIn({ onNavigate }) {
               className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold py-3 px-4 rounded-lg text-xs shadow transition-colors disabled:opacity-50"
             >
               {loading ? "Signing in..." : "Sign In"}
+            </button>
+          </div>
+
+          <div className="text-center pt-2 text-[11px] text-slate-500 border-t border-slate-100">
+            Don't have an account?{" "}
+            <button
+              type="button"
+              onClick={() => onNavigate && onNavigate("signup")}
+              className="font-bold text-slate-900 hover:underline"
+            >
+              Create Account
             </button>
           </div>
         </form>

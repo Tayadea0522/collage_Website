@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { supabase } from "./supabaseClient.js";
 
-export function SignUp({ onNavigate }) {
+export function SignUp({ onNavigate, onSignUpSuccess }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,13 +21,21 @@ export function SignUp({ onNavigate }) {
       if (authError) {
         setError(authError.message);
       } else {
-        if (onNavigate) {
-          onNavigate("home");
+        const successMessage =
+          "Your account has been created. Please check your email and verify your address before logging in.";
+
+        // Store pre-fill email and success message for Sign In screen
+        sessionStorage.setItem("signedUpEmail", email);
+        sessionStorage.setItem("signUpSuccessMessage", successMessage);
+
+        if (onSignUpSuccess) {
+          onSignUpSuccess(email, successMessage);
+        } else if (onNavigate) {
+          onNavigate("signin", { email, successMessage });
         }
-        window.location.href = "/";
       }
     } catch (err) {
-      setError(err?.message || "An unexpected error occurred.");
+      setError(err?.message || "An unexpected error occurred during sign up.");
     } finally {
       setLoading(false);
     }
@@ -69,8 +77,11 @@ export function SignUp({ onNavigate }) {
           </div>
 
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg">
-              {error}
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg flex items-center gap-2">
+              <svg className="w-4 h-4 shrink-0 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{error}</span>
             </div>
           )}
 
@@ -81,6 +92,17 @@ export function SignUp({ onNavigate }) {
               className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold py-3 px-4 rounded-lg text-xs shadow transition-colors disabled:opacity-50"
             >
               {loading ? "Creating account..." : "Sign Up"}
+            </button>
+          </div>
+
+          <div className="text-center pt-2 text-[11px] text-slate-500 border-t border-slate-100">
+            Already have an account?{" "}
+            <button
+              type="button"
+              onClick={() => onNavigate && onNavigate("signin")}
+              className="font-bold text-slate-900 hover:underline"
+            >
+              Sign In
             </button>
           </div>
         </form>

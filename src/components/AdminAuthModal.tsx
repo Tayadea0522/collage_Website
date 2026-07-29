@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { storageService } from '../services/storageService';
+import { supabase } from '../supabaseClient.js';
 import { AdminUser } from '../types';
 import { 
   Lock, 
@@ -36,6 +37,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
   const [usernameInput, setUsernameInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [signInError, setSignInError] = useState('');
+  const [signInSuccessMessage, setSignInSuccessMessage] = useState('');
 
   // Sign Up (Register Administrator) state
   const [signUpData, setSignUpData] = useState({
@@ -70,13 +72,45 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
   const adminUsers = storageService.getAdminUsers();
 
   // 1. Handle Sign In
-  const handleSignInSubmit = (e: React.FormEvent) => {
+  const handleSignInSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSignInError('');
 
-    const trimmedIdent = usernameInput.trim().toLowerCase();
+    const trimmedIdent = usernameInput.trim();
+
+    if (trimmedIdent.includes('@')) {
+      try {
+        const { data, error: authError } = await supabase.auth.signInWithPassword({
+          email: trimmedIdent,
+          password: passwordInput,
+        });
+
+        if (!authError && data?.user) {
+          const matchedUser: AdminUser = adminUsers.find(
+            u => u.email.toLowerCase() === trimmedIdent.toLowerCase()
+          ) || {
+            id: data.user.id,
+            name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Administrator',
+            username: data.user.email?.split('@')[0] || 'admin',
+            email: data.user.email || '',
+            mobile: '9822100000',
+            role: 'Super Admin',
+            securityQuestion: 'What is the college code?',
+            securityAnswer: 'LSSCDT',
+            password: passwordInput,
+            createdAt: new Date().toISOString().split('T')[0]
+          };
+          onLoginSuccess(matchedUser);
+          onClose();
+          return;
+        }
+      } catch (err) {
+        // Fall back to local check below
+      }
+    }
+
     const match = adminUsers.find(
-      u => (u.username.toLowerCase() === trimmedIdent || u.email.toLowerCase() === trimmedIdent) &&
+      u => (u.username.toLowerCase() === trimmedIdent.toLowerCase() || u.email.toLowerCase() === trimmedIdent.toLowerCase()) &&
            u.password === passwordInput
     );
 
@@ -96,7 +130,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
   };
 
   // 2. Handle Sign Up (Add Administrator)
-  const handleSignUpSubmit = (e: React.FormEvent) => {
+  const handleSignUpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSignUpError('');
     setSignUpSuccess('');
@@ -116,7 +150,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
       return;
     }
 
-    // Check existing username / email
+    // Check existing username / email locally
     const exists = adminUsers.some(
       u => u.username.toLowerCase() === signUpData.username.trim().toLowerCase() ||
            u.email.toLowerCase() === signUpData.email.trim().toLowerCase()
@@ -127,11 +161,29 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
       return;
     }
 
+    const createdEmail = signUpData.email.trim();
+
+    // Perform Supabase signUp
+    try {
+      const { data, error: authError } = await supabase.auth.signUp({
+        email: createdEmail,
+        password: signUpData.password,
+      });
+
+      if (authError) {
+        setSignUpError(authError.message);
+        return;
+      }
+    } catch (err: any) {
+      setSignUpError(err?.message || "Failed to create administrator account via Supabase.");
+      return;
+    }
+
     const newUser: AdminUser = {
       id: `admin-${Date.now()}`,
       name: signUpData.name,
       username: signUpData.username.trim(),
-      email: signUpData.email.trim(),
+      email: createdEmail,
       mobile: signUpData.mobile.trim() || '9822100000',
       role: signUpData.role,
       securityQuestion: signUpData.securityQuestion,
@@ -142,14 +194,14 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
 
     storageService.addAdminUser(newUser);
 
-    setSignUpSuccess(`Administrator account for ${newUser.name} created successfully! You can now sign in.`);
-    setUsernameInput(newUser.username);
-    setPasswordInput(newUser.password);
-    
-    setTimeout(() => {
-      setMode('signin');
-      setSignUpSuccess('');
-    }, 1800);
+    // 1) Do NOT auto-login.
+    // 2) Redirect user to Sign In page.
+    // 3) Pre-fill the email used during signup.
+    // 4) Show clear success message on Sign In screen.
+    setUsernameInput(createdEmail);
+    setPasswordInput(''); // Do NOT pre-fill password
+    setSignInSuccessMessage("Your account has been created. Please check your email and verify your address before logging in.");
+    setMode('signin');
   };
 
   // 3. Handle Forgot Password - Step 1: Find User
@@ -297,6 +349,14 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
         {/* ------------------ MODE 1: SIGN IN ------------------ */}
         {mode === 'signin' && (
           <form onSubmit={handleSignInSubmit} className="space-y-4 text-xs">
+            
+            {/* Clear Success Message Banner if user comes from signup */}
+            {signInSuccessMessage && (
+              <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-start gap-2.5 font-medium shadow-sm">
+                <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600 mt-0.5" />
+                <span className="leading-relaxed">{signInSuccessMessage}</span>
+              </div>
+            )}
             
             {/* Registered Administrators Selector Pills for quick access */}
             <div className="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200">

@@ -1,5 +1,6 @@
 import { CollegeInfo, DepartmentInfo, Facility, FacultyMember, Notice, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser } from '../types';
 import { initialCollegeInfo, initialDepartments, initialFacilities, initialFaculty, initialNotices, initialApplications, initialGallery, initialEvents, initialAdminUsers } from '../data/initialData';
+import { supabase } from '../supabaseClient';
 
 const KEYS = {
   COLLEGE_INFO: 'lsscdt_college_info_v2',
@@ -25,6 +26,20 @@ export const storageService = {
 
   saveAdminUsers: (users: AdminUser[]): void => {
     localStorage.setItem(KEYS.ADMIN_USERS, JSON.stringify(users));
+    (async () => {
+      try {
+        const { error } = await supabase.from('admin_users').upsert(users.map(u => ({
+          id: u.id,
+          username: u.username,
+          email: u.email,
+          role: u.role,
+          data: u
+        })));
+        if (error) console.log('Supabase admin_users sync:', error.message);
+      } catch (err) {
+        // silent fallback
+      }
+    })();
   },
 
   addAdminUser: (user: AdminUser): void => {
@@ -56,6 +71,12 @@ export const storageService = {
   },
   saveCollegeInfo: (info: CollegeInfo): void => {
     localStorage.setItem(KEYS.COLLEGE_INFO, JSON.stringify(info));
+    (async () => {
+      try {
+        const { error } = await supabase.from('college_info').upsert([{ id: 'default', data: info }]);
+        if (error) console.log('Supabase college_info sync:', error.message);
+      } catch (err) {}
+    })();
   },
 
   getNotices: (): Notice[] => {
@@ -64,6 +85,18 @@ export const storageService = {
   },
   saveNotices: (notices: Notice[]): void => {
     localStorage.setItem(KEYS.NOTICES, JSON.stringify(notices));
+    (async () => {
+      try {
+        const { error } = await supabase.from('notices').upsert(notices.map(n => ({
+          id: n.id,
+          title: n.title,
+          category: n.category,
+          date: n.date,
+          data: n
+        })));
+        if (error) console.log('Supabase notices sync:', error.message);
+      } catch (err) {}
+    })();
   },
 
   getEvents: (): CollegeEvent[] => {
@@ -72,6 +105,17 @@ export const storageService = {
   },
   saveEvents: (events: CollegeEvent[]): void => {
     localStorage.setItem(KEYS.EVENTS, JSON.stringify(events));
+    (async () => {
+      try {
+        const { error } = await supabase.from('events').upsert(events.map(e => ({
+          id: e.id,
+          title: e.title,
+          date: e.date,
+          data: e
+        })));
+        if (error) console.log('Supabase events sync:', error.message);
+      } catch (err) {}
+    })();
   },
 
   getFaculty: (): FacultyMember[] => {
@@ -80,6 +124,17 @@ export const storageService = {
   },
   saveFaculty: (faculty: FacultyMember[]): void => {
     localStorage.setItem(KEYS.FACULTY, JSON.stringify(faculty));
+    (async () => {
+      try {
+        const { error } = await supabase.from('faculty').upsert(faculty.map(f => ({
+          id: f.id,
+          name: f.name,
+          department: f.department,
+          data: f
+        })));
+        if (error) console.log('Supabase faculty sync:', error.message);
+      } catch (err) {}
+    })();
   },
 
   getDepartments: (): DepartmentInfo[] => {
@@ -88,6 +143,16 @@ export const storageService = {
   },
   saveDepartments: (depts: DepartmentInfo[]): void => {
     localStorage.setItem(KEYS.DEPARTMENTS, JSON.stringify(depts));
+    (async () => {
+      try {
+        const { error } = await supabase.from('departments').upsert(depts.map(d => ({
+          id: d.id,
+          name: d.name,
+          data: d
+        })));
+        if (error) console.log('Supabase departments sync:', error.message);
+      } catch (err) {}
+    })();
   },
 
   getFacilities: (): Facility[] => {
@@ -96,6 +161,17 @@ export const storageService = {
   },
   saveFacilities: (facs: Facility[]): void => {
     localStorage.setItem(KEYS.FACILITIES, JSON.stringify(facs));
+    (async () => {
+      try {
+        const { error } = await supabase.from('facilities').upsert(facs.map(f => ({
+          id: f.id,
+          title: f.title,
+          category: f.category,
+          data: f
+        })));
+        if (error) console.log('Supabase facilities sync:', error.message);
+      } catch (err) {}
+    })();
   },
 
   getApplications: (): AdmissionApplication[] => {
@@ -104,6 +180,19 @@ export const storageService = {
   },
   saveApplications: (apps: AdmissionApplication[]): void => {
     localStorage.setItem(KEYS.APPLICATIONS, JSON.stringify(apps));
+    (async () => {
+      try {
+        const { error } = await supabase.from('admission_applications').upsert(apps.map(a => ({
+          id: a.id,
+          full_name: a.fullName,
+          email: a.email,
+          mobile: a.mobile,
+          status: a.status,
+          data: a
+        })));
+        if (error) console.log('Supabase applications sync:', error.message);
+      } catch (err) {}
+    })();
   },
   addApplication: (app: AdmissionApplication): void => {
     const apps = storageService.getApplications();
@@ -122,6 +211,87 @@ export const storageService = {
   },
   saveGallery: (items: GalleryItem[]): void => {
     localStorage.setItem(KEYS.GALLERY, JSON.stringify(items));
+    (async () => {
+      try {
+        const { error } = await supabase.from('gallery').upsert(items.map(g => ({
+          id: g.id,
+          title: g.title,
+          category: g.category,
+          data: g
+        })));
+        if (error) console.log('Supabase gallery sync:', error.message);
+      } catch (err) {}
+    })();
+  },
+
+  // Fetch and hydrate state from Supabase
+  syncFromSupabase: async (): Promise<boolean> => {
+    try {
+      const [
+        appsRes,
+        noticesRes,
+        eventsRes,
+        facultyRes,
+        deptsRes,
+        facsRes,
+        galleryRes,
+        infoRes,
+        adminRes
+      ] = await Promise.allSettled([
+        supabase.from('admission_applications').select('*'),
+        supabase.from('notices').select('*'),
+        supabase.from('events').select('*'),
+        supabase.from('faculty').select('*'),
+        supabase.from('departments').select('*'),
+        supabase.from('facilities').select('*'),
+        supabase.from('gallery').select('*'),
+        supabase.from('college_info').select('*'),
+        supabase.from('admin_users').select('*')
+      ]);
+
+      if (appsRes.status === 'fulfilled' && appsRes.value.data && appsRes.value.data.length > 0) {
+        const loadedApps = appsRes.value.data.map(row => row.data || row);
+        localStorage.setItem(KEYS.APPLICATIONS, JSON.stringify(loadedApps));
+      }
+      if (noticesRes.status === 'fulfilled' && noticesRes.value.data && noticesRes.value.data.length > 0) {
+        const loadedNotices = noticesRes.value.data.map(row => row.data || row);
+        localStorage.setItem(KEYS.NOTICES, JSON.stringify(loadedNotices));
+      }
+      if (eventsRes.status === 'fulfilled' && eventsRes.value.data && eventsRes.value.data.length > 0) {
+        const loadedEvents = eventsRes.value.data.map(row => row.data || row);
+        localStorage.setItem(KEYS.EVENTS, JSON.stringify(loadedEvents));
+      }
+      if (facultyRes.status === 'fulfilled' && facultyRes.value.data && facultyRes.value.data.length > 0) {
+        const loadedFaculty = facultyRes.value.data.map(row => row.data || row);
+        localStorage.setItem(KEYS.FACULTY, JSON.stringify(loadedFaculty));
+      }
+      if (deptsRes.status === 'fulfilled' && deptsRes.value.data && deptsRes.value.data.length > 0) {
+        const loadedDepts = deptsRes.value.data.map(row => row.data || row);
+        localStorage.setItem(KEYS.DEPARTMENTS, JSON.stringify(loadedDepts));
+      }
+      if (facsRes.status === 'fulfilled' && facsRes.value.data && facsRes.value.data.length > 0) {
+        const loadedFacs = facsRes.value.data.map(row => row.data || row);
+        localStorage.setItem(KEYS.FACILITIES, JSON.stringify(loadedFacs));
+      }
+      if (galleryRes.status === 'fulfilled' && galleryRes.value.data && galleryRes.value.data.length > 0) {
+        const loadedGallery = galleryRes.value.data.map(row => row.data || row);
+        localStorage.setItem(KEYS.GALLERY, JSON.stringify(loadedGallery));
+      }
+      if (infoRes.status === 'fulfilled' && infoRes.value.data && infoRes.value.data.length > 0) {
+        const row = infoRes.value.data[0];
+        const loadedInfo = row.data || row;
+        localStorage.setItem(KEYS.COLLEGE_INFO, JSON.stringify(loadedInfo));
+      }
+      if (adminRes.status === 'fulfilled' && adminRes.value.data && adminRes.value.data.length > 0) {
+        const loadedAdmins = adminRes.value.data.map(row => row.data || row);
+        localStorage.setItem(KEYS.ADMIN_USERS, JSON.stringify(loadedAdmins));
+      }
+
+      return true;
+    } catch (err) {
+      console.log('Supabase sync initial load:', err);
+      return false;
+    }
   },
 
   resetAllToDefaults: (): void => {

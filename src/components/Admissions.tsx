@@ -52,6 +52,7 @@ export const Admissions: React.FC<AdmissionsProps> = ({
   // Form Step State
   const [formStep, setFormStep] = useState(1);
   const [submittedApp, setSubmittedApp] = useState<AdmissionApplication | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -168,78 +169,83 @@ export const Admissions: React.FC<AdmissionsProps> = ({
     setAttachedFiles(prev => prev.filter(d => d.docType !== docType));
   };
 
-  const handleSubmitApplication = (e: React.FormEvent) => {
+  const handleSubmitApplication = async (e: React.FormEvent) => {
     e.preventDefault();
-    const appNumber = Math.floor(1000 + Math.random() * 9000);
-    const newAppId = `LSSCDT-2026-${appNumber}`;
+    setIsSubmitting(true);
+    try {
+      const appNumber = Math.floor(1000 + Math.random() * 9000);
+      const newAppId = `LSSCDT-2026-${appNumber}`;
 
-    const newApp: AdmissionApplication = {
-      id: newAppId,
-      fullName: formData.fullName,
-      fatherName: formData.fatherName,
-      motherName: formData.motherName,
-      dob: formData.dob || '2007-06-15',
-      gender: formData.gender,
-      category: formData.category,
-      email: formData.email,
-      mobile: formData.mobile,
-      aadharNumber: formData.aadharNumber,
-      address: formData.address,
-      district: formData.district,
-      state: formData.state,
-      pincode: formData.pincode,
+      const newApp: AdmissionApplication = {
+        id: newAppId,
+        fullName: formData.fullName,
+        fatherName: formData.fatherName,
+        motherName: formData.motherName,
+        dob: formData.dob || '2007-06-15',
+        gender: formData.gender,
+        category: formData.category,
+        email: formData.email,
+        mobile: formData.mobile,
+        aadharNumber: formData.aadharNumber,
+        address: formData.address,
+        district: formData.district,
+        state: formData.state,
+        pincode: formData.pincode,
 
-      admissionYear: formData.admissionYear,
-      admissionBranch: formData.admissionBranch,
+        admissionYear: formData.admissionYear,
+        admissionBranch: formData.admissionBranch,
 
-      previousQualification: formData.previousQualification,
-      previousInstitute: formData.previousInstitute || 'Previous School / College',
-      previousBoardUniversity: formData.previousBoardUniversity,
-      previousPassingYear: formData.previousPassingYear,
-      previousStreamBranch: formData.previousStreamBranch,
-      previousObtainedMarks: Number(formData.previousObtainedMarks),
-      previousTotalMarks: Number(formData.previousTotalMarks),
-      previousPercentage: prevPct,
+        previousQualification: formData.previousQualification,
+        previousInstitute: formData.previousInstitute || 'Previous School / College',
+        previousBoardUniversity: formData.previousBoardUniversity,
+        previousPassingYear: formData.previousPassingYear,
+        previousStreamBranch: formData.previousStreamBranch,
+        previousObtainedMarks: Number(formData.previousObtainedMarks),
+        previousTotalMarks: Number(formData.previousTotalMarks),
+        previousPercentage: prevPct,
 
-      hscPcmMarks: Number(formData.hscPcmMarks),
-      hscTotalMarks: Number(formData.hscTotalMarks),
-      hscPercentage: hscPct,
-      hscBoard: formData.hscBoard,
-      hscPassingYear: formData.hscPassingYear,
+        hscPcmMarks: Number(formData.hscPcmMarks),
+        hscTotalMarks: Number(formData.hscTotalMarks),
+        hscPercentage: hscPct,
+        hscBoard: formData.hscBoard,
+        hscPassingYear: formData.hscPassingYear,
 
-      entranceExam: formData.entranceExam,
-      entranceRollNo: formData.entranceRollNo || `EXAM-${Math.floor(100000 + Math.random() * 900000)}`,
-      entrancePercentile: Number(formData.entrancePercentile),
+        entranceExam: formData.entranceExam,
+        entranceRollNo: formData.entranceRollNo || `EXAM-${Math.floor(100000 + Math.random() * 900000)}`,
+        entrancePercentile: Number(formData.entrancePercentile),
 
-      isAgriculturalist: formData.isAgriculturalist,
-      isMaharashtraDomicile: formData.isMaharashtraDomicile,
+        isAgriculturalist: formData.isAgriculturalist,
+        isMaharashtraDomicile: formData.isMaharashtraDomicile,
 
-      status: 'Submitted',
-      submissionDate: new Date().toISOString().split('T')[0],
-      remarks: 'Application submitted online with attached documents. Awaiting scrutiny verification.',
-      documentsUploaded: {
-        photo: attachedFiles.some(f => f.docType === 'photo'),
-        signature: attachedFiles.some(f => f.docType === 'signature'),
-        hscMarksheet: attachedFiles.some(f => f.docType === 'marksheet'),
-        cetScoreCard: attachedFiles.some(f => f.docType === 'cetScoreCard'),
-        casteCertificate: attachedFiles.some(f => f.docType === 'caste'),
-        domicileCertificate: attachedFiles.some(f => f.docType === 'domicile'),
-        agriculturalistCertificate: attachedFiles.some(f => f.docType === 'agriculturalist')
-      },
-      attachedFiles: attachedFiles.map(f => ({
-        id: f.id,
-        title: f.title,
-        fileName: f.fileName,
-        fileSize: f.fileSize,
-        dataUrl: f.dataUrl,
-        uploadedAt: f.uploadedAt
-      }))
-    };
+        status: 'Submitted',
+        submissionDate: new Date().toISOString().split('T')[0],
+        remarks: 'Application submitted online with attached documents. Awaiting scrutiny verification.',
+        documentsUploaded: {
+          photo: attachedFiles.some(f => f.docType === 'photo'),
+          signature: attachedFiles.some(f => f.docType === 'signature'),
+          hscMarksheet: attachedFiles.some(f => f.docType === 'marksheet'),
+          cetScoreCard: attachedFiles.some(f => f.docType === 'cetScoreCard'),
+          casteCertificate: attachedFiles.some(f => f.docType === 'caste'),
+          domicileCertificate: attachedFiles.some(f => f.docType === 'domicile'),
+          agriculturalistCertificate: attachedFiles.some(f => f.docType === 'agriculturalist')
+        },
+        attachedFiles: attachedFiles.map(f => ({
+          id: f.id,
+          title: f.title,
+          fileName: f.fileName,
+          fileSize: f.fileSize,
+          dataUrl: f.dataUrl,
+          uploadedAt: f.uploadedAt
+        }))
+      };
 
-    storageService.addApplication(newApp);
-    onRefreshApplications();
-    setSubmittedApp(newApp);
-    setFormStep(4); // Success Slip View
+      storageService.addApplication(newApp);
+      onRefreshApplications();
+      setSubmittedApp(newApp);
+      setFormStep(4); // Success Slip View
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleSearchApp = (e: React.FormEvent) => {

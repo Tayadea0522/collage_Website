@@ -66,6 +66,13 @@ export default function App() {
   // Gallery Filter State
   const [galleryFilter, setGalleryFilter] = useState<string>('All');
 
+  // Sync from Supabase on load
+  useEffect(() => {
+    storageService.syncFromSupabase().then(() => {
+      refreshAllData();
+    });
+  }, []);
+
   const refreshAllData = () => {
     setCollegeInfo(storageService.getCollegeInfo());
     setNotices(storageService.getNotices());

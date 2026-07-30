@@ -30,7 +30,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
   onClose,
   onLoginSuccess
 }) => {
-  type AuthMode = 'signin' | 'signup' | 'forgot_password';
+  type AuthMode = 'signin' | 'forgot_password';
   const [mode, setMode] = useState<AuthMode>('signin');
 
   // Sign In state
@@ -38,21 +38,6 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
   const [passwordInput, setPasswordInput] = useState('');
   const [signInError, setSignInError] = useState('');
   const [signInSuccessMessage, setSignInSuccessMessage] = useState('');
-
-  // Sign Up (Register Administrator) state
-  const [signUpData, setSignUpData] = useState({
-    name: '',
-    username: '',
-    email: '',
-    mobile: '',
-    role: 'Admission Incharge' as AdminUser['role'],
-    securityQuestion: 'What is the college code?',
-    securityAnswer: '',
-    password: '',
-    confirmPassword: ''
-  });
-  const [signUpError, setSignUpError] = useState('');
-  const [signUpSuccess, setSignUpSuccess] = useState('');
 
   // Forgot Password state
   const [forgotStep, setForgotStep] = useState<1 | 2>(1);
@@ -129,82 +114,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
     setSignInError('');
   };
 
-  // 2. Handle Sign Up (Add Administrator)
-  const handleSignUpSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSignUpError('');
-    setSignUpSuccess('');
-
-    if (!signUpData.name || !signUpData.username || !signUpData.email || !signUpData.password) {
-      setSignUpError('Please fill in all required fields.');
-      return;
-    }
-
-    if (signUpData.password.length < 4) {
-      setSignUpError('Password must be at least 4 characters long.');
-      return;
-    }
-
-    if (signUpData.password !== signUpData.confirmPassword) {
-      setSignUpError('Passwords do not match.');
-      return;
-    }
-
-    // Check existing username / email locally
-    const exists = adminUsers.some(
-      u => u.username.toLowerCase() === signUpData.username.trim().toLowerCase() ||
-           u.email.toLowerCase() === signUpData.email.trim().toLowerCase()
-    );
-
-    if (exists) {
-      setSignUpError('An Administrator account with this Username or Email already exists.');
-      return;
-    }
-
-    const createdEmail = signUpData.email.trim();
-
-    // Perform Supabase signUp
-    try {
-      const { data, error: authError } = await supabase.auth.signUp({
-        email: createdEmail,
-        password: signUpData.password,
-      });
-
-      if (authError) {
-        setSignUpError(authError.message);
-        return;
-      }
-    } catch (err: any) {
-      setSignUpError(err?.message || "Failed to create administrator account via Supabase.");
-      return;
-    }
-
-    const newUser: AdminUser = {
-      id: `admin-${Date.now()}`,
-      name: signUpData.name,
-      username: signUpData.username.trim(),
-      email: createdEmail,
-      mobile: signUpData.mobile.trim() || '9822100000',
-      role: signUpData.role,
-      securityQuestion: signUpData.securityQuestion,
-      securityAnswer: signUpData.securityAnswer.trim(),
-      password: signUpData.password,
-      createdAt: new Date().toISOString().split('T')[0]
-    };
-
-    storageService.addAdminUser(newUser);
-
-    // 1) Do NOT auto-login.
-    // 2) Redirect user to Sign In page.
-    // 3) Pre-fill the email used during signup.
-    // 4) Show clear success message on Sign In screen.
-    setUsernameInput(createdEmail);
-    setPasswordInput(''); // Do NOT pre-fill password
-    setSignInSuccessMessage("Your account has been created. Please check your email and verify your address before logging in.");
-    setMode('signin');
-  };
-
-  // 3. Handle Forgot Password - Step 1: Find User
+  // 2. Handle Forgot Password - Step 1: Find User
   const handleFindUserForRecovery = (e: React.FormEvent) => {
     e.preventDefault();
     setForgotError('');
@@ -297,17 +207,14 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
         <div className="text-center space-y-1">
           <div className="w-12 h-12 rounded-2xl bg-[#0A2342] text-amber-400 mx-auto flex items-center justify-center font-bold shadow-md">
             {mode === 'signin' && <Lock className="w-6 h-6" />}
-            {mode === 'signup' && <UserPlus className="w-6 h-6 text-amber-300" />}
             {mode === 'forgot_password' && <KeyRound className="w-6 h-6 text-amber-300" />}
           </div>
           <h2 className="text-xl sm:text-2xl font-bold font-serif text-[#0A2342]">
             {mode === 'signin' && 'Administrator Portal Login'}
-            {mode === 'signup' && 'Register New Administrator'}
             {mode === 'forgot_password' && 'Admin Password Recovery'}
           </h2>
           <p className="text-xs text-slate-500">
             {mode === 'signin' && 'Access college CMS, admission desk & campus operations'}
-            {mode === 'signup' && 'Add an administrator account for college management'}
             {mode === 'forgot_password' && 'Reset your admin password via security answer or OTP'}
           </p>
         </div>
@@ -326,16 +233,6 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => { setMode('signup'); setSignUpError(''); setSignUpSuccess(''); }}
-            className={`flex-1 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-              mode === 'signup' ? 'bg-white text-[#0A2342] shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <UserPlus className="w-3.5 h-3.5" />
-            <span>Register Admin</span>
-          </button>
-          <button
-            type="button"
             onClick={() => { setMode('forgot_password'); setForgotError(''); setForgotSuccess(''); setForgotStep(1); }}
             className={`flex-1 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
               mode === 'forgot_password' ? 'bg-white text-[#0A2342] shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900'
@@ -350,7 +247,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
         {mode === 'signin' && (
           <form onSubmit={handleSignInSubmit} className="space-y-4 text-xs">
             
-            {/* Clear Success Message Banner if user comes from signup */}
+            {/* Clear Success Message Banner */}
             {signInSuccessMessage && (
               <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-start gap-2.5 font-medium shadow-sm">
                 <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600 mt-0.5" />
@@ -434,158 +331,12 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
               <span>Login to Admin Panel</span>
             </button>
 
-            <div className="text-center pt-2 text-[11px] text-slate-500 border-t border-slate-100 flex items-center justify-between">
-              <span>Need another admin account?</span>
-              <button
-                type="button"
-                onClick={() => setMode('signup')}
-                className="font-bold text-[#0A2342] hover:underline flex items-center gap-1"
-              >
-                <UserPlus className="w-3 h-3 text-amber-600" /> Register Administrator
-              </button>
+            <div className="text-center pt-2 text-[11px] text-slate-500 border-t border-slate-100">
+              <span className="flex items-center justify-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
+                Restricted portal. Contact system admin for new accounts.
+              </span>
             </div>
-          </form>
-        )}
-
-        {/* ------------------ MODE 2: REGISTER ADMINISTRATOR ------------------ */}
-        {mode === 'signup' && (
-          <form onSubmit={handleSignUpSubmit} className="space-y-3.5 text-xs max-h-[60vh] overflow-y-auto pr-1">
-            
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Administrator Full Name *</label>
-              <input
-                type="text"
-                required
-                placeholder="e.g. Dr. R. M. Kulkarni"
-                value={signUpData.name}
-                onChange={(e) => setSignUpData({ ...signUpData, name: e.target.value })}
-                className="w-full p-2.5 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-amber-500"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Username *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. kulkarni_admin"
-                  value={signUpData.username}
-                  onChange={(e) => setSignUpData({ ...signUpData, username: e.target.value })}
-                  className="w-full p-2.5 rounded-lg border border-slate-300 font-mono outline-none focus:ring-2 focus:ring-amber-500"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Admin Email *</label>
-                <input
-                  type="email"
-                  required
-                  placeholder="admin@lsscdt.ac.in"
-                  value={signUpData.email}
-                  onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
-                  className="w-full p-2.5 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-amber-500"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Mobile Number</label>
-                <input
-                  type="tel"
-                  placeholder="9822100000"
-                  value={signUpData.mobile}
-                  onChange={(e) => setSignUpData({ ...signUpData, mobile: e.target.value })}
-                  className="w-full p-2.5 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-amber-500"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Admin Role *</label>
-                <select
-                  value={signUpData.role}
-                  onChange={(e) => setSignUpData({ ...signUpData, role: e.target.value as AdminUser['role'] })}
-                  className="w-full p-2.5 rounded-lg border border-slate-300 bg-white font-bold outline-none focus:ring-2 focus:ring-amber-500"
-                >
-                  <option value="Super Admin">Super Admin</option>
-                  <option value="Admission Incharge">Admission Incharge</option>
-                  <option value="Academic Admin">Academic Admin</option>
-                  <option value="System Administrator">System Administrator</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Security Question (for password recovery) *</label>
-              <select
-                value={signUpData.securityQuestion}
-                onChange={(e) => setSignUpData({ ...signUpData, securityQuestion: e.target.value })}
-                className="w-full p-2.5 rounded-lg border border-slate-300 bg-white outline-none focus:ring-2 focus:ring-amber-500 mb-1.5"
-              >
-                <option value="What is the college code?">What is the college code?</option>
-                <option value="What city is the college located in?">What city is the college located in?</option>
-                <option value="What degree program is offered?">What degree program is offered?</option>
-                <option value="What is your employee ID number?">What is your employee ID number?</option>
-                <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
-              </select>
-              <input
-                type="text"
-                required
-                placeholder="Your Answer (e.g. LSSCDT)"
-                value={signUpData.securityAnswer}
-                onChange={(e) => setSignUpData({ ...signUpData, securityAnswer: e.target.value })}
-                className="w-full p-2.5 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-amber-500"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Password *</label>
-                <input
-                  type="password"
-                  required
-                  placeholder="••••••••"
-                  value={signUpData.password}
-                  onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
-                  className="w-full p-2.5 rounded-lg border border-slate-300 font-mono outline-none focus:ring-2 focus:ring-amber-500"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Confirm Password *</label>
-                <input
-                  type="password"
-                  required
-                  placeholder="••••••••"
-                  value={signUpData.confirmPassword}
-                  onChange={(e) => setSignUpData({ ...signUpData, confirmPassword: e.target.value })}
-                  className="w-full p-2.5 rounded-lg border border-slate-300 font-mono outline-none focus:ring-2 focus:ring-amber-500"
-                />
-              </div>
-            </div>
-
-            {signUpError && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
-                <span>{signUpError}</span>
-              </div>
-            )}
-
-            {signUpSuccess && (
-              <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-lg flex items-center gap-2 font-bold">
-                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
-                <span>{signUpSuccess}</span>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              className="w-full bg-[#D97706] hover:bg-[#b86202] text-slate-950 font-extrabold py-3 rounded-xl text-xs shadow-md transition-colors flex items-center justify-center gap-2"
-            >
-              <UserPlus className="w-4 h-4" />
-              <span>Register Administrator</span>
-            </button>
           </form>
         )}
 

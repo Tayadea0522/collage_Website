@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AdmissionApplication, CollegeInfo } from '../types';
 import { storageService } from '../services/storageService';
+import { printApplicationSlip, downloadApplicationSlip } from '../utils/printUtils';
 import { 
   Sparkles, 
   CheckCircle2, 
@@ -269,8 +270,20 @@ export const Admissions: React.FC<AdmissionsProps> = ({
     }
   };
 
-  const handlePrintSlip = () => {
-    window.print();
+  const handlePrintSlip = (appToPrint?: AdmissionApplication | null) => {
+    const target = appToPrint || submittedApp || trackedApp;
+    if (target) {
+      printApplicationSlip(target, collegeInfo);
+    } else {
+      window.print();
+    }
+  };
+
+  const handleDownloadSlip = (appToDownload?: AdmissionApplication | null) => {
+    const target = appToDownload || submittedApp || trackedApp;
+    if (target) {
+      downloadApplicationSlip(target, collegeInfo);
+    }
   };
 
   return (
@@ -964,12 +977,20 @@ export const Admissions: React.FC<AdmissionsProps> = ({
                       <p className="text-xs text-emerald-100">Your unique Application ID is <strong className="text-amber-300 font-mono text-sm">{submittedApp.id}</strong></p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
-                      onClick={handlePrintSlip}
-                      className="bg-white text-slate-900 hover:bg-amber-400 font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-1.5 shadow"
+                      type="button"
+                      onClick={() => handlePrintSlip(submittedApp)}
+                      className="bg-white text-slate-900 hover:bg-amber-400 font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-1.5 shadow transition-colors"
                     >
-                      <Printer className="w-4 h-4" /> Print / Save Application Slip
+                      <Printer className="w-4 h-4 text-[#0A2342]" /> Print Application Slip
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadSlip(submittedApp)}
+                      className="bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-1.5 shadow transition-colors"
+                    >
+                      <Download className="w-4 h-4" /> Download Slip (.html)
                     </button>
                   </div>
                 </div>
@@ -1118,16 +1139,35 @@ export const Admissions: React.FC<AdmissionsProps> = ({
                     <h3 className="text-xl font-extrabold font-mono text-blue-900">{trackedApp.id}</h3>
                     <p className="text-xs text-slate-600 font-medium">{trackedApp.fullName} | {trackedApp.mobile}</p>
                   </div>
-                  <div className="text-right">
-                    <span className="text-xs font-bold text-slate-500 uppercase block">Current Verification Status</span>
-                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-extrabold uppercase mt-1 ${
-                      trackedApp.status === 'Provisionally Selected' ? 'bg-emerald-600 text-white' :
-                      trackedApp.status === 'Verified' ? 'bg-blue-600 text-white' :
-                      trackedApp.status === 'Rejected' ? 'bg-red-600 text-white' :
-                      'bg-amber-500 text-slate-950'
-                    }`}>
-                      {trackedApp.status}
-                    </span>
+                  <div className="text-right flex flex-col items-end gap-2">
+                    <div>
+                      <span className="text-xs font-bold text-slate-500 uppercase block">Current Verification Status</span>
+                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-extrabold uppercase mt-1 ${
+                        trackedApp.status === 'Provisionally Selected' ? 'bg-emerald-600 text-white' :
+                        trackedApp.status === 'Verified' ? 'bg-blue-600 text-white' :
+                        trackedApp.status === 'Rejected' ? 'bg-red-600 text-white' :
+                        'bg-amber-500 text-slate-950'
+                      }`}>
+                        {trackedApp.status}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <button
+                        type="button"
+                        onClick={() => handlePrintSlip(trackedApp)}
+                        className="bg-[#0A2342] hover:bg-slate-900 text-amber-400 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow transition-colors"
+                      >
+                        <Printer className="w-3.5 h-3.5" /> Print Slip
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadSlip(trackedApp)}
+                        className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow transition-colors"
+                      >
+                        <Download className="w-3.5 h-3.5" /> Download (.html)
+                      </button>
+                    </div>
                   </div>
                 </div>
 

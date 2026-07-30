@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
 import { CollegeInfo, Notice, DepartmentInfo, FacultyMember, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser } from '../types';
 import { storageService } from '../services/storageService';
+import { printApplicationSlip, downloadApplicationSlip } from '../utils/printUtils';
 import { 
   Lock, 
   LogOut, 
@@ -27,6 +28,7 @@ import {
   LayoutGrid,
   GraduationCap,
   Download,
+  Printer,
   Settings,
   Phone,
   Shield,
@@ -854,9 +856,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       {selectedApp.fullName}
                     </h3>
                   </div>
-                  <button onClick={() => setSelectedApp(null)} className="p-1 text-slate-400 hover:text-slate-700">
-                    <X className="w-5 h-5" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => printApplicationSlip(selectedApp, collegeInfo)}
+                      className="bg-[#0A2342] hover:bg-slate-900 text-amber-400 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow transition-colors"
+                    >
+                      <Printer className="w-3.5 h-3.5" /> Print Slip
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => downloadApplicationSlip(selectedApp, collegeInfo)}
+                      className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow transition-colors"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Download (.html)
+                    </button>
+                    <button onClick={() => setSelectedApp(null)} className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-200 ml-1">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">

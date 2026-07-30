@@ -26,3 +26,32 @@
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+/* Printable Application Slip Styles */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  
+  /* Hide non-essential layout elements during print */
+  header, 
+  footer, 
+  nav, 
+  .no-print,
+  button,
+  .no-scrollbar {
+    display: none !important;
+  }
+
+  .print-slip-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+  }
+}
+

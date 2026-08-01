@@ -1279,9 +1279,74 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </select>
                 </div>
 
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Qualification & Experience</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      placeholder="e.g. M.Tech (Dairy Tech)"
+                      value={newFaculty.qualification || ''}
+                      onChange={(e) => setNewFaculty({ ...newFaculty, qualification: e.target.value })}
+                      className="w-full p-2.5 rounded-lg border border-slate-300 outline-none"
+                    />
+                    <input
+                      type="text"
+                      placeholder="e.g. 8 Years"
+                      value={newFaculty.experience || ''}
+                      onChange={(e) => setNewFaculty({ ...newFaculty, experience: e.target.value })}
+                      className="w-full p-2.5 rounded-lg border border-slate-300 outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Email Address</label>
+                  <input
+                    type="email"
+                    placeholder="e.g. faculty@lsscdt.edu.in"
+                    value={newFaculty.email || ''}
+                    onChange={(e) => setNewFaculty({ ...newFaculty, email: e.target.value })}
+                    className="w-full p-2.5 rounded-lg border border-slate-300 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Faculty Photo</label>
+                  <div className="space-y-2">
+                    {newFaculty.image && (
+                      <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-300">
+                        <img src={newFaculty.image} alt="Preview" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Image URL or upload"
+                        value={newFaculty.image || ''}
+                        onChange={(e) => setNewFaculty({ ...newFaculty, image: e.target.value })}
+                        className="w-full p-2 rounded-lg border border-slate-300 text-xs outline-none"
+                      />
+                      <label className="cursor-pointer bg-[#0A2342] text-amber-400 font-bold px-3 py-2 rounded-lg text-xs flex items-center shrink-0 hover:bg-slate-900 transition-colors">
+                        <Upload className="w-3.5 h-3.5 mr-1" />
+                        <span>Upload</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files?.[0]) {
+                              handleImageFileUpload(e.target.files[0], (url) => setNewFaculty(prev => ({ ...prev, image: url })));
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
                 <button
                   type="submit"
-                  className="w-full bg-[#D97706] text-slate-950 font-bold py-2.5 rounded-lg text-xs"
+                  className="w-full bg-[#D97706] text-slate-950 font-bold py-2.5 rounded-lg text-xs hover:bg-amber-600 transition-colors"
                 >
                   Save Faculty Member
                 </button>
@@ -1339,21 +1404,37 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Upload Photo</label>
-                  <label className="cursor-pointer bg-[#0A2342] text-amber-400 font-bold px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-2">
-                    <Upload className="w-4 h-4" />
-                    <span>Upload Image File</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        if (e.target.files?.[0]) {
-                          handleImageFileUpload(e.target.files[0], (url) => setNewGallery(prev => ({ ...prev, image: url })));
-                        }
-                      }}
-                    />
-                  </label>
+                  <label className="block font-bold text-slate-700 mb-1">Upload Photo from Device</label>
+                  <div className="space-y-2">
+                    {newGallery.image && (
+                      <div className="relative w-full h-32 rounded-lg overflow-hidden border border-slate-300">
+                        <img src={newGallery.image} alt="Preview" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Image URL or upload file"
+                        value={newGallery.image || ''}
+                        onChange={(e) => setNewGallery({ ...newGallery, image: e.target.value })}
+                        className="w-full p-2.5 rounded-lg border border-slate-300 outline-none text-xs bg-white"
+                      />
+                      <label className="cursor-pointer bg-[#0A2342] text-amber-400 font-bold px-3 py-2 rounded-lg text-xs flex items-center shrink-0 hover:bg-slate-900 transition-colors">
+                        <Upload className="w-4 h-4 mr-1" />
+                        <span>Upload File</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files?.[0]) {
+                              handleImageFileUpload(e.target.files[0], (url) => setNewGallery(prev => ({ ...prev, image: url })));
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
                 </div>
 
                 <button
@@ -1584,7 +1665,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     type="text"
                     value={infoForm.name}
                     onChange={(e) => setInfoForm({ ...infoForm, name: e.target.value })}
-                    className="w-full p-2 rounded border border-slate-300 font-bold"
+                    className="w-full p-2 rounded border border-slate-300 font-bold bg-white"
                   />
                 </div>
                 <div>
@@ -1593,8 +1674,170 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     type="text"
                     value={infoForm.tagline}
                     onChange={(e) => setInfoForm({ ...infoForm, tagline: e.target.value })}
-                    className="w-full p-2 rounded border border-slate-300"
+                    className="w-full p-2 rounded border border-slate-300 bg-white"
                   />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700">About College Summary (Paragraph 1)</label>
+                  <textarea
+                    rows={3}
+                    value={infoForm.aboutText1}
+                    onChange={(e) => setInfoForm({ ...infoForm, aboutText1: e.target.value })}
+                    className="w-full p-2 rounded border border-slate-300 bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* Patron / Late Shri Shaktikumar Sancheti Details */}
+              <div className="space-y-3 bg-[#F0F4F8] p-5 rounded-2xl border border-slate-200">
+                <h3 className="font-bold text-[#0A2342]">Patron Details (Late Shri Shaktikumar Sancheti)</h3>
+                <div>
+                  <label className="font-bold text-slate-700">Patron Message / Tribute</label>
+                  <textarea
+                    rows={3}
+                    value={infoForm.shaktikumarMessage || ''}
+                    onChange={(e) => setInfoForm({ ...infoForm, shaktikumarMessage: e.target.value })}
+                    className="w-full p-2 rounded border border-slate-300 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700">Patron Photo</label>
+                  <div className="space-y-2">
+                    {infoForm.shaktikumarImage && (
+                      <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-300">
+                        <img src={infoForm.shaktikumarImage} alt="Patron" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="text"
+                        value={infoForm.shaktikumarImage || ''}
+                        onChange={(e) => setInfoForm({ ...infoForm, shaktikumarImage: e.target.value })}
+                        className="w-full p-2 rounded border border-slate-300 bg-white"
+                        placeholder="Image URL or upload photo"
+                      />
+                      <label className="cursor-pointer bg-[#0A2342] text-amber-400 font-bold px-3 py-2 rounded text-xs hover:bg-slate-900 shrink-0 shadow-sm flex items-center gap-1">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Upload</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              handleImageFileUpload(file, (url) => setInfoForm(prev => ({ ...prev, shaktikumarImage: url })));
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Hero Banner Carousel Sliders */}
+              <div className="lg:col-span-2 space-y-4 bg-[#F0F4F8] p-5 rounded-2xl border border-slate-200">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="font-bold text-[#0A2342] text-sm font-serif">Hero Slider Banners</h3>
+                    <p className="text-[11px] text-slate-500">Upload high-resolution banner images for homepage main slider</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddBanner}
+                    className="bg-[#0A2342] hover:bg-slate-900 text-amber-400 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add New Banner
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {(infoForm.heroBanners || []).map((banner, index) => (
+                    <div key={banner.id || index} className="p-4 bg-white rounded-xl border border-slate-200 space-y-3">
+                      <div className="flex justify-between items-center border-b pb-2">
+                        <span className="font-bold text-[#0A2342]">Banner #{index + 1}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveBanner(banner.id)}
+                          className="text-red-500 hover:text-red-700 text-xs font-bold flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Remove
+                        </button>
+                      </div>
+
+                      <div>
+                        <label className="font-bold text-slate-600 text-[11px]">Title</label>
+                        <input
+                          type="text"
+                          value={banner.title}
+                          onChange={(e) => {
+                            const updated = [...(infoForm.heroBanners || [])];
+                            updated[index] = { ...updated[index], title: e.target.value };
+                            setInfoForm({ ...infoForm, heroBanners: updated });
+                          }}
+                          className="w-full p-2 rounded border border-slate-300 font-bold"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="font-bold text-slate-600 text-[11px]">Subtitle</label>
+                        <input
+                          type="text"
+                          value={banner.subtitle}
+                          onChange={(e) => {
+                            const updated = [...(infoForm.heroBanners || [])];
+                            updated[index] = { ...updated[index], subtitle: e.target.value };
+                            setInfoForm({ ...infoForm, heroBanners: updated });
+                          }}
+                          className="w-full p-2 rounded border border-slate-300"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="font-bold text-slate-600 text-[11px]">Banner Image</label>
+                        <div className="space-y-2">
+                          {banner.image && (
+                            <div className="relative w-full h-24 rounded-lg overflow-hidden border border-slate-200">
+                              <img src={banner.image} alt={banner.title} className="w-full h-full object-cover" />
+                            </div>
+                          )}
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={banner.image}
+                              onChange={(e) => {
+                                const updated = [...(infoForm.heroBanners || [])];
+                                updated[index] = { ...updated[index], image: e.target.value };
+                                setInfoForm({ ...infoForm, heroBanners: updated });
+                              }}
+                              className="w-full p-2 rounded border border-slate-300 text-xs"
+                              placeholder="Image URL or upload file"
+                            />
+                            <label className="cursor-pointer bg-[#0A2342] text-amber-400 font-bold px-3 py-2 rounded text-xs hover:bg-slate-900 shrink-0 shadow-sm flex items-center gap-1">
+                              <Upload className="w-3.5 h-3.5" />
+                              <span>Upload</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    handleImageFileUpload(file, (url) => {
+                                      const updated = [...(infoForm.heroBanners || [])];
+                                      updated[index] = { ...updated[index], image: url };
+                                      setInfoForm(prev => ({ ...prev, heroBanners: updated }));
+                                    });
+                                  }
+                                }}
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -1619,13 +1862,30 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700">Dean Photo URL</label>
-                  <input
-                    type="text"
-                    value={infoForm.deanImage}
-                    onChange={(e) => setInfoForm({ ...infoForm, deanImage: e.target.value })}
-                    className="w-full p-2 rounded border border-slate-300 bg-white"
-                  />
+                  <label className="font-bold text-slate-700">Dean Photo</label>
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={infoForm.deanImage}
+                      onChange={(e) => setInfoForm({ ...infoForm, deanImage: e.target.value })}
+                      className="w-full p-2 rounded border border-slate-300 bg-white"
+                      placeholder="Image URL or upload"
+                    />
+                    <label className="cursor-pointer bg-[#0A2342] text-white px-3 py-2 rounded text-xs font-bold hover:bg-slate-900 shrink-0 shadow-sm">
+                      Upload
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleImageFileUpload(file, (url) => setInfoForm(prev => ({ ...prev, deanImage: url })));
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
                 </div>
                 <div>
                   <label className="font-bold text-slate-700">Dean Message Quote</label>
@@ -1659,13 +1919,30 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700">Secretary Photo URL</label>
-                  <input
-                    type="text"
-                    value={infoForm.secretaryImage}
-                    onChange={(e) => setInfoForm({ ...infoForm, secretaryImage: e.target.value })}
-                    className="w-full p-2 rounded border border-slate-300 bg-white"
-                  />
+                  <label className="font-bold text-slate-700">Secretary Photo</label>
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={infoForm.secretaryImage}
+                      onChange={(e) => setInfoForm({ ...infoForm, secretaryImage: e.target.value })}
+                      className="w-full p-2 rounded border border-slate-300 bg-white"
+                      placeholder="Image URL or upload"
+                    />
+                    <label className="cursor-pointer bg-[#0A2342] text-white px-3 py-2 rounded text-xs font-bold hover:bg-slate-900 shrink-0 shadow-sm">
+                      Upload
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleImageFileUpload(file, (url) => setInfoForm(prev => ({ ...prev, secretaryImage: url })));
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
                 </div>
                 <div>
                   <label className="font-bold text-slate-700">Secretary Message Quote</label>
@@ -1687,7 +1964,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     value={infoForm.adminOfficerName || ''}
                     onChange={(e) => setInfoForm({ ...infoForm, adminOfficerName: e.target.value })}
                     className="w-full p-2 rounded border border-slate-300 font-bold bg-white"
-                    placeholder="Shri. M. V. Kulkarni"
+                    placeholder="Shri S. D. Lokhande"
                   />
                 </div>
                 <div>
@@ -1701,13 +1978,30 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700">Admin Officer Photo URL</label>
-                  <input
-                    type="text"
-                    value={infoForm.adminOfficerImage || ''}
-                    onChange={(e) => setInfoForm({ ...infoForm, adminOfficerImage: e.target.value })}
-                    className="w-full p-2 rounded border border-slate-300 bg-white"
-                  />
+                  <label className="font-bold text-slate-700">Admin Officer Photo</label>
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={infoForm.adminOfficerImage || ''}
+                      onChange={(e) => setInfoForm({ ...infoForm, adminOfficerImage: e.target.value })}
+                      className="w-full p-2 rounded border border-slate-300 bg-white"
+                      placeholder="Image URL or upload photo"
+                    />
+                    <label className="cursor-pointer bg-[#0A2342] text-white px-3 py-2 rounded text-xs font-bold hover:bg-slate-900 shrink-0 shadow-sm">
+                      Upload
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleImageFileUpload(file, (url) => setInfoForm(prev => ({ ...prev, adminOfficerImage: url })));
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
                 </div>
                 <div>
                   <label className="font-bold text-slate-700">Admin Officer Message Quote</label>

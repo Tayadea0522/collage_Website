@@ -266,8 +266,9 @@ export const Home: React.FC<HomeProps> = ({
               <div>
                 <div className="flex items-start gap-4">
                   <img
-                    src={collegeInfo.adminOfficerImage || "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=300&q=80"}
-                    alt={collegeInfo.adminOfficerName || "Shri. M. V. Kulkarni"}
+                    src={collegeInfo.adminOfficerImage || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80"}
+                    alt={collegeInfo.adminOfficerName || "Shri S. D. Lokhande"}
+                    referrerPolicy="no-referrer"
                     className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover shrink-0 bg-slate-100 shadow-sm border border-slate-200"
                   />
                   <div className="space-y-0.5">
@@ -275,7 +276,7 @@ export const Home: React.FC<HomeProps> = ({
                       Administrative Officer's Message
                     </h3>
                     <div className="text-slate-600 font-semibold text-xs sm:text-sm">
-                      {collegeInfo.adminOfficerName || "Shri. M. V. Kulkarni"}
+                      {collegeInfo.adminOfficerName || "Shri S. D. Lokhande"}
                     </div>
                     <div className="text-slate-500 text-xs leading-tight">
                       {collegeInfo.adminOfficerDesignation || "Administrative Officer, Late Shaktikumar Sancheti College of Dairy Technology"}

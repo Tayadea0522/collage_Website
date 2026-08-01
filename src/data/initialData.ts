@@ -22,10 +22,10 @@ export const initialCollegeInfo: CollegeInfo = {
   secretaryMessage: "It is our commitment to build an institution that not only imparts technical knowledge but also shapes the character and values of our students. LSSCDT stands as a symbol of our dedication to rural development and the dairy industry of India.",
   secretaryImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80",
   
-  adminOfficerName: "Shri. M. V. Kulkarni",
+  adminOfficerName: "Shri S. D. Lokhande",
   adminOfficerDesignation: "Administrative Officer, Late Shaktikumar Sancheti College of Dairy Technology",
   adminOfficerMessage: "Our administrative department is dedicated to ensuring smooth operational management, transparent governance, student guidance, and providing a supportive ecosystem for academic and professional excellence.",
-  adminOfficerImage: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=300&q=80",
+  adminOfficerImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80",
   
   shaktikumarImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
   shaktikumarMessage: "A visionary philanthropist and dedicated patron of education, Late Shri Shaktikumar Sancheti believed that knowledge is the greatest gift one can give to society. This institution stands as a lasting tribute to his unwavering commitment to rural development and the empowerment of India's dairy sector.",

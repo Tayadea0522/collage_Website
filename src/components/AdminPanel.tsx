@@ -1668,6 +1668,42 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     className="w-full p-2 rounded border border-slate-300 font-bold bg-white"
                   />
                 </div>
+
+                <div>
+                  <label className="font-bold text-slate-700">College Emblem / Logo</label>
+                  <div className="space-y-2 mt-1">
+                    {infoForm.logoImage && (
+                      <div className="w-16 h-16 rounded-lg bg-white p-1 border border-slate-300 flex items-center justify-center">
+                        <img src={infoForm.logoImage} alt="College Logo Preview" className="max-w-full max-h-full object-contain" />
+                      </div>
+                    )}
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="text"
+                        value={infoForm.logoImage || ''}
+                        onChange={(e) => setInfoForm({ ...infoForm, logoImage: e.target.value })}
+                        className="w-full p-2 rounded border border-slate-300 bg-white"
+                        placeholder="Logo image URL or upload file"
+                      />
+                      <label className="cursor-pointer bg-[#0A2342] text-amber-400 font-bold px-3 py-2 rounded text-xs hover:bg-slate-900 shrink-0 shadow-sm flex items-center gap-1">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Upload Logo</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              handleImageFileUpload(file, (url) => setInfoForm(prev => ({ ...prev, logoImage: url })));
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <label className="font-bold text-slate-700">Tagline</label>
                   <input

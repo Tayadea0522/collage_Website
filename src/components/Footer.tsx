@@ -74,9 +74,24 @@ export const Footer: React.FC<FooterProps> = ({
           
           {/* Column 1: LSSCDT Branding & Socials */}
           <div className="space-y-4">
-            <h3 className="text-2xl font-extrabold text-[#EAB308] font-serif tracking-wide">
-              LSSCDT
-            </h3>
+            <div className="flex items-center gap-3">
+              {collegeInfo.logoImage && (
+                <img 
+                  src={collegeInfo.logoImage} 
+                  alt={collegeInfo.name} 
+                  referrerPolicy="no-referrer"
+                  className="w-12 h-12 object-contain bg-white/10 rounded-lg p-1"
+                />
+              )}
+              <div>
+                <h3 className="text-xl font-extrabold text-[#EAB308] font-serif tracking-wide leading-tight">
+                  LSSCDT
+                </h3>
+                <p className="text-[10px] text-slate-300 font-bold uppercase tracking-wider">
+                  Malkapur, MH
+                </p>
+              </div>
+            </div>
             <p className="text-xs text-slate-300 leading-relaxed max-w-xs">
               Late Shaktikumar Sancheti College of Dairy Technology is a premier institution dedicated to creating leaders in dairy science and technology in Maharashtra.
             </p>

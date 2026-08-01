@@ -123,6 +123,7 @@ export interface CollegeInfo {
   name: string;
   shortName: string;
   tagline: string;
+  logoImage?: string;
   affiliation: string;
   approval: string;
   location: string;

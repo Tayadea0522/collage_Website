@@ -113,9 +113,18 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={() => handleNavClick('home')}
             className="flex items-center gap-3 cursor-pointer group"
           >
-            <div className="w-11 h-11 rounded-full bg-[#0A2342] text-amber-400 flex items-center justify-center font-bold shadow shrink-0 group-hover:scale-105 transition-transform">
-              <GraduationCap className="w-6 h-6" />
-            </div>
+            {collegeInfo.logoImage ? (
+              <img
+                src={collegeInfo.logoImage}
+                alt={collegeInfo.name}
+                referrerPolicy="no-referrer"
+                className="w-12 h-12 sm:w-14 sm:h-14 object-contain shrink-0 group-hover:scale-105 transition-transform"
+              />
+            ) : (
+              <div className="w-11 h-11 rounded-full bg-[#0A2342] text-amber-400 flex items-center justify-center font-bold shadow shrink-0 group-hover:scale-105 transition-transform">
+                <GraduationCap className="w-6 h-6" />
+              </div>
+            )}
             <div>
               <h1 className="text-lg sm:text-xl font-bold text-[#0A2342] leading-tight font-serif tracking-tight">
                 Late Shaktikumar Sancheti

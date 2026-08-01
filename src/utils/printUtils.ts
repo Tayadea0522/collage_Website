@@ -208,7 +208,8 @@ export function generateSlipHtml(app: AdmissionApplication, collegeInfo: College
   </div>
 
   <div class="slip-card">
-    <div class="header">
+    <div class="header" style="position: relative;">
+      ${collegeInfo.logoImage ? `<img src="${collegeInfo.logoImage}" alt="College Logo" style="height: 60px; max-width: 120px; object-fit: contain; margin-bottom: 8px;" />` : ''}
       <h1>${collegeName}</h1>
       <p><strong>Address:</strong> ${collegeInfo.address}</p>
       <p><strong>Affiliation:</strong> ${collegeInfo.affiliation}</p>

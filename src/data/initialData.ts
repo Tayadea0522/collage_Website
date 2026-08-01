@@ -4,6 +4,7 @@ export const initialCollegeInfo: CollegeInfo = {
   name: "Late Shaktikumar Sancheti College of Dairy Technology",
   shortName: "LSSCDT",
   tagline: "College of Dairy Technology",
+  logoImage: "/logo.svg",
   affiliation: "Affiliated to Maharashtra Animal & Fishery Sciences University (MAFSU), Nagpur",
   approval: "Approved by ICAR, New Delhi & Govt. of Maharashtra",
   location: "Malkapur, Maharashtra",

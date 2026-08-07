@@ -80,7 +80,7 @@ export interface AdmissionApplication {
   hscPassingYear: string;
   
   // Entrance Exam
-  entranceExam: 'MHT-CET' | 'ICAR AIEEA' | 'NEET' | 'JEE Main' | 'Not Applicable (Lateral Entry)';
+  entranceExam: 'MHT-CET' | 'ICAR AIEEA' | 'Not Applicable (Lateral Entry)';
   entranceRollNo: string;
   entrancePercentile: number;
   

@@ -122,85 +122,47 @@ export const Academics: React.FC<AcademicsProps> = ({ faculty: propsFaculty }) =
       </div>
 
       {/* Program Overview & Highlights */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        <div className="lg:col-span-2 bg-[#F0F4F8] p-8 rounded-2xl border border-slate-200/80 space-y-6">
-          <h2 className="text-2xl font-bold font-serif text-[#0A2342] border-b border-slate-300/80 pb-3 flex items-center gap-2">
-            <Award className="w-6 h-6 text-[#D97706]" />
-            Degree Program Specifications
-          </h2>
+      <div className="bg-[#F0F4F8] p-8 rounded-2xl border border-slate-200/80 space-y-6">
+        <h2 className="text-2xl font-bold font-serif text-[#0A2342] border-b border-slate-300/80 pb-3 flex items-center gap-2">
+          <Award className="w-6 h-6 text-[#D97706]" />
+          Degree Program Specifications
+        </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-1">
-              <span className="text-xs font-bold text-slate-500 uppercase">Degree Title</span>
-              <div className="font-bold text-[#0A2342] text-base">B.Tech (Dairy Technology)</div>
-            </div>
-            <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-1">
-              <span className="text-xs font-bold text-slate-500 uppercase">Course Duration</span>
-              <div className="font-bold text-[#0A2342] text-base">4 Academic Years (8 Semesters)</div>
-            </div>
-            <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-1">
-              <span className="text-xs font-bold text-slate-500 uppercase">Medium of Instruction</span>
-              <div className="font-bold text-[#0A2342] text-base">English</div>
-            </div>
-            <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-1">
-              <span className="text-xs font-bold text-slate-500 uppercase">Curriculum Framework</span>
-              <div className="font-bold text-[#D97706] text-base">ICAR Vth Deans' Committee</div>
-            </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-1">
+            <span className="text-xs font-bold text-slate-500 uppercase">Degree Title</span>
+            <div className="font-bold text-[#0A2342] text-base">B.Tech (Dairy Technology)</div>
           </div>
-
-          <div className="space-y-3 pt-2">
-            <h3 className="font-bold text-[#0A2342] text-base font-serif">Eligibility & Admission Criteria:</h3>
-            <ul className="space-y-2 text-sm text-slate-700">
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="w-4 h-4 text-[#D97706] shrink-0 mt-0.5" />
-                <span>Passed 10+2 / HSC Science stream with Physics, Chemistry, Mathematics, and English (PCM / PCMB).</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="w-4 h-4 text-[#D97706] shrink-0 mt-0.5" />
-                <span>Minimum 50% aggregate marks for Open Category (40% for SC/ST/OBC candidates of Maharashtra).</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="w-4 h-4 text-[#D97706] shrink-0 mt-0.5" />
-                <span>Valid scorecard in <strong>MHT-CET (PCM/PCB)</strong> / <strong>ICAR AIEEA</strong> / <strong>NEET</strong> / <strong>JEE Main</strong>.</span>
-              </li>
-            </ul>
+          <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-1">
+            <span className="text-xs font-bold text-slate-500 uppercase">Course Duration</span>
+            <div className="font-bold text-[#0A2342] text-base">4 Academic Years (8 Semesters)</div>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-1">
+            <span className="text-xs font-bold text-slate-500 uppercase">Medium of Instruction</span>
+            <div className="font-bold text-[#0A2342] text-base">English</div>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-1">
+            <span className="text-xs font-bold text-slate-500 uppercase">Curriculum Framework</span>
+            <div className="font-bold text-[#D97706] text-base">ICAR Vth Deans' Committee</div>
           </div>
         </div>
 
-        {/* Seat Matrix & Intake */}
-        <div className="bg-[#0A2342] text-white p-6 rounded-2xl shadow-md space-y-4">
-          <h3 className="text-lg font-bold font-serif text-amber-400 border-b border-blue-900/80 pb-2">
-            Annual Intake & Seat Matrix
-          </h3>
-
-          <div className="text-center bg-[#123158] p-4 rounded-xl border border-blue-800">
-            <div className="text-xs font-bold uppercase text-slate-300">Total Sanctioned Intake</div>
-            <div className="text-3xl font-extrabold text-amber-400 font-mono mt-1">60 Seats / Year</div>
-          </div>
-
-          <ul className="space-y-2 text-xs text-slate-200">
-            <li className="flex justify-between items-center py-2 border-b border-blue-900/60">
-              <span>State CAP Quota (Maharashtra):</span>
-              <strong className="text-white font-mono">80% (48 Seats)</strong>
+        <div className="space-y-3 pt-2">
+          <h3 className="font-bold text-[#0A2342] text-base font-serif">Eligibility & Admission Criteria:</h3>
+          <ul className="space-y-2 text-sm text-slate-700">
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="w-4 h-4 text-[#D97706] shrink-0 mt-0.5" />
+              <span>Passed 10+2 / HSC Science stream with Physics, Chemistry, Mathematics, and English (PCM / PCMB).</span>
             </li>
-            <li className="flex justify-between items-center py-2 border-b border-blue-900/60">
-              <span>ICAR All-India Quota:</span>
-              <strong className="text-white font-mono">15% (9 Seats)</strong>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="w-4 h-4 text-[#D97706] shrink-0 mt-0.5" />
+              <span>Minimum 50% aggregate marks for Open Category (40% for SC/ST/OBC candidates of Maharashtra).</span>
             </li>
-            <li className="flex justify-between items-center py-2 border-b border-blue-900/60">
-              <span>Management / NRI Quota:</span>
-              <strong className="text-white font-mono">5% (3 Seats)</strong>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="w-4 h-4 text-[#D97706] shrink-0 mt-0.5" />
+              <span>Valid scorecard in <strong>MHT-CET (PCM/PCB)</strong> / <strong>ICAR AIEEA</strong>.</span>
             </li>
           </ul>
-
-          <div className="pt-2">
-            <a
-              href="#syllabi"
-              className="w-full bg-[#D97706] hover:bg-[#b86202] text-slate-950 font-bold py-2.5 rounded-lg text-xs text-center block transition-colors shadow"
-            >
-              Explore Semester-Wise Syllabus
-            </a>
-          </div>
         </div>
       </div>
 

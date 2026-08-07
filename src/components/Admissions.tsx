@@ -780,8 +780,6 @@ export const Admissions: React.FC<AdmissionsProps> = ({
                         >
                           <option value="MHT-CET">MHT-CET (PCM/PCB)</option>
                           <option value="ICAR AIEEA">ICAR AIEEA</option>
-                          <option value="NEET">NEET UG</option>
-                          <option value="JEE Main">JEE Main</option>
                           <option value="Not Applicable (Lateral Entry)">Not Applicable (Lateral Entry Candidate)</option>
                         </select>
                       </div>
@@ -1296,7 +1294,7 @@ export const Admissions: React.FC<AdmissionsProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
                 <span className="font-extrabold text-blue-900 uppercase block">First Year Admission (1st Year)</span>
-                <p>12th Science pass with Physics, Chemistry, Mathematics (PCM/PCMB) from recognized board + valid score in MHT-CET / ICAR AIEEA / NEET / JEE Main.</p>
+                <p>12th Science pass with Physics, Chemistry, Mathematics (PCM/PCMB) from recognized board + valid score in MHT-CET / ICAR AIEEA.</p>
               </div>
 
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">

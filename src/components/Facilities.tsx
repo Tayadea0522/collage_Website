@@ -57,6 +57,19 @@ export const Facilities: React.FC<FacilitiesProps> = ({ facilities }) => {
               <p className="text-slate-700 text-sm sm:text-base leading-relaxed">
                 {fac.description}
               </p>
+
+              {fac.features && fac.features.length > 0 && (
+                <div className="pt-2 space-y-2">
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Key Highlights</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {fac.features.map((feat, fIdx) => (
+                      <span key={fIdx} className="bg-white border border-slate-300 text-slate-800 text-xs font-semibold px-2.5 py-1 rounded-lg shadow-2xs">
+                        ✓ {feat}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ))}

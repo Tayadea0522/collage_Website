@@ -38,7 +38,7 @@ export const initialCollegeInfo: CollegeInfo = {
   stats: {
     placement: "100%",
     labs: "15+",
-    dairyPlant: "50k",
+    dairyPlant: "500 LPD",
     faculty: "20+"
   },
   
@@ -61,7 +61,7 @@ export const initialCollegeInfo: CollegeInfo = {
     },
     {
       id: "b2",
-      title: "State-of-the-Art 50,000 LPD Dairy Processing Plant",
+      title: "State-of-the-Art 500 LPD Dairy Processing Plant",
       subtitle: "Hands-On Practical Learning for Future Dairy Industry Leaders",
       image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1600&q=80",
       ctaText: "Explore Campus"
@@ -225,35 +225,75 @@ export const initialFaculty: FacultyMember[] = [
 export const initialFacilities: Facility[] = [
   {
     id: "fac-plant",
-    title: "50,000 LPD Experimental Dairy Processing Plant",
+    title: "500 LPD Dairy Processing Plant",
     category: "Plant",
-    description: "Fully automated commercial pilot plant equipped with Milk Pasteurizer, Separator, Homogenizer, Ghee Kettle, and Automatic Pouch Packaging.",
-    features: ["HTST Milk Pasteurization", "Paneer & Cheese Vats", "Ghee & Butter Churns", "Automatic Pouch Packing"],
+    description: "State-of-the-art pilot processing plant with 500 Litres Per Day (LPD) capacity for milk pasteurization, cream separation, paneer, ghee, and curd/lassi manufacturing.",
+    features: ["500 LPD Milk Pasteurization", "Paneer & Cheese Processing Vats", "Cream Separator & Ghee Kettle", "Automatic Pouch Packaging & Cold Storage"],
     image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80"
   },
   {
     id: "fac-lab",
-    title: "15+ Advanced Quality Testing Laboratories",
-    category: "Lab",
-    description: "Includes FTIR Milk Spectrometer, Gerber Centrifuge, Laminar Airflow Workstations, and Antibiotic Residue Screening kits.",
-    features: ["FTIR Milk Spectroscopy", "Microbiology Incubators", "Chemical Titration Desks", "Sensory Booths"],
+    title: "Latest Laboratories",
+    category: "Laboratories",
+    description: "Fully equipped modern quality testing and research laboratories with Gerber centrifuges, FTIR milk analyzers, HPLC, laminar airflows, and spectrophotometers.",
+    features: ["FTIR Milk Spectroscopy", "Microbiology Incubators & Biosafety", "Chemical Titration Desks", "Sensory & Quality Testing"],
     image: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=800&q=80"
   },
   {
     id: "fac-lib",
-    title: "Digital Library & Learning Resource Center",
+    title: "Complete Library",
     category: "Library",
-    description: "Access to ICAR e-journals, CeRA database, thousands of reference textbooks, and computer terminals with high-speed internet.",
-    features: ["12,000+ Printed Books", "CeRA E-Journal Access", "Digital Reading Kiosks", "Quiet Study Zone"],
+    description: "Comprehensive learning resource center housing thousands of reference textbooks, scientific dairy journals, ICAR e-learning modules, and digital reading kiosks.",
+    features: ["12,000+ Printed Reference Books", "CeRA E-Journal Access", "Digital Reading Kiosks", "Quiet Study Zone"],
     image: "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=800&q=80"
   },
   {
     id: "fac-hostel",
-    title: "Campus Student Residences & Mess",
+    title: "Hostel Services",
     category: "Hostel",
-    description: "Comfortable hostels for Boys and Girls with solar hot water, 24/7 security, power backup, and hygienic dining mess.",
-    features: ["Fully Furnished Rooms", "Solar Water Heaters", "Pure Veg Hygienic Mess", "24/7 CCTV & Security"],
+    description: "Separate, secure student hostels for Boys and Girls with solar hot water systems, study rooms, 24/7 CCTV security, power backup, and mess facilities.",
+    features: ["Separate Boys & Girls Hostels", "Solar Water Heaters", "Pure Veg Hygienic Mess", "24/7 CCTV & Security Guard"],
     image: "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80"
+  },
+  {
+    id: "fac-smartroom",
+    title: "Digital Smart Classroom",
+    category: "Classroom",
+    description: "Tech-enabled interactive classrooms with digital smart touchboards, high-definition projectors, acoustic sound systems, and video conferencing capabilities.",
+    features: ["Interactive Smart Touchboards", "HD Projector & Sound System", "E-Learning & Virtual Lectures", "Ergonomic Air-Conditioned Seating"],
+    image: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=800&q=80"
+  },
+  {
+    id: "fac-bus",
+    title: "Bus Service",
+    category: "Transport",
+    description: "Dedicated college bus fleet providing comfortable and safe daily transport connecting the campus with Malkapur city, railway station, bus stand, and surrounding routes.",
+    features: ["Multiple Daily Commute Routes", "Safe Experienced Drivers", "GPS Fleet Tracking", "Punctual Morning & Evening Pickups"],
+    image: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80"
+  },
+  {
+    id: "fac-medical",
+    title: "Medical Service",
+    category: "Healthcare",
+    description: "On-campus medical first-aid care center equipped with essential emergency medicines, regular visiting doctor facility, and emergency transport tie-ups.",
+    features: ["First-Aid Care Unit", "Visiting Qualified Doctor", "24/7 Emergency Ambulance Tie-up", "Annual Health Checkup Camps"],
+    image: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=800&q=80"
+  },
+  {
+    id: "fac-sports",
+    title: "Sports Services",
+    category: "Sports",
+    description: "Spacious sports ground and indoor games facilities equipped for volleyball, cricket, badminton, table tennis, chess, and athletic events.",
+    features: ["Volleyball & Cricket Pitch", "Indoor Badminton & Table Tennis", "Athletics & Track Gear", "Inter-College Sports Competitions"],
+    image: "https://images.unsplash.com/photo-1526676037777-05a232554f77?auto=format&fit=crop&w=800&q=80"
+  },
+  {
+    id: "fac-canteen",
+    title: "Canteen",
+    category: "Canteen",
+    description: "Hygienic campus canteen serving fresh, delicious vegetarian meals, snacks, beverages, and fresh dairy items like lassi and peda made on campus.",
+    features: ["Fresh & Hygienic Veg Food", "Campus Fresh Dairy Snacks & Drinks", "Clean Dining Space", "Affordable Student Pricing"],
+    image: "https://images.unsplash.com/photo-1567521464027-f127ff144326?auto=format&fit=crop&w=800&q=80"
   }
 ];
 

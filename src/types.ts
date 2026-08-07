@@ -35,7 +35,7 @@ export interface DepartmentInfo {
 export interface Facility {
   id: string;
   title: string;
-  category: 'Plant' | 'Lab' | 'Library' | 'Hostel' | 'Sports' | 'IT';
+  category: string;
   description: string;
   features: string[];
   image: string;

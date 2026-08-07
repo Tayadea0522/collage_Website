@@ -158,7 +158,28 @@ export const storageService = {
 
   getFacilities: (): Facility[] => {
     const data = localStorage.getItem(KEYS.FACILITIES);
-    return data ? JSON.parse(data) : initialFacilities;
+    if (!data) return initialFacilities;
+    try {
+      const parsed: Facility[] = JSON.parse(data);
+      const existingIds = new Set(parsed.map(f => f.id));
+      const missing = initialFacilities.filter(f => !existingIds.has(f.id));
+      if (missing.length > 0) {
+        const merged = [...parsed, ...missing];
+        localStorage.setItem(KEYS.FACILITIES, JSON.stringify(merged));
+        return merged;
+      }
+      // Also update any title changes like 500 LPD plant
+      const updated = parsed.map(f => {
+        const match = initialFacilities.find(i => i.id === f.id);
+        if (match && (f.title.includes('50,000') || f.title.includes('15+ Advanced'))) {
+          return { ...f, title: match.title, description: match.description, features: match.features };
+        }
+        return f;
+      });
+      return updated;
+    } catch {
+      return initialFacilities;
+    }
   },
   saveFacilities: (facs: Facility[]): void => {
     localStorage.setItem(KEYS.FACILITIES, JSON.stringify(facs));

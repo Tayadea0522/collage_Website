@@ -563,10 +563,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newFaculty, setNewFaculty] = useState<Partial<FacultyMember>>({
     name: '',
     designation: 'Assistant Professor',
-    department: 'Dairy Technology',
-    qualification: 'M.Tech (Dairy Technology)',
-    experience: '5 Years',
-    specialization: 'Dairy Processing',
+    qualification: '',
+    experience: '',
+    specialization: '',
     email: '',
     phone: '',
     isHOD: false
@@ -593,8 +592,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       id: `f-${Date.now()}`,
       name: newFaculty.name,
       designation: newFaculty.designation || 'Assistant Professor',
-      department: newFaculty.department || 'Dairy Technology',
-      qualification: newFaculty.qualification || 'M.Tech',
+      department: '',
+      qualification: newFaculty.qualification || '',
       experience: newFaculty.experience || '',
       specialization: newFaculty.specialization || '',
       email: newFaculty.email || '',
@@ -609,7 +608,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setNewFaculty({
       name: '',
       designation: 'Assistant Professor',
-      department: 'Dairy Technology',
       qualification: '',
       experience: '',
       specialization: '',
@@ -1875,21 +1873,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Department *</label>
-                  <select
-                    value={newFaculty.department || 'Dairy Technology'}
-                    onChange={(e) => setNewFaculty({ ...newFaculty, department: e.target.value })}
-                    className="w-full p-2.5 rounded-lg border border-slate-300 outline-none bg-white font-semibold text-slate-800"
-                  >
-                    <option value="Dairy Technology">Dairy Technology</option>
-                    <option value="Dairy Engineering">Dairy Engineering</option>
-                    <option value="Dairy Chemistry">Dairy Chemistry</option>
-                    <option value="Dairy Microbiology">Dairy Microbiology</option>
-                    <option value="Dairy Business Management">Dairy Business Management</option>
-                  </select>
-                </div>
-
-                <div>
                   <label className="block font-bold text-slate-700 mb-1">Qualification</label>
                   <input
                     type="text"
@@ -1988,9 +1971,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         )}
                       </div>
                       <div className="text-[#D97706] font-bold text-[11px]">{f.designation}</div>
-                      <div className="text-slate-600 font-semibold bg-white px-2 py-0.5 rounded border border-slate-200 text-[10px] w-fit">
-                        {f.department}
-                      </div>
+                      {f.department && (
+                        <div className="text-slate-600 font-semibold bg-white px-2 py-0.5 rounded border border-slate-200 text-[10px] w-fit">
+                          {f.department}
+                        </div>
+                      )}
                       {f.qualification && (
                         <div className="text-slate-700 text-[11px]">
                           <strong>Qualification:</strong> {f.qualification}

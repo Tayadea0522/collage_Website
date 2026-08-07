@@ -133,7 +133,7 @@ export const Faculties: React.FC<FacultiesProps> = ({ faculty: propsFaculty }) =
             <div className="space-y-4">
               <div className="space-y-1">
                 <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 w-fit inline-block">
-                  {f.department || 'Dairy Technology'}
+                  {f.department || 'Teaching Faculty'}
                 </span>
                 <h3 className="text-xl font-extrabold text-[#0A2342] font-serif pt-1">{f.name}</h3>
                 <div className="text-xs font-bold text-[#D97706]">{f.designation}</div>

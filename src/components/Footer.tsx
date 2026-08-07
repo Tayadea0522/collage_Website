@@ -90,6 +90,9 @@ export const Footer: React.FC<FooterProps> = ({
                 <p className="text-[10px] text-slate-300 font-bold uppercase tracking-wider">
                   Malkapur, MH
                 </p>
+                <p className="text-[10px] text-amber-300 font-medium">
+                  Managed by {collegeInfo.trustName || 'Late. Madanlalji Kisanlalji Sancheti Seva Samiti, Malkapur'}
+                </p>
               </div>
             </div>
             <p className="text-xs text-slate-300 leading-relaxed max-w-xs">

@@ -19,6 +19,9 @@ export const AboutUs: React.FC<AboutUsProps> = ({ collegeInfo }) => {
           <h1 className="text-3xl sm:text-4xl font-extrabold font-serif text-white">
             {collegeInfo.name}
           </h1>
+          <p className="text-amber-300 font-bold text-sm sm:text-base">
+            Managed by {collegeInfo.trustName || 'Late. Madanlalji Kisanlalji Sancheti Seva Samiti, Malkapur'}
+          </p>
           <p className="text-slate-200 text-sm sm:text-base leading-relaxed">
             {collegeInfo.tagline}
           </p>

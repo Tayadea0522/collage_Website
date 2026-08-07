@@ -211,6 +211,7 @@ export function generateSlipHtml(app: AdmissionApplication, collegeInfo: College
     <div class="header" style="position: relative;">
       ${collegeInfo.logoImage ? `<img src="${collegeInfo.logoImage}" alt="College Logo" style="height: 60px; max-width: 120px; object-fit: contain; margin-bottom: 8px;" />` : ''}
       <h1>${collegeName}</h1>
+      <p style="font-weight: 700; color: #0a2342; font-size: 13px;">Managed by: ${collegeInfo.trustName || 'Late. Madanlalji Kisanlalji Sancheti Seva Samiti, Malkapur'}</p>
       <p><strong>Address:</strong> ${collegeInfo.address}</p>
       <p><strong>Affiliation:</strong> ${collegeInfo.affiliation}</p>
       <p><strong>Contact:</strong> ${collegeInfo.phone} | ${collegeInfo.email}</p>

@@ -133,6 +133,7 @@ export interface CollegeInfo {
   shortName: string;
   tagline: string;
   logoImage?: string;
+  trustName?: string;
   affiliation: string;
   approval: string;
   location: string;

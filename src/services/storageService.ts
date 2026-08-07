@@ -68,7 +68,23 @@ export const storageService = {
 
   getCollegeInfo: (): CollegeInfo => {
     const data = localStorage.getItem(KEYS.COLLEGE_INFO);
-    return data ? JSON.parse(data) : initialCollegeInfo;
+    if (!data) return initialCollegeInfo;
+    try {
+      const parsed: CollegeInfo = JSON.parse(data);
+      if (!parsed.affiliation?.includes('मपाविवि') || !parsed.approval?.includes('DAHD')) {
+        const updated = {
+          ...parsed,
+          affiliation: initialCollegeInfo.affiliation,
+          approval: initialCollegeInfo.approval,
+          trustName: parsed.trustName || initialCollegeInfo.trustName
+        };
+        localStorage.setItem(KEYS.COLLEGE_INFO, JSON.stringify(updated));
+        return updated;
+      }
+      return parsed;
+    } catch {
+      return initialCollegeInfo;
+    }
   },
   saveCollegeInfo: (info: CollegeInfo): void => {
     localStorage.setItem(KEYS.COLLEGE_INFO, JSON.stringify(info));

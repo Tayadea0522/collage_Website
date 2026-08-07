@@ -94,7 +94,7 @@ export const AboutUs: React.FC<AboutUsProps> = ({ collegeInfo }) => {
             </li>
             <li className="flex justify-between items-center py-1.5 border-b border-blue-900/60">
               <span>Pilot Dairy Capacity:</span>
-              <strong className="text-amber-400 font-mono">50,000 Liters/Day</strong>
+              <strong className="text-amber-400 font-mono">500 LPD</strong>
             </li>
             <li className="flex justify-between items-center py-1.5 border-b border-blue-900/60">
               <span>Primary Medium:</span>
@@ -121,14 +121,14 @@ export const AboutUs: React.FC<AboutUsProps> = ({ collegeInfo }) => {
           <ul className="space-y-3.5 text-slate-800 text-sm sm:text-base">
             <li className="flex items-start gap-3">
               <span className="w-2.5 h-2.5 rounded-full bg-[#D97706] mt-2 shrink-0 shadow-sm" />
-              <span className="font-semibold text-slate-900">
-                Affiliated to Maharashtra Animal & Fishery Sciences University (MAFSU), Nagpur.
+              <span className="font-semibold text-slate-900 leading-relaxed">
+                {collegeInfo.affiliation || 'Affiliated to Maharashtra Animal & Fishery Sciences University (MAFSU), Nagpur ( मपाविवि/प.वि./शा./स.शा.अ.(60)/ नस्ती क्र. 281/739/26 17/07/2026)'}
               </span>
             </li>
             <li className="flex items-start gap-3">
               <span className="w-2.5 h-2.5 rounded-full bg-[#D97706] mt-2 shrink-0 shadow-sm" />
-              <span className="font-semibold text-slate-900">
-                Approved by the State Government of Maharashtra.
+              <span className="font-semibold text-slate-900 leading-relaxed">
+                {collegeInfo.approval || 'Approved by the State Government of Maharashtra (DAHD-12024/73/2026-AH(1696785) 16/07/2026)'}
               </span>
             </li>
           </ul>

@@ -41,7 +41,9 @@ import {
   UserPlus,
   KeyRound,
   User,
-  Filter
+  Filter,
+  Crown,
+  Star
 } from 'lucide-react';
 
 interface AdminPanelProps {
@@ -561,10 +563,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newFaculty, setNewFaculty] = useState<Partial<FacultyMember>>({
     name: '',
     designation: 'Assistant Professor',
+    department: 'Dairy Technology',
     qualification: 'M.Tech (Dairy Technology)',
     experience: '5 Years',
-    specialization: 'Dairy Processing'
+    specialization: 'Dairy Processing',
+    email: '',
+    phone: '',
+    isHOD: false
   });
+
+  const handleToggleHOD = (id: string) => {
+    const updated = facultyList.map(f => {
+      if (f.id === id) {
+        const nextStatus = !f.isHOD;
+        showToast(`${f.name} is now ${nextStatus ? 'Head of Department (HOD)' : 'Regular Faculty'}`);
+        return { ...f, isHOD: nextStatus };
+      }
+      return f;
+    });
+    setFacultyList(updated);
+    storageService.saveFaculty(updated);
+    onRefreshAll();
+  };
 
   const handleAddFaculty = (e: React.FormEvent) => {
     e.preventDefault();
@@ -573,18 +593,30 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       id: `f-${Date.now()}`,
       name: newFaculty.name,
       designation: newFaculty.designation || 'Assistant Professor',
-      department: '',
+      department: newFaculty.department || 'Dairy Technology',
       qualification: newFaculty.qualification || 'M.Tech',
-      experience: '',
+      experience: newFaculty.experience || '',
       specialization: newFaculty.specialization || '',
-      email: '',
-      image: newFaculty.image || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
+      email: newFaculty.email || '',
+      phone: newFaculty.phone || '',
+      image: '',
+      isHOD: !!newFaculty.isHOD
     };
     const updated = [item, ...facultyList];
     setFacultyList(updated);
     storageService.saveFaculty(updated);
     onRefreshAll();
-    setNewFaculty({ name: '', designation: 'Assistant Professor', qualification: 'M.Tech', specialization: '', image: '' });
+    setNewFaculty({
+      name: '',
+      designation: 'Assistant Professor',
+      department: 'Dairy Technology',
+      qualification: '',
+      experience: '',
+      specialization: '',
+      email: '',
+      phone: '',
+      isHOD: false
+    });
     showToast('Faculty member added!');
   };
 
@@ -1824,70 +1856,114 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     type="text"
                     required
                     placeholder="e.g. Dr. Rajesh Kumar"
-                    value={newFaculty.name}
+                    value={newFaculty.name || ''}
                     onChange={(e) => setNewFaculty({ ...newFaculty, name: e.target.value })}
-                    className="w-full p-2.5 rounded-lg border border-slate-300 outline-none"
+                    className="w-full p-2.5 rounded-lg border border-slate-300 outline-none bg-white font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Designation</label>
+                  <label className="block font-bold text-slate-700 mb-1">Designation *</label>
                   <input
                     type="text"
-                    value={newFaculty.designation}
+                    required
+                    placeholder="e.g. Professor & Head / Assistant Professor"
+                    value={newFaculty.designation || ''}
                     onChange={(e) => setNewFaculty({ ...newFaculty, designation: e.target.value })}
-                    className="w-full p-2.5 rounded-lg border border-slate-300 outline-none"
+                    className="w-full p-2.5 rounded-lg border border-slate-300 outline-none bg-white"
                   />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Department *</label>
+                  <select
+                    value={newFaculty.department || 'Dairy Technology'}
+                    onChange={(e) => setNewFaculty({ ...newFaculty, department: e.target.value })}
+                    className="w-full p-2.5 rounded-lg border border-slate-300 outline-none bg-white font-semibold text-slate-800"
+                  >
+                    <option value="Dairy Technology">Dairy Technology</option>
+                    <option value="Dairy Engineering">Dairy Engineering</option>
+                    <option value="Dairy Chemistry">Dairy Chemistry</option>
+                    <option value="Dairy Microbiology">Dairy Microbiology</option>
+                    <option value="Dairy Business Management">Dairy Business Management</option>
+                  </select>
                 </div>
 
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Qualification</label>
                   <input
                     type="text"
-                    placeholder="e.g. M.Tech (Dairy Tech)"
+                    placeholder="e.g. Ph.D. (Dairy Tech) / M.Tech"
                     value={newFaculty.qualification || ''}
                     onChange={(e) => setNewFaculty({ ...newFaculty, qualification: e.target.value })}
-                    className="w-full p-2.5 rounded-lg border border-slate-300 outline-none"
+                    className="w-full p-2.5 rounded-lg border border-slate-300 outline-none bg-white"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Experience</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 12 Years"
+                      value={newFaculty.experience || ''}
+                      onChange={(e) => setNewFaculty({ ...newFaculty, experience: e.target.value })}
+                      className="w-full p-2.5 rounded-lg border border-slate-300 outline-none bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Specialization</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Membrane Tech"
+                      value={newFaculty.specialization || ''}
+                      onChange={(e) => setNewFaculty({ ...newFaculty, specialization: e.target.value })}
+                      className="w-full p-2.5 rounded-lg border border-slate-300 outline-none bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Email Address</label>
+                  <input
+                    type="email"
+                    placeholder="e.g. faculty@lsscdt.ac.in"
+                    value={newFaculty.email || ''}
+                    onChange={(e) => setNewFaculty({ ...newFaculty, email: e.target.value })}
+                    className="w-full p-2.5 rounded-lg border border-slate-300 outline-none bg-white"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Faculty Photo (Upload from local device)</label>
-                  <div className="space-y-2">
-                    {newFaculty.image && (
-                      <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-[#D97706] shadow-sm">
-                        <img src={newFaculty.image} alt="Preview" className="w-full h-full object-cover" />
-                      </div>
-                    )}
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Image URL or upload file"
-                        value={newFaculty.image || ''}
-                        onChange={(e) => setNewFaculty({ ...newFaculty, image: e.target.value })}
-                        className="w-full p-2 rounded-lg border border-slate-300 outline-none text-xs bg-white"
-                      />
-                      <label className="cursor-pointer bg-[#0A2342] text-amber-400 font-bold px-3 py-2 rounded-lg text-xs flex items-center shrink-0 hover:bg-slate-900 transition-colors shadow-sm">
-                        <Upload className="w-3.5 h-3.5 mr-1" />
-                        <span>Upload Photo</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                              handleImageFileUpload(e.target.files[0], (url) => setNewFaculty(prev => ({ ...prev, image: url })));
-                            }
-                          }}
-                        />
-                      </label>
+                  <label className="block font-bold text-slate-700 mb-1">Phone / Mobile</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. +91 9876543210"
+                    value={newFaculty.phone || ''}
+                    onChange={(e) => setNewFaculty({ ...newFaculty, phone: e.target.value })}
+                    className="w-full p-2.5 rounded-lg border border-slate-300 outline-none bg-white font-mono"
+                  />
+                </div>
+
+                <div className="bg-amber-50 p-3 rounded-lg border border-amber-200 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Crown className="w-4 h-4 text-amber-600" />
+                    <div>
+                      <div className="font-bold text-slate-900 text-xs">Head of Department (HOD)</div>
+                      <div className="text-[10px] text-slate-600">Mark if faculty leads this department</div>
                     </div>
                   </div>
+                  <input
+                    type="checkbox"
+                    checked={!!newFaculty.isHOD}
+                    onChange={(e) => setNewFaculty({ ...newFaculty, isHOD: e.target.checked })}
+                    className="w-4 h-4 text-amber-600 rounded border-slate-300 focus:ring-amber-500 cursor-pointer"
+                  />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full bg-[#D97706] text-slate-950 font-bold py-2.5 rounded-lg text-xs hover:bg-amber-600 transition-colors"
+                  className="w-full bg-[#D97706] text-slate-950 font-bold py-2.5 rounded-lg text-xs hover:bg-amber-600 transition-colors shadow"
                 >
                   Save Faculty Member
                 </button>
@@ -1901,18 +1977,62 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {facultyList.map((f) => (
-                  <div key={f.id} className="p-4 bg-[#F0F4F8] rounded-xl border border-slate-200 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <img src={f.image} alt={f.name} className="w-12 h-12 rounded-full object-cover border-2 border-[#D97706]" />
-                      <div className="text-xs">
-                        <div className="font-bold text-slate-900">{f.name}</div>
-                        <div className="text-slate-500 text-[11px]">{f.designation}</div>
-                        {f.qualification && <div className="text-[10px] text-[#D97706] font-bold">{f.qualification}</div>}
+                  <div key={f.id} className="p-4 bg-[#F0F4F8] rounded-xl border border-slate-200 flex items-start justify-between gap-3 shadow-2xs">
+                    <div className="space-y-1.5 text-xs flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-slate-900 text-sm">{f.name}</span>
+                        {f.isHOD && (
+                          <span className="bg-[#0A2342] text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                            <Crown className="w-3 h-3 text-amber-400" /> HOD
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[#D97706] font-bold text-[11px]">{f.designation}</div>
+                      <div className="text-slate-600 font-semibold bg-white px-2 py-0.5 rounded border border-slate-200 text-[10px] w-fit">
+                        {f.department}
+                      </div>
+                      {f.qualification && (
+                        <div className="text-slate-700 text-[11px]">
+                          <strong>Qualification:</strong> {f.qualification}
+                        </div>
+                      )}
+                      {f.experience && (
+                        <div className="text-slate-700 text-[11px]">
+                          <strong>Experience:</strong> {f.experience}
+                        </div>
+                      )}
+                      {f.specialization && (
+                        <div className="text-slate-600 text-[10px]">
+                          <strong>Specialization:</strong> {f.specialization}
+                        </div>
+                      )}
+                      {f.email && (
+                        <div className="text-slate-500 text-[10px]">
+                          ✉ {f.email}
+                        </div>
+                      )}
+
+                      {/* HOD Toggle Button */}
+                      <div className="pt-2">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleHOD(f.id)}
+                          className={`px-3 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-all shadow-2xs ${
+                            f.isHOD
+                              ? 'bg-amber-500 text-slate-950 hover:bg-amber-600'
+                              : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-100'
+                          }`}
+                        >
+                          <Crown className={`w-3.5 h-3.5 ${f.isHOD ? 'text-slate-950' : 'text-amber-600'}`} />
+                          <span>{f.isHOD ? 'HOD Status: ON' : 'Make HOD'}</span>
+                        </button>
                       </div>
                     </div>
+
                     <button
                       onClick={() => handleDeleteFaculty(f.id)}
-                      className="p-1.5 text-slate-400 hover:text-red-600 rounded"
+                      className="p-1.5 text-slate-400 hover:text-red-600 rounded shrink-0 hover:bg-red-50 transition-colors"
+                      title="Delete Faculty"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

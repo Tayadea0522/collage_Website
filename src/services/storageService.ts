@@ -137,7 +137,20 @@ export const storageService = {
 
   getFaculty: (): FacultyMember[] => {
     const data = localStorage.getItem(KEYS.FACULTY);
-    return data ? JSON.parse(data) : initialFaculty;
+    if (!data) return initialFaculty;
+    try {
+      const parsed: FacultyMember[] = JSON.parse(data);
+      // Ensure initial HOD flags exist if missing
+      return parsed.map(f => {
+        const match = initialFaculty.find(i => i.id === f.id);
+        if (match && f.isHOD === undefined) {
+          return { ...f, isHOD: match.isHOD };
+        }
+        return f;
+      });
+    } catch {
+      return initialFaculty;
+    }
   },
   saveFaculty: (faculty: FacultyMember[]): void => {
     localStorage.setItem(KEYS.FACULTY, JSON.stringify(faculty));
@@ -156,7 +169,27 @@ export const storageService = {
 
   getDepartments: (): DepartmentInfo[] => {
     const data = localStorage.getItem(KEYS.DEPARTMENTS);
-    return data ? JSON.parse(data) : initialDepartments;
+    if (!data) return initialDepartments;
+    try {
+      const parsed: DepartmentInfo[] = JSON.parse(data);
+      const updated = initialDepartments.map(init => {
+        const found = parsed.find(p => p.id === init.id);
+        if (found) {
+          return {
+            ...found,
+            name: init.name,
+            code: init.code
+          };
+        }
+        return init;
+      });
+      const customDepts = parsed.filter(p => !initialDepartments.some(init => init.id === p.id));
+      const result = [...updated, ...customDepts];
+      localStorage.setItem(KEYS.DEPARTMENTS, JSON.stringify(result));
+      return result;
+    } catch {
+      return initialDepartments;
+    }
   },
   saveDepartments: (depts: DepartmentInfo[]): void => {
     localStorage.setItem(KEYS.DEPARTMENTS, JSON.stringify(depts));

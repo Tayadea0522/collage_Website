@@ -61,7 +61,7 @@ export const Departments: React.FC<DepartmentsProps> = ({ departments }) => {
                   </span>
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-extrabold font-serif text-[#0A2342]">
-                  {selectedDept.name}
+                  {selectedDept.name.startsWith('Department') ? selectedDept.name : `Department of ${selectedDept.name}`}
                 </h2>
               </div>
 

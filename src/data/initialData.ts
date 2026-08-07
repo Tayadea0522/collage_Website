@@ -124,7 +124,7 @@ export const initialEvents: CollegeEvent[] = [];
 export const initialDepartments: DepartmentInfo[] = [
   {
     id: "dt",
-    name: "Department of Dairy Technology",
+    name: "Dairy Technology",
     code: "DT",
     head: "Dr. Suresh K. Shinde",
     description: "Focuses on liquid milk processing, market milk, ice cream, cheese, butter, milk powders, and traditional indigenous dairy product technology.",
@@ -134,7 +134,7 @@ export const initialDepartments: DepartmentInfo[] = [
   },
   {
     id: "de",
-    name: "Department of Dairy Engineering",
+    name: "Dairy Engineering",
     code: "DE",
     head: "Prof. Anil B. Kulkarni",
     description: "Covers dairy machinery design, refrigeration, boiler operations, heat exchangers, fluid mechanics, and automated CAD plant layout.",
@@ -144,7 +144,7 @@ export const initialDepartments: DepartmentInfo[] = [
   },
   {
     id: "dc",
-    name: "Department of Dairy Chemistry",
+    name: "Dairy Chemistry",
     code: "DC",
     head: "Dr. Meena V. Patil",
     description: "Conducts advanced chemical analysis of milk constituents, milk protein isolation, fatty acid profiles, and adulteration testing.",
@@ -154,7 +154,7 @@ export const initialDepartments: DepartmentInfo[] = [
   },
   {
     id: "dm",
-    name: "Department of Dairy Microbiology",
+    name: "Dairy Microbiology",
     code: "DM",
     head: "Dr. Rajeshwar N. Wagh",
     description: "Specializes in fermentation technology, starter cultures for Dahi/Lassi/Shrikhand, pathogen testing, and probiotic cultures.",
@@ -164,7 +164,7 @@ export const initialDepartments: DepartmentInfo[] = [
   },
   {
     id: "dbm",
-    name: "Department of Dairy Business Management",
+    name: "Dairy Business Management",
     code: "DBM",
     head: "Prof. Sunita R. Jadhav",
     description: "Teaches milk procurement logistics, supply chain management, financial planning, marketing, and entrepreneurship.",
@@ -179,46 +179,50 @@ export const initialFaculty: FacultyMember[] = [
     id: "f1",
     name: "Dr. P. L. Chaudhari",
     designation: "Dean & Principal",
-    department: "Department of Dairy Technology",
+    department: "Dairy Technology",
     qualification: "Ph.D. (Dairy Technology)",
     experience: "22 Years Teaching & Research",
     specialization: "Membrane Processing & Dairy Tech Innovation",
     email: "dean@lsscdt.edu.in",
     phone: "+91 8625869560",
-    image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=600&q=80"
+    image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=600&q=80",
+    isHOD: false
   },
   {
     id: "f2",
     name: "Dr. Suresh K. Shinde",
     designation: "Professor & Head",
-    department: "Department of Dairy Technology",
+    department: "Dairy Technology",
     qualification: "Ph.D. (Dairy Tech)",
     experience: "18 Years",
     specialization: "UHT Processing & Cheese Tech",
     email: "skshinde@lsscdt.edu.in",
-    image: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=600&q=80"
+    image: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=600&q=80",
+    isHOD: true
   },
   {
     id: "f3",
     name: "Prof. Anil B. Kulkarni",
     designation: "Associate Professor & Head",
-    department: "Department of Dairy Engineering",
+    department: "Dairy Engineering",
     qualification: "M.Tech (Dairy Engineering)",
     experience: "16 Years",
     specialization: "Evaporation & Thermal Engineering",
     email: "abkulkarni@lsscdt.edu.in",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80"
+    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80",
+    isHOD: true
   },
   {
     id: "f4",
     name: "Dr. Meena V. Patil",
     designation: "Associate Professor & Head",
-    department: "Department of Dairy Chemistry",
+    department: "Dairy Chemistry",
     qualification: "Ph.D. (Food Chemistry)",
     experience: "15 Years",
     specialization: "Adulteration Detection & HPLC",
     email: "mvpatil@lsscdt.edu.in",
-    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80"
+    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80",
+    isHOD: true
   }
 ];
 

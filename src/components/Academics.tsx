@@ -1,8 +1,22 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Award } from 'lucide-react';
+import { CheckCircle2, Award, Users, BookOpen, GraduationCap, Mail, Phone, Briefcase } from 'lucide-react';
+import { FacultyMember } from '../types';
+import { storageService } from '../services/storageService';
 
-export const Academics: React.FC = () => {
+interface AcademicsProps {
+  faculty?: FacultyMember[];
+}
+
+export const Academics: React.FC<AcademicsProps> = ({ faculty: propsFaculty }) => {
   const [activeSem, setActiveSem] = useState(1);
+  const [facultyDeptFilter, setFacultyDeptFilter] = useState('All');
+
+  const facultyList = propsFaculty && propsFaculty.length > 0 ? propsFaculty : storageService.getFaculty();
+
+  const filteredFaculty = facultyList.filter(f => {
+    if (facultyDeptFilter === 'All') return true;
+    return f.department?.toLowerCase().includes(facultyDeptFilter.toLowerCase());
+  });
 
   const semesters = [
     {

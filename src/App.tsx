@@ -22,6 +22,7 @@ import { AboutUs } from './components/AboutUs';
 import { Academics } from './components/Academics';
 import { Departments } from './components/Departments';
 import { Facilities } from './components/Facilities';
+import { Faculties } from './components/Faculties';
 import { Admissions } from './components/Admissions';
 import { AdminPanel } from './components/AdminPanel';
 import { AdminAuthModal } from './components/AdminAuthModal';
@@ -136,7 +137,7 @@ export default function App() {
         )}
 
         {currentTab === 'academics' && (
-          <Academics />
+          <Academics faculty={faculty} />
         )}
 
         {currentTab === 'departments' && (
@@ -155,39 +156,8 @@ export default function App() {
           />
         )}
 
-        {currentTab === 'faculty' && (
-          <div className="max-w-7xl mx-auto px-4 sm:px-8 py-10 space-y-8">
-            <div className="bg-gradient-to-r from-blue-950 via-slate-900 to-blue-950 text-white p-8 sm:p-12 rounded-2xl shadow-lg border border-amber-500/30">
-              <div className="max-w-3xl space-y-3">
-                <span className="text-xs font-bold uppercase tracking-widest text-amber-400 bg-amber-500/20 px-3 py-1 rounded-full border border-amber-400/30">
-                  Academic Mentors
-                </span>
-                <h1 className="text-3xl sm:text-4xl font-extrabold font-serif text-white">
-                  Faculty Directory & Experts
-                </h1>
-                <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-                  Our distinguished professors and scientists possess decades of industry, research, and dairy processing experience.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {faculty.map((f) => (
-                <div key={f.id} className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-all space-y-3 p-4">
-                  <img src={f.image} alt={f.name} className="w-full h-48 object-cover rounded-lg border" />
-                  <div>
-                    <h3 className="font-bold text-slate-900 text-base">{f.name}</h3>
-                    <div className="text-xs font-semibold text-amber-600">{f.designation}</div>
-                    <div className="text-xs text-slate-500">{f.department}</div>
-                  </div>
-                  <div className="text-xs text-slate-600 pt-2 border-t border-slate-100 space-y-1">
-                    <p><strong>Qualification:</strong> {f.qualification}</p>
-                    <p><strong>Specialization:</strong> {f.specialization}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+        {(currentTab === 'faculties' || currentTab === 'faculty') && (
+          <Faculties faculty={faculty} />
         )}
 
         {currentTab === 'placements' && (

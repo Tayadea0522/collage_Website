@@ -19,6 +19,7 @@ export interface FacultyMember {
   email: string;
   phone?: string;
   image: string;
+  isHOD?: boolean;
 }
 
 export interface DepartmentInfo {

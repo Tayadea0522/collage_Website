@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
 import { CollegeInfo, Notice, DepartmentInfo, FacultyMember, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser } from '../types';
 import { storageService } from '../services/storageService';
+import { zipService } from '../services/zipService';
+import { supabaseStorageService } from '../services/supabaseStorageService';
 import { printApplicationSlip, downloadApplicationSlip } from '../utils/printUtils';
 import { 
   Lock, 
@@ -286,15 +288,39 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [appYearFilter, setAppYearFilter] = useState('All');
   const [appDeptFilter, setAppDeptFilter] = useState('All');
   const [appStatusFilter, setAppStatusFilter] = useState('All');
+  const [appDateFilter, setAppDateFilter] = useState('');
+  const [appSortBy, setAppSortBy] = useState<'date_desc' | 'date_asc' | 'name_asc' | 'hsc_desc'>('date_desc');
+  const [appPage, setAppPage] = useState(1);
+  const [appPageSize, setAppPageSize] = useState(10);
+
+  // Selection state for Bulk Operations
+  const [selectedAppIds, setSelectedAppIds] = useState<string[]>([]);
+
+  // Modals & Action States
+  const [selectedApp, setSelectedApp] = useState<AdmissionApplication | null>(null);
+  const [appStatusInput, setAppStatusInput] = useState<AdmissionApplication['status']>('Verified');
+  const [appRemarksInput, setAppRemarksInput] = useState('');
+
+  const [deleteConfirmApp, setDeleteConfirmApp] = useState<AdmissionApplication | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const [archiveModalOpen, setArchiveModalOpen] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
+  const [archiveProgress, setArchiveProgress] = useState('');
+
+  const [resetModalOpen, setResetModalOpen] = useState(false);
+  const [resetConfirmInput, setResetConfirmInput] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
+
+  const [zipProcessing, setZipProcessing] = useState(false);
+  const [zipProgressText, setZipProgressText] = useState('');
+
+  const [docPreviewModal, setDocPreviewModal] = useState<{ title: string; fileName: string; url: string; isPdf: boolean } | null>(null);
 
   const [studentSearch, setStudentSearch] = useState('');
   const [studentYearFilter, setStudentYearFilter] = useState('All');
   const [studentDeptFilter, setStudentDeptFilter] = useState('All');
   const [studentCategoryFilter, setStudentCategoryFilter] = useState('All');
-
-  const [selectedApp, setSelectedApp] = useState<AdmissionApplication | null>(null);
-  const [appStatusInput, setAppStatusInput] = useState<AdmissionApplication['status']>('Verified');
-  const [appRemarksInput, setAppRemarksInput] = useState('');
 
   // Helper matcher for Year of Admission
   const matchesYear = (app: AdmissionApplication, selectedYear: string) => {
@@ -349,23 +375,147 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     return branch.includes(target);
   };
 
-  // Applications List with Filters
-  const filteredApps = (applications || []).filter(a => {
-    if (appSearch.trim()) {
-      const q = appSearch.toLowerCase().trim();
-      const matchName = a.fullName.toLowerCase().includes(q);
-      const matchId = a.id.toLowerCase().includes(q);
-      const matchMobile = a.mobile.includes(q);
-      const matchBranch = (a.admissionBranch || '').toLowerCase().includes(q);
-      if (!matchName && !matchId && !matchMobile && !matchBranch) return false;
+  // Applications List with Filters, Date, Search and Sorting
+  const filteredApps = (applications || [])
+    .filter(a => {
+      if (appSearch.trim()) {
+        const q = appSearch.toLowerCase().trim();
+        const matchName = a.fullName.toLowerCase().includes(q);
+        const matchId = a.id.toLowerCase().includes(q);
+        const matchMobile = a.mobile.includes(q);
+        const matchBranch = (a.admissionBranch || '').toLowerCase().includes(q);
+        if (!matchName && !matchId && !matchMobile && !matchBranch) return false;
+      }
+      if (appStatusFilter !== 'All' && a.status !== appStatusFilter) {
+        return false;
+      }
+      if (appDateFilter && a.submissionDate !== appDateFilter) {
+        return false;
+      }
+      if (!matchesYear(a, appYearFilter)) return false;
+      if (!matchesDept(a, appDeptFilter)) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (appSortBy === 'date_desc') {
+        return new Date(b.submissionDate || 0).getTime() - new Date(a.submissionDate || 0).getTime();
+      }
+      if (appSortBy === 'date_asc') {
+        return new Date(a.submissionDate || 0).getTime() - new Date(b.submissionDate || 0).getTime();
+      }
+      if (appSortBy === 'name_asc') {
+        return a.fullName.localeCompare(b.fullName);
+      }
+      if (appSortBy === 'hsc_desc') {
+        return (b.hscPercentage || 0) - (a.hscPercentage || 0);
+      }
+      return 0;
+    });
+
+  // Pagination calculation
+  const totalPages = Math.ceil(filteredApps.length / appPageSize) || 1;
+  const paginatedApps = filteredApps.slice((appPage - 1) * appPageSize, appPage * appPageSize);
+
+  // Bulk Select Toggle Handlers
+  const handleSelectAllOnPage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      const pageIds = paginatedApps.map(a => a.id);
+      setSelectedAppIds(prev => Array.from(new Set([...prev, ...pageIds])));
+    } else {
+      const pageIds = new Set(paginatedApps.map(a => a.id));
+      setSelectedAppIds(prev => prev.filter(id => !pageIds.has(id)));
     }
-    if (appStatusFilter !== 'All' && a.status !== appStatusFilter) {
-      return false;
+  };
+
+  const handleToggleSelectApp = (id: string) => {
+    setSelectedAppIds(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  // Actions
+  const handleSingleZipDownload = async (app: AdmissionApplication) => {
+    setZipProcessing(true);
+    setZipProgressText(`Preparing ZIP package for ${app.fullName}...`);
+    try {
+      await zipService.downloadSingleApplicationZip(app, collegeInfo, (status) => setZipProgressText(status));
+      showToast(`ZIP Package for ${app.fullName} downloaded successfully!`);
+    } catch (e: any) {
+      showToast(`Download error: ${e.message || 'Failed to generate ZIP'}`);
+    } finally {
+      setZipProcessing(false);
+      setZipProgressText('');
     }
-    if (!matchesYear(a, appYearFilter)) return false;
-    if (!matchesDept(a, appDeptFilter)) return false;
-    return true;
-  });
+  };
+
+  const handleBulkZipDownload = async () => {
+    const selectedApps = (applications || []).filter(a => selectedAppIds.includes(a.id));
+    if (selectedApps.length === 0) {
+      showToast('Please select at least one application to download bulk ZIP.');
+      return;
+    }
+    setZipProcessing(true);
+    setZipProgressText(`Packaging ${selectedApps.length} applications into ZIP...`);
+    try {
+      await zipService.downloadBulkApplicationsZip(selectedApps, collegeInfo, 'Admissions_2026_Bulk_Selected', (status) => setZipProgressText(status));
+      showToast(`Bulk ZIP for ${selectedApps.length} candidates downloaded!`);
+    } catch (e: any) {
+      showToast(`Bulk download error: ${e.message || 'Failed to download bulk ZIP'}`);
+    } finally {
+      setZipProcessing(false);
+      setZipProgressText('');
+    }
+  };
+
+  const handleArchiveAcademicYear = async () => {
+    setIsArchiving(true);
+    setArchiveProgress('Initializing Academic Year Master Archive...');
+    try {
+      await zipService.downloadAcademicYearArchive(applications || [], collegeInfo, '2026-27', (status) => setArchiveProgress(status));
+      showToast('Academic Year Master Archive created and downloaded successfully!');
+      setArchiveModalOpen(false);
+    } catch (e: any) {
+      showToast(`Archive error: ${e.message || 'Failed to create archive'}`);
+    } finally {
+      setIsArchiving(false);
+      setArchiveProgress('');
+    }
+  };
+
+  const handleDeleteCandidate = async () => {
+    if (!deleteConfirmApp) return;
+    setIsDeleting(true);
+    try {
+      await storageService.deleteApplication(deleteConfirmApp.id);
+      onRefreshAll();
+      showToast(`Candidate ${deleteConfirmApp.fullName} (${deleteConfirmApp.id}) permanently deleted.`);
+      setDeleteConfirmApp(null);
+      if (selectedApp?.id === deleteConfirmApp.id) setSelectedApp(null);
+    } catch (e: any) {
+      showToast(`Delete error: ${e.message || 'Failed to delete candidate'}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleResetAdmissions = async () => {
+    if (resetConfirmInput.trim() !== 'CONFIRM RESET') {
+      showToast('Please type CONFIRM RESET exactly to proceed.');
+      return;
+    }
+    setIsResetting(true);
+    try {
+      await storageService.resetAdmissionsData();
+      onRefreshAll();
+      showToast('Admission data permanently wiped and reset for new academic year!');
+      setResetModalOpen(false);
+      setResetConfirmInput('');
+    } catch (e: any) {
+      showToast(`Reset error: ${e.message || 'Failed to reset admissions'}`);
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   // Approved Students List
   const approvedStudentsAll = (applications || []).filter(a => 
@@ -411,12 +561,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newFaculty, setNewFaculty] = useState<Partial<FacultyMember>>({
     name: '',
     designation: 'Assistant Professor',
-    department: 'Department of Dairy Technology',
     qualification: 'M.Tech (Dairy Technology)',
     experience: '5 Years',
-    specialization: 'Dairy Processing',
-    email: '',
-    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
+    specialization: 'Dairy Processing'
   });
 
   const handleAddFaculty = (e: React.FormEvent) => {
@@ -426,18 +573,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       id: `f-${Date.now()}`,
       name: newFaculty.name,
       designation: newFaculty.designation || 'Assistant Professor',
-      department: newFaculty.department || 'Department of Dairy Technology',
+      department: '',
       qualification: newFaculty.qualification || 'M.Tech',
-      experience: newFaculty.experience || '1 Year',
-      specialization: newFaculty.specialization || 'Dairy Tech',
-      email: newFaculty.email || 'faculty@lsscdt.edu.in',
+      experience: '',
+      specialization: newFaculty.specialization || '',
+      email: '',
       image: newFaculty.image || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
     };
     const updated = [item, ...facultyList];
     setFacultyList(updated);
     storageService.saveFaculty(updated);
     onRefreshAll();
-    setNewFaculty({ name: '', designation: 'Assistant Professor', department: 'Department of Dairy Technology', qualification: 'M.Tech', experience: '5 Years', specialization: '', email: '', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80' });
+    setNewFaculty({ name: '', designation: 'Assistant Professor', qualification: 'M.Tech', specialization: '', image: '' });
     showToast('Faculty member added!');
   };
 
@@ -750,141 +897,240 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         {/* TAB 2: ADMISSIONS / APPLICATIONS */}
         {activeTab === 'applications' && (
           <div className="space-y-6">
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            {/* Top Toolbar & Action Cards */}
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
               <div>
-                <h2 className="text-xl font-bold font-serif text-[#0A2342]">
-                  Admission Applications ({filteredApps.length})
+                <h2 className="text-xl font-bold font-serif text-[#0A2342] flex items-center gap-2">
+                  <span>Admission Applications Portal</span>
+                  <span className="text-xs bg-amber-100 text-[#D97706] font-mono px-2.5 py-0.5 rounded-full font-bold">
+                    {filteredApps.length} Records
+                  </span>
                 </h2>
-                <p className="text-xs text-slate-500">Review, verify and approve online admission candidates</p>
+                <p className="text-xs text-slate-500">Manage candidate storage, verification status, bulk ZIP downloads & year reset</p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+              {/* Master System Actions */}
+              <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                {/* Bulk Download Selected ZIP */}
+                <button
+                  type="button"
+                  onClick={handleBulkZipDownload}
+                  disabled={selectedAppIds.length === 0}
+                  className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm ${
+                    selectedAppIds.length > 0 
+                      ? 'bg-[#0A2342] text-amber-400 hover:bg-slate-900 cursor-pointer' 
+                      : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                  }`}
+                  title="Download selected applications and documents in a single ZIP file"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Bulk ZIP ({selectedAppIds.length})</span>
+                </button>
+
+                {/* Academic Year Master Archive */}
+                <button
+                  type="button"
+                  onClick={() => setArchiveModalOpen(true)}
+                  className="bg-indigo-700 hover:bg-indigo-800 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-colors"
+                  title="Export all data, excel summaries and uploaded files into a master ZIP archive"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Archive Year</span>
+                </button>
+
+                {/* Reset Admissions for New Academic Year */}
+                <button
+                  type="button"
+                  onClick={() => setResetModalOpen(true)}
+                  className="bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-colors"
+                  title="Securely wipe admission records while preserving site configuration"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset Admissions</span>
+                </button>
+
+                {/* Excel Export */}
+                <button
+                  type="button"
+                  onClick={() => handleExportExcel(filteredApps, 'Admission_Applications_2026')}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-colors"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  <span>Excel</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Zip Processing Banner */}
+            {zipProcessing && (
+              <div className="bg-amber-50 border border-amber-300 p-3 rounded-xl flex items-center gap-3 text-xs text-amber-900 font-bold animate-pulse">
+                <div className="w-4 h-4 border-2 border-amber-700 border-t-transparent rounded-full animate-spin"></div>
+                <span>{zipProgressText || 'Processing ZIP download archive... Please wait.'}</span>
+              </div>
+            )}
+
+            {/* Filtering & Sorting Controls */}
+            <div className="bg-[#F0F4F8] p-4 rounded-2xl border border-slate-200/90 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5">
                 {/* Search */}
-                <div className="relative flex-1 sm:w-56">
+                <div className="relative col-span-1 sm:col-span-2">
                   <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
                   <input
                     type="text"
-                    placeholder="Search candidate, ID or mobile..."
+                    placeholder="Search name, App ID, mobile or branch..."
                     value={appSearch}
-                    onChange={(e) => setAppSearch(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-300 text-xs outline-none focus:ring-2 focus:ring-[#D97706]"
+                    onChange={(e) => { setAppSearch(e.target.value); setAppPage(1); }}
+                    className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-300 bg-white text-xs outline-none focus:ring-2 focus:ring-[#D97706]"
                   />
                 </div>
 
-                {/* Admission Year Filter */}
-                <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs">
-                  <Calendar className="w-3.5 h-3.5 text-[#0A2342]" />
+                {/* Class / Year Filter */}
+                <div className="flex items-center gap-1 bg-white border border-slate-300 rounded-xl px-2 py-1 text-xs">
+                  <Calendar className="w-3.5 h-3.5 text-[#0A2342] shrink-0" />
                   <select
                     value={appYearFilter}
-                    onChange={(e) => setAppYearFilter(e.target.value)}
-                    className="bg-transparent font-medium text-xs text-slate-800 outline-none cursor-pointer"
+                    onChange={(e) => { setAppYearFilter(e.target.value); setAppPage(1); }}
+                    className="w-full bg-transparent font-medium text-xs text-slate-800 outline-none cursor-pointer truncate"
                   >
-                    <option value="All">All Years of Admission</option>
+                    <option value="All">All Seeking Years</option>
                     <option value="First Year (1st Year)">First Year (1st Year)</option>
                     <option value="Direct Second Year (2nd Year - Lateral Entry)">Direct Second Year (Lateral Entry)</option>
                     <option value="Third Year (3rd Year)">Third Year (3rd Year)</option>
                     <option value="Fourth Year (4th Year)">Fourth Year (4th Year)</option>
-                    <option value="2026 Batch">2026 Academic Batch</option>
-                    <option value="2025 Batch">2025 Academic Batch</option>
-                  </select>
-                </div>
-
-                {/* Department / Branch Filter */}
-                <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs">
-                  <Building2 className="w-3.5 h-3.5 text-[#0A2342]" />
-                  <select
-                    value={appDeptFilter}
-                    onChange={(e) => setAppDeptFilter(e.target.value)}
-                    className="bg-transparent font-medium text-xs text-slate-800 outline-none cursor-pointer"
-                  >
-                    <option value="All">All Departments / Branches</option>
-                    <option value="Department of Dairy Technology">Dairy Technology</option>
-                    <option value="Department of Dairy Engineering">Dairy Engineering</option>
-                    <option value="Department of Dairy Chemistry">Dairy Chemistry</option>
-                    <option value="Department of Dairy Microbiology">Dairy Microbiology</option>
-                    <option value="Department of Dairy Business Management">Dairy Business Management</option>
+                    <option value="2026 Batch">2026 Batch</option>
                   </select>
                 </div>
 
                 {/* Status Filter */}
-                <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2 py-1 text-xs">
-                  <Filter className="w-3.5 h-3.5 text-slate-500" />
+                <div className="flex items-center gap-1 bg-white border border-slate-300 rounded-xl px-2 py-1 text-xs">
+                  <Filter className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                   <select
                     value={appStatusFilter}
-                    onChange={(e) => setAppStatusFilter(e.target.value)}
-                    className="bg-transparent font-medium text-xs text-slate-800 outline-none cursor-pointer"
+                    onChange={(e) => { setAppStatusFilter(e.target.value); setAppPage(1); }}
+                    className="w-full bg-transparent font-medium text-xs text-slate-800 outline-none cursor-pointer"
                   >
                     <option value="All">All Statuses</option>
-                    <option value="Submitted">Submitted</option>
+                    <option value="Submitted">Submitted (Pending)</option>
                     <option value="Verified">Verified</option>
-                    <option value="Provisionally Selected">Provisionally Selected</option>
+                    <option value="Provisionally Selected">Approved / Selected</option>
                     <option value="Rejected">Rejected</option>
                   </select>
                 </div>
 
-                {/* Reset Filters */}
-                {(appYearFilter !== 'All' || appDeptFilter !== 'All' || appStatusFilter !== 'All' || appSearch !== '') && (
+                {/* Date Filter */}
+                <div className="flex items-center gap-1 bg-white border border-slate-300 rounded-xl px-2 py-1 text-xs">
+                  <Calendar className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                  <input
+                    type="date"
+                    value={appDateFilter}
+                    onChange={(e) => { setAppDateFilter(e.target.value); setAppPage(1); }}
+                    className="w-full bg-transparent font-medium text-xs text-slate-800 outline-none cursor-pointer"
+                    title="Filter by submission date"
+                  />
+                </div>
+
+                {/* Sorting */}
+                <div className="flex items-center gap-1 bg-white border border-slate-300 rounded-xl px-2 py-1 text-xs">
+                  <Sliders className="w-3.5 h-3.5 text-[#0A2342] shrink-0" />
+                  <select
+                    value={appSortBy}
+                    onChange={(e) => setAppSortBy(e.target.value as any)}
+                    className="w-full bg-transparent font-medium text-xs text-slate-800 outline-none cursor-pointer"
+                  >
+                    <option value="date_desc">Date (Newest First)</option>
+                    <option value="date_asc">Date (Oldest First)</option>
+                    <option value="name_asc">Name (A to Z)</option>
+                    <option value="hsc_desc">HSC % (Highest First)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Secondary Filter Controls */}
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs pt-1 border-t border-slate-200/60">
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-500 font-medium">Page Size:</span>
+                  <select
+                    value={appPageSize}
+                    onChange={(e) => { setAppPageSize(Number(e.target.value)); setAppPage(1); }}
+                    className="bg-white border border-slate-300 rounded-lg px-2 py-0.5 text-xs outline-none cursor-pointer"
+                  >
+                    <option value={10}>10 per page</option>
+                    <option value={25}>25 per page</option>
+                    <option value={50}>50 per page</option>
+                    <option value={100}>100 per page</option>
+                  </select>
+                </div>
+
+                {(appYearFilter !== 'All' || appDeptFilter !== 'All' || appStatusFilter !== 'All' || appDateFilter !== '' || appSearch !== '') && (
                   <button
-                    onClick={() => { setAppYearFilter('All'); setAppDeptFilter('All'); setAppStatusFilter('All'); setAppSearch(''); }}
-                    className="px-2 py-1.5 text-slate-500 hover:text-slate-800 bg-slate-200 hover:bg-slate-300 rounded-lg text-xs font-bold flex items-center gap-1"
-                    title="Clear Filters"
+                    onClick={() => {
+                      setAppYearFilter('All');
+                      setAppDeptFilter('All');
+                      setAppStatusFilter('All');
+                      setAppDateFilter('');
+                      setAppSearch('');
+                      setAppPage(1);
+                    }}
+                    className="px-2.5 py-1 text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
                   >
                     <RotateCcw className="w-3 h-3" />
-                    <span>Reset</span>
+                    <span>Clear All Filters</span>
                   </button>
                 )}
-
-                <button
-                  onClick={() => handleExportExcel(filteredApps, 'Filtered_Applications')}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shrink-0 shadow"
-                >
-                  <FileSpreadsheet className="w-3.5 h-3.5" />
-                  <span>Export</span>
-                </button>
               </div>
             </div>
 
             {/* Application Details Modal */}
             {selectedApp && (
-              <div className="bg-[#F0F4F8] p-6 rounded-2xl border-2 border-[#0A2342] space-y-4">
-                <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+              <div className="bg-[#F0F4F8] p-6 rounded-2xl border-2 border-[#0A2342] space-y-4 shadow-xl">
+                <div className="flex flex-wrap justify-between items-center border-b border-slate-200 pb-3 gap-2">
                   <div>
-                    <span className="text-[10px] font-mono font-bold text-[#D97706] bg-amber-100 px-2 py-0.5 rounded">
+                    <span className="text-[10px] font-mono font-bold text-[#D97706] bg-amber-100 px-2.5 py-0.5 rounded">
                       Application ID: {selectedApp.id}
                     </span>
-                    <h3 className="text-lg font-bold text-[#0A2342] font-serif mt-1">
+                    <h3 className="text-xl font-bold text-[#0A2342] font-serif mt-1">
                       {selectedApp.fullName}
                     </h3>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Option A: Download Application PDF */}
                     <button
                       type="button"
                       onClick={() => printApplicationSlip(selectedApp, collegeInfo)}
-                      className="bg-[#0A2342] hover:bg-slate-900 text-amber-400 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow transition-colors"
+                      className="bg-[#0A2342] hover:bg-slate-900 text-amber-400 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow transition-colors"
+                      title="Print or Save Application Slip as PDF"
                     >
-                      <Printer className="w-3.5 h-3.5" /> Print Slip
+                      <Printer className="w-3.5 h-3.5" /> PDF Slip
                     </button>
+
+                    {/* Option B: Download Individual Candidate ZIP */}
                     <button
                       type="button"
-                      onClick={() => downloadApplicationSlip(selectedApp, collegeInfo)}
-                      className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow transition-colors"
+                      onClick={() => handleSingleZipDownload(selectedApp)}
+                      className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow transition-colors"
+                      title="Download Application PDF and all uploaded documents in a single ZIP file"
                     >
-                      <Download className="w-3.5 h-3.5" /> Download (.html)
+                      <Download className="w-3.5 h-3.5" /> Candidate ZIP
                     </button>
-                    <button onClick={() => setSelectedApp(null)} className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-200 ml-1">
+
+                    <button 
+                      onClick={() => setSelectedApp(null)} 
+                      className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-200 ml-1"
+                    >
                       <X className="w-5 h-5" />
                     </button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                   <div className="bg-white p-3 rounded-xl border border-slate-200">
                     <div className="text-slate-400 font-bold">Category</div>
                     <div className="font-bold text-slate-800">{selectedApp.category}</div>
                   </div>
                   <div className="bg-white p-3 rounded-xl border border-slate-200">
                     <div className="text-slate-400 font-bold">Mobile / Email</div>
-                    <div className="font-bold text-slate-800">{selectedApp.mobile}</div>
+                    <div className="font-bold text-slate-800 truncate">{selectedApp.mobile}</div>
+                    <div className="text-[10px] text-slate-500 truncate">{selectedApp.email}</div>
                   </div>
                   <div className="bg-white p-3 rounded-xl border border-slate-200">
                     <div className="text-slate-400 font-bold">Admission Year</div>
@@ -897,55 +1143,86 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
 
                 {/* Additional Qualification & Branch Details */}
-                <div className="p-3 bg-white rounded-xl border border-slate-200 text-xs space-y-1">
+                <div className="p-3.5 bg-white rounded-xl border border-slate-200 text-xs space-y-1">
                   <div className="font-bold text-blue-900 border-b pb-1">Academic Qualification & Program</div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-700 mt-1">
                     <div><strong>Course Branch:</strong> {selectedApp.admissionBranch || 'B.Tech (Dairy Technology)'}</div>
                     <div><strong>Previous Qualification:</strong> {selectedApp.previousQualification || '12th Science'}</div>
                     <div><strong>Previous Institute/Board:</strong> {selectedApp.previousBoardUniversity || selectedApp.hscBoard}</div>
-                    <div><strong>Previous Score:</strong> {selectedApp.previousPercentage || selectedApp.hscPercentage}%</div>
+                    <div><strong>HSC Percentage / PCM:</strong> {selectedApp.previousPercentage || selectedApp.hscPercentage}% ({selectedApp.hscPcmMarks} PCM)</div>
+                    <div><strong>Address:</strong> {selectedApp.address}, {selectedApp.district} - {selectedApp.pincode} ({selectedApp.state})</div>
+                    <div><strong>Aadhaar Number:</strong> {selectedApp.aadharNumber || 'Provided'}</div>
                   </div>
                 </div>
 
                 {/* Attached Files List for Admin Review */}
                 {selectedApp.attachedFiles && selectedApp.attachedFiles.length > 0 && (
-                  <div className="p-3 bg-white rounded-xl border border-slate-200 text-xs space-y-2">
+                  <div className="p-3.5 bg-white rounded-xl border border-slate-200 text-xs space-y-2">
                     <div className="font-bold text-emerald-800 border-b pb-1 flex items-center justify-between">
-                      <span>Attached Verification Certificates ({selectedApp.attachedFiles.length}):</span>
+                      <span>Attached Documents in Supabase Storage ({selectedApp.attachedFiles.length}):</span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                      {selectedApp.attachedFiles.map((doc, idx) => (
-                        <div key={idx} className="p-2 bg-emerald-50 rounded border border-emerald-200 flex justify-between items-center">
-                          <div className="truncate max-w-[180px]">
-                            <span className="font-bold text-slate-900 block text-[11px]">{doc.title}</span>
-                            <span className="text-[10px] text-slate-500 font-mono">{doc.fileName} ({doc.fileSize})</span>
+                      {selectedApp.attachedFiles.map((doc, idx) => {
+                        const isPdf = doc.fileName.toLowerCase().endsWith('.pdf');
+                        return (
+                          <div key={idx} className="p-2.5 bg-emerald-50/80 rounded-xl border border-emerald-200 flex justify-between items-center gap-2">
+                            <div className="truncate flex-1">
+                              <span className="font-bold text-slate-900 block text-[11px] truncate">{doc.title}</span>
+                              <span className="text-[10px] text-slate-500 font-mono block truncate">
+                                {doc.storagePath ? `Bucket Path: ${doc.storagePath}` : doc.fileName} ({doc.fileSize})
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  const url = await supabaseStorageService.getSignedUrl(doc.storagePath || '', doc.dataUrl);
+                                  setDocPreviewModal({ title: doc.title, fileName: doc.fileName, url, isPdf });
+                                }}
+                                className="px-2 py-1 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg text-[10px] flex items-center gap-1 shadow-sm transition-colors"
+                              >
+                                <Eye className="w-3 h-3" /> Preview
+                              </button>
+                            </div>
                           </div>
-                          {doc.dataUrl && (
-                            <a
-                              href={doc.dataUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="px-2 py-1 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded text-[10px] flex items-center gap-1"
-                            >
-                              <Eye className="w-3 h-3" /> View Document
-                            </a>
-                          )}
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Application Status History Timeline */}
+                {selectedApp.statusHistory && selectedApp.statusHistory.length > 0 && (
+                  <div className="p-3.5 bg-white rounded-xl border border-slate-200 text-xs space-y-2">
+                    <div className="font-bold text-[#0A2342] border-b pb-1">
+                      Status Workflow History ({selectedApp.statusHistory.length} logs)
+                    </div>
+                    <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                      {selectedApp.statusHistory.map((item, idx) => (
+                        <div key={idx} className="p-2 bg-slate-50 rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between text-[11px]">
+                          <div>
+                            <span className="font-bold text-[#0A2342]">{item.status}</span>
+                            {item.remarks && <span className="text-slate-600 ml-2">— "{item.remarks}"</span>}
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-mono">
+                            {new Date(item.updatedAt).toLocaleString('en-IN')} ({item.updatedBy || 'Admin'})
+                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* Status Updater */}
+                {/* Status Updater Form */}
                 <form onSubmit={handleUpdateAppStatus} className="bg-white p-4 rounded-xl border border-slate-200 flex flex-col sm:flex-row items-end gap-3">
                   <div className="flex-1 space-y-1 w-full text-xs">
-                    <label className="font-bold text-slate-700">Update Candidate Status</label>
+                    <label className="font-bold text-slate-700">Update Application Status</label>
                     <select
                       value={appStatusInput}
                       onChange={(e) => setAppStatusInput(e.target.value as any)}
                       className="w-full p-2 rounded-lg border border-slate-300 font-bold text-xs"
                     >
-                      <option value="Submitted">Submitted (Under Review)</option>
+                      <option value="Submitted">Submitted (Pending Review)</option>
                       <option value="Verified">Verified (Documents Checked)</option>
                       <option value="Provisionally Selected">Provisionally Selected (Seat Allotted)</option>
                       <option value="Rejected">Rejected</option>
@@ -967,60 +1244,357 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     type="submit"
                     className="bg-[#0A2342] text-amber-400 font-bold px-4 py-2 rounded-lg text-xs shrink-0 hover:bg-[#071931]"
                   >
-                    Save Status
+                    Save Status & Log
                   </button>
                 </form>
               </div>
             )}
 
             {/* Applications Table */}
-            <div className="overflow-x-auto border border-slate-200 rounded-2xl">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="bg-[#0A2342] text-white">
-                    <th className="p-3 font-semibold">App ID</th>
-                    <th className="p-3 font-semibold">Student Name</th>
-                    <th className="p-3 font-semibold">Category</th>
-                    <th className="p-3 font-semibold">Mobile</th>
-                    <th className="p-3 font-semibold">HSC %</th>
-                    <th className="p-3 font-semibold">Status</th>
-                    <th className="p-3 font-semibold">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-800">
-                  {filteredApps.map((app) => (
-                    <tr key={app.id} className="hover:bg-[#F0F4F8]">
-                      <td className="p-3 font-mono font-bold text-[#D97706]">{app.id}</td>
-                      <td className="p-3 font-bold text-slate-900">{app.fullName}</td>
-                      <td className="p-3">{app.category}</td>
-                      <td className="p-3 font-mono">{app.mobile}</td>
-                      <td className="p-3 font-mono font-bold">{app.hscPercentage}%</td>
-                      <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          app.status === 'Provisionally Selected' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                        }`}>
-                          {app.status}
-                        </span>
-                      </td>
-                      <td className="p-3 flex items-center gap-2">
-                        <button
-                          onClick={() => { setSelectedApp(app); setAppStatusInput(app.status); setAppRemarksInput(app.remarks || ''); }}
-                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-[#0A2342] font-bold rounded"
-                        >
-                          View
-                        </button>
-                        <button
-                          onClick={() => handleQuickApprove(app)}
-                          className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded"
-                        >
-                          Approve
-                        </button>
-                      </td>
+            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="bg-[#0A2342] text-white">
+                      <th className="p-3 w-10 text-center">
+                        <input
+                          type="checkbox"
+                          onChange={handleSelectAllOnPage}
+                          checked={paginatedApps.length > 0 && paginatedApps.every(a => selectedAppIds.includes(a.id))}
+                          className="rounded border-slate-300 text-[#D97706] focus:ring-[#D97706] cursor-pointer"
+                          title="Select all on this page"
+                        />
+                      </th>
+                      <th className="p-3 font-semibold">App ID</th>
+                      <th className="p-3 font-semibold">Student Name</th>
+                      <th className="p-3 font-semibold">Seeking Year</th>
+                      <th className="p-3 font-semibold">Category</th>
+                      <th className="p-3 font-semibold">Mobile</th>
+                      <th className="p-3 font-semibold">HSC %</th>
+                      <th className="p-3 font-semibold">Status</th>
+                      <th className="p-3 font-semibold text-center">Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-slate-800">
+                    {paginatedApps.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="p-8 text-center text-slate-500 text-xs">
+                          No admission applications found matching the selected filters.
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedApps.map((app) => {
+                        const isSelected = selectedAppIds.includes(app.id);
+                        return (
+                          <tr key={app.id} className={`hover:bg-[#F0F4F8] transition-colors ${isSelected ? 'bg-amber-50/60' : ''}`}>
+                            <td className="p-3 text-center">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => handleToggleSelectApp(app.id)}
+                                className="rounded border-slate-300 text-[#D97706] focus:ring-[#D97706] cursor-pointer"
+                              />
+                            </td>
+                            <td className="p-3 font-mono font-bold text-[#D97706]">{app.id}</td>
+                            <td className="p-3 font-bold text-slate-900">{app.fullName}</td>
+                            <td className="p-3 text-slate-600 font-medium">{app.admissionYear || '1st Year'}</td>
+                            <td className="p-3">{app.category}</td>
+                            <td className="p-3 font-mono">{app.mobile}</td>
+                            <td className="p-3 font-mono font-bold">{app.hscPercentage}%</td>
+                            <td className="p-3">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                app.status === 'Provisionally Selected' ? 'bg-emerald-100 text-emerald-800' :
+                                app.status === 'Verified' ? 'bg-blue-100 text-blue-800' :
+                                app.status === 'Rejected' ? 'bg-rose-100 text-rose-800' :
+                                'bg-amber-100 text-amber-800'
+                              }`}>
+                                {app.status}
+                              </span>
+                            </td>
+                            <td className="p-3">
+                              <div className="flex items-center justify-center gap-1.5">
+                                {/* View Details */}
+                                <button
+                                  type="button"
+                                  onClick={() => { setSelectedApp(app); setAppStatusInput(app.status); setAppRemarksInput(app.remarks || ''); }}
+                                  className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-[#0A2342] font-bold rounded text-[11px] transition-colors"
+                                  title="View Candidate Full Profile & Status History"
+                                >
+                                  View
+                                </button>
+
+                                {/* Option A: PDF Download */}
+                                <button
+                                  type="button"
+                                  onClick={() => printApplicationSlip(app, collegeInfo)}
+                                  className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-900 font-bold rounded text-[11px] flex items-center gap-0.5 transition-colors"
+                                  title="Download / Print Application PDF"
+                                >
+                                  <FileText className="w-3 h-3 text-blue-700" />
+                                  <span>PDF</span>
+                                </button>
+
+                                {/* Option B: ZIP Download */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleSingleZipDownload(app)}
+                                  className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded text-[11px] flex items-center gap-0.5 transition-colors"
+                                  title="Download Application ZIP (PDF + all uploaded documents)"
+                                >
+                                  <Download className="w-3 h-3 text-amber-800" />
+                                  <span>ZIP</span>
+                                </button>
+
+                                {/* Delete Candidate */}
+                                <button
+                                  type="button"
+                                  onClick={() => setDeleteConfirmApp(app)}
+                                  className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                                  title="Delete candidate permanently from database & storage"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="p-3 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs">
+                  <div className="text-slate-500 font-medium">
+                    Showing <strong className="text-slate-800">{((appPage - 1) * appPageSize) + 1}</strong> to <strong className="text-slate-800">{Math.min(appPage * appPageSize, filteredApps.length)}</strong> of <strong className="text-slate-800">{filteredApps.length}</strong> applications
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      disabled={appPage === 1}
+                      onClick={() => setAppPage(p => Math.max(1, p - 1))}
+                      className="px-2.5 py-1 rounded-lg border border-slate-300 bg-white font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 text-slate-700"
+                    >
+                      Previous
+                    </button>
+                    <span className="font-bold text-slate-700 px-2">
+                      Page {appPage} of {totalPages}
+                    </span>
+                    <button
+                      disabled={appPage === totalPages}
+                      onClick={() => setAppPage(p => Math.min(totalPages, p + 1))}
+                      className="px-2.5 py-1 rounded-lg border border-slate-300 bg-white font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 text-slate-700"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
+
+            {/* DELETE CANDIDATE CONFIRMATION MODAL */}
+            {deleteConfirmApp && (
+              <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl border-2 border-rose-500 max-w-md w-full p-6 space-y-4 shadow-2xl animate-in fade-in zoom-in-95">
+                  <div className="flex items-center gap-3 text-rose-600 border-b border-rose-100 pb-3">
+                    <div className="p-2 bg-rose-100 rounded-xl">
+                      <Trash2 className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg text-slate-900 font-serif">Permanently Delete Candidate?</h3>
+                      <p className="text-xs text-rose-600 font-semibold">This action cannot be undone</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs space-y-1 text-slate-800">
+                    <div><strong>Candidate Name:</strong> {deleteConfirmApp.fullName}</div>
+                    <div><strong>Application ID:</strong> {deleteConfirmApp.id}</div>
+                    <div><strong>Mobile Number:</strong> {deleteConfirmApp.mobile}</div>
+                    <div><strong>Seeking Year:</strong> {deleteConfirmApp.admissionYear || '1st Year'}</div>
+                  </div>
+
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Are you sure you want to delete this application? This will permanently remove the record from the Supabase PostgreSQL database AND purge all uploaded documents (photo, Aadhaar, marksheets) from Supabase Storage.
+                  </p>
+
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      disabled={isDeleting}
+                      onClick={() => setDeleteConfirmApp(null)}
+                      className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isDeleting}
+                      onClick={handleDeleteCandidate}
+                      className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow"
+                    >
+                      {isDeleting ? 'Deleting Record & Storage...' : 'Yes, Delete Candidate'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ACADEMIC YEAR ARCHIVE MODAL */}
+            {archiveModalOpen && (
+              <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl border-2 border-indigo-600 max-w-lg w-full p-6 space-y-4 shadow-2xl">
+                  <div className="flex items-center gap-3 text-indigo-700 border-b border-indigo-100 pb-3">
+                    <div className="p-2 bg-indigo-100 rounded-xl">
+                      <Download className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg text-slate-900 font-serif">Academic Year Master Archive</h3>
+                      <p className="text-xs text-indigo-700 font-semibold">Package all applications, spreadsheets & documents</p>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    This will create and download a single compressed ZIP archive <strong className="text-slate-900">Admissions_2026-27_Archive.zip</strong> containing:
+                  </p>
+
+                  <ul className="text-xs space-y-1.5 list-disc list-inside text-slate-700 bg-indigo-50/60 p-3 rounded-xl border border-indigo-100">
+                    <li><strong className="text-slate-900">applications.xlsx</strong> (Complete spreadsheet of candidate records)</li>
+                    <li><strong className="text-slate-900">documents.xlsx</strong> (Summary metadata of all uploaded certificates)</li>
+                    <li><strong className="text-slate-900">Folders for every candidate</strong> with Application PDF and attached document files</li>
+                  </ul>
+
+                  {archiveProgress && (
+                    <div className="bg-indigo-50 border border-indigo-200 p-2.5 rounded-xl text-xs text-indigo-900 font-bold flex items-center gap-2">
+                      <div className="w-3.5 h-3.5 border-2 border-indigo-700 border-t-transparent rounded-full animate-spin"></div>
+                      <span>{archiveProgress}</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      disabled={isArchiving}
+                      onClick={() => setArchiveModalOpen(false)}
+                      className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700"
+                    >
+                      Close
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isArchiving}
+                      onClick={handleArchiveAcademicYear}
+                      className="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-700 hover:bg-indigo-800 text-white shadow"
+                    >
+                      {isArchiving ? 'Generating Archive ZIP...' : 'Generate & Download Archive'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* RESET ADMISSIONS FOR NEW ACADEMIC YEAR MODAL */}
+            {resetModalOpen && (
+              <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl border-2 border-rose-600 max-w-md w-full p-6 space-y-4 shadow-2xl">
+                  <div className="flex items-center gap-3 text-rose-600 border-b border-rose-100 pb-3">
+                    <div className="p-2 bg-rose-100 rounded-xl">
+                      <AlertCircle className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg text-slate-900 font-serif">Reset Admissions for New Year</h3>
+                      <p className="text-xs text-rose-600 font-bold">Wipe student records & storage</p>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-rose-700 bg-rose-50 p-3 rounded-xl border border-rose-200 font-bold leading-relaxed">
+                    Notice: This action will permanently delete all admission records and uploaded documents after the archive has been created. This action cannot be undone.
+                  </p>
+
+                  <p className="text-xs text-slate-600">
+                    Note: Your Admin users, Faculty list, College Info, Notices, Events, Facilities, Gallery, and site settings will remain 100% intact.
+                  </p>
+
+                  <div className="space-y-1 text-xs">
+                    <label className="font-bold text-slate-800">
+                      Type <span className="font-mono bg-slate-200 px-1 py-0.5 rounded text-rose-700">CONFIRM RESET</span> to confirm:
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="CONFIRM RESET"
+                      value={resetConfirmInput}
+                      onChange={(e) => setResetConfirmInput(e.target.value)}
+                      className="w-full p-2 rounded-xl border border-slate-300 font-mono text-xs outline-none focus:ring-2 focus:ring-rose-500"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      disabled={isResetting}
+                      onClick={() => { setResetModalOpen(false); setResetConfirmInput(''); }}
+                      className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isResetting || resetConfirmInput.trim() !== 'CONFIRM RESET'}
+                      onClick={handleResetAdmissions}
+                      className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white shadow"
+                    >
+                      {isResetting ? 'Wiping Admissions...' : 'Wipe & Reset Admissions'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* INLINE DOCUMENT PREVIEW OVERLAY MODAL */}
+            {docPreviewModal && (
+              <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200">
+                  <div className="p-4 bg-[#0A2342] text-white flex justify-between items-center">
+                    <div>
+                      <h4 className="font-bold text-sm">{docPreviewModal.title}</h4>
+                      <p className="text-[10px] text-slate-300 font-mono">{docPreviewModal.fileName}</p>
+                    </div>
+                    <button
+                      onClick={() => setDocPreviewModal(null)}
+                      className="p-1 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="flex-1 p-4 overflow-auto bg-slate-100 flex items-center justify-center min-h-[350px]">
+                    {docPreviewModal.isPdf ? (
+                      <iframe
+                        src={docPreviewModal.url}
+                        title={docPreviewModal.title}
+                        className="w-full h-[550px] rounded-xl border border-slate-300 bg-white"
+                      />
+                    ) : (
+                      <img
+                        src={docPreviewModal.url}
+                        alt={docPreviewModal.title}
+                        className="max-h-[500px] max-w-full object-contain rounded-xl shadow-md"
+                      />
+                    )}
+                  </div>
+                  <div className="p-3 bg-white border-t border-slate-200 flex justify-end">
+                    <a
+                      href={docPreviewModal.url}
+                      download={docPreviewModal.fileName}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-4 py-2 bg-[#0A2342] hover:bg-slate-900 text-amber-400 font-bold text-xs rounded-xl flex items-center gap-1.5 shadow"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Download File
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1267,68 +1841,35 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Department</label>
-                  <select
-                    value={newFaculty.department}
-                    onChange={(e) => setNewFaculty({ ...newFaculty, department: e.target.value })}
-                    className="w-full p-2.5 rounded-lg border border-slate-300 outline-none bg-white font-bold"
-                  >
-                    {(departments || []).map(d => (
-                      <option key={d.id} value={d.name}>{d.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Qualification & Experience</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      placeholder="e.g. M.Tech (Dairy Tech)"
-                      value={newFaculty.qualification || ''}
-                      onChange={(e) => setNewFaculty({ ...newFaculty, qualification: e.target.value })}
-                      className="w-full p-2.5 rounded-lg border border-slate-300 outline-none"
-                    />
-                    <input
-                      type="text"
-                      placeholder="e.g. 8 Years"
-                      value={newFaculty.experience || ''}
-                      onChange={(e) => setNewFaculty({ ...newFaculty, experience: e.target.value })}
-                      className="w-full p-2.5 rounded-lg border border-slate-300 outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Email Address</label>
+                  <label className="block font-bold text-slate-700 mb-1">Qualification</label>
                   <input
-                    type="email"
-                    placeholder="e.g. faculty@lsscdt.edu.in"
-                    value={newFaculty.email || ''}
-                    onChange={(e) => setNewFaculty({ ...newFaculty, email: e.target.value })}
+                    type="text"
+                    placeholder="e.g. M.Tech (Dairy Tech)"
+                    value={newFaculty.qualification || ''}
+                    onChange={(e) => setNewFaculty({ ...newFaculty, qualification: e.target.value })}
                     className="w-full p-2.5 rounded-lg border border-slate-300 outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Faculty Photo</label>
+                  <label className="block font-bold text-slate-700 mb-1">Faculty Photo (Upload from local device)</label>
                   <div className="space-y-2">
                     {newFaculty.image && (
-                      <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-300">
+                      <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-[#D97706] shadow-sm">
                         <img src={newFaculty.image} alt="Preview" className="w-full h-full object-cover" />
                       </div>
                     )}
                     <div className="flex gap-2">
                       <input
                         type="text"
-                        placeholder="Image URL or upload"
+                        placeholder="Image URL or upload file"
                         value={newFaculty.image || ''}
                         onChange={(e) => setNewFaculty({ ...newFaculty, image: e.target.value })}
-                        className="w-full p-2 rounded-lg border border-slate-300 text-xs outline-none"
+                        className="w-full p-2 rounded-lg border border-slate-300 outline-none text-xs bg-white"
                       />
-                      <label className="cursor-pointer bg-[#0A2342] text-amber-400 font-bold px-3 py-2 rounded-lg text-xs flex items-center shrink-0 hover:bg-slate-900 transition-colors">
+                      <label className="cursor-pointer bg-[#0A2342] text-amber-400 font-bold px-3 py-2 rounded-lg text-xs flex items-center shrink-0 hover:bg-slate-900 transition-colors shadow-sm">
                         <Upload className="w-3.5 h-3.5 mr-1" />
-                        <span>Upload</span>
+                        <span>Upload Photo</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -1366,7 +1907,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       <div className="text-xs">
                         <div className="font-bold text-slate-900">{f.name}</div>
                         <div className="text-slate-500 text-[11px]">{f.designation}</div>
-                        <div className="text-[10px] text-[#D97706] font-bold">{f.department}</div>
+                        {f.qualification && <div className="text-[10px] text-[#D97706] font-bold">{f.qualification}</div>}
                       </div>
                     </div>
                     <button

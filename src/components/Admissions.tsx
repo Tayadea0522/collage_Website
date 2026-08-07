@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AdmissionApplication, CollegeInfo } from '../types';
 import { storageService } from '../services/storageService';
+import { supabaseStorageService } from '../services/supabaseStorageService';
 import { printApplicationSlip, downloadApplicationSlip } from '../utils/printUtils';
 import { 
   Sparkles, 
@@ -177,6 +178,41 @@ export const Admissions: React.FC<AdmissionsProps> = ({
       const appNumber = Math.floor(1000 + Math.random() * 9000);
       const newAppId = `LSSCDT-2026-${appNumber}`;
 
+      // Upload files to Supabase Storage bucket
+      const uploadedAttachedFiles = await Promise.all(
+        attachedFiles.map(async (f) => {
+          if (f.dataUrl) {
+            const uploadRes = await supabaseStorageService.uploadDocument(
+              newAppId,
+              f.docType,
+              f.dataUrl,
+              f.fileName
+            );
+            return {
+              id: f.id,
+              docType: f.docType,
+              title: f.title,
+              fileName: f.fileName,
+              fileSize: f.fileSize,
+              dataUrl: f.dataUrl,
+              storagePath: uploadRes.storagePath,
+              uploadedAt: f.uploadedAt
+            };
+          }
+          return {
+            id: f.id,
+            docType: f.docType,
+            title: f.title,
+            fileName: f.fileName,
+            fileSize: f.fileSize,
+            dataUrl: f.dataUrl,
+            uploadedAt: f.uploadedAt
+          };
+        })
+      );
+
+      const nowIso = new Date().toISOString();
+
       const newApp: AdmissionApplication = {
         id: newAppId,
         fullName: formData.fullName,
@@ -221,6 +257,14 @@ export const Admissions: React.FC<AdmissionsProps> = ({
         status: 'Submitted',
         submissionDate: new Date().toISOString().split('T')[0],
         remarks: 'Application submitted online with attached documents. Awaiting scrutiny verification.',
+        statusHistory: [
+          {
+            status: 'Submitted',
+            remarks: 'Application submitted online with attached documents.',
+            updatedAt: nowIso,
+            updatedBy: 'Candidate'
+          }
+        ],
         documentsUploaded: {
           photo: attachedFiles.some(f => f.docType === 'photo'),
           signature: attachedFiles.some(f => f.docType === 'signature'),
@@ -230,14 +274,7 @@ export const Admissions: React.FC<AdmissionsProps> = ({
           domicileCertificate: attachedFiles.some(f => f.docType === 'domicile'),
           agriculturalistCertificate: attachedFiles.some(f => f.docType === 'agriculturalist')
         },
-        attachedFiles: attachedFiles.map(f => ({
-          id: f.id,
-          title: f.title,
-          fileName: f.fileName,
-          fileSize: f.fileSize,
-          dataUrl: f.dataUrl,
-          uploadedAt: f.uploadedAt
-        }))
+        attachedFiles: uploadedAttachedFiles
       };
 
       storageService.addApplication(newApp);

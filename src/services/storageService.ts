@@ -1,6 +1,7 @@
 import { CollegeInfo, DepartmentInfo, Facility, FacultyMember, Notice, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser } from '../types';
 import { initialCollegeInfo, initialDepartments, initialFacilities, initialFaculty, initialNotices, initialApplications, initialGallery, initialEvents, initialAdminUsers } from '../data/initialData';
 import { supabase } from '../supabaseClient';
+import { supabaseStorageService } from './supabaseStorageService';
 
 const KEYS = {
   COLLEGE_INFO: 'lsscdt_college_info_v2',
@@ -199,10 +200,60 @@ export const storageService = {
     const updated = [app, ...apps];
     storageService.saveApplications(updated);
   },
-  updateApplicationStatus: (id: string, status: AdmissionApplication['status'], remarks?: string): void => {
+  updateApplicationStatus: (id: string, status: AdmissionApplication['status'], remarks?: string, updatedBy = 'Admin'): void => {
     const apps = storageService.getApplications();
-    const updated = apps.map(a => a.id === id ? { ...a, status, remarks: remarks !== undefined ? remarks : a.remarks } : a);
+    const updated = apps.map(a => {
+      if (a.id === id) {
+        const history = a.statusHistory || [];
+        const newHistoryItem = {
+          status,
+          remarks: remarks !== undefined ? remarks : a.remarks,
+          updatedAt: new Date().toISOString(),
+          updatedBy
+        };
+        return {
+          ...a,
+          status,
+          remarks: remarks !== undefined ? remarks : a.remarks,
+          statusHistory: [newHistoryItem, ...history]
+        };
+      }
+      return a;
+    });
     storageService.saveApplications(updated);
+  },
+  deleteApplication: async (id: string): Promise<void> => {
+    const apps = storageService.getApplications();
+    const target = apps.find(a => a.id === id);
+    if (target) {
+      // 1. Remove documents from Supabase Storage bucket
+      await supabaseStorageService.deleteCandidateDocuments(target);
+    }
+    
+    // 2. Remove row from Supabase Database
+    try {
+      await supabase.from('admission_applications').delete().eq('id', id);
+    } catch (e) {
+      console.warn('Supabase DB delete warning:', e);
+    }
+
+    // 3. Remove from local state
+    const updated = apps.filter(a => a.id !== id);
+    localStorage.setItem(KEYS.APPLICATIONS, JSON.stringify(updated));
+  },
+  resetAdmissionsData: async (): Promise<void> => {
+    // 1. Delete all storage files in Supabase bucket
+    await supabaseStorageService.deleteAllStorageFiles();
+
+    // 2. Delete all records from Supabase admission_applications table
+    try {
+      await supabase.from('admission_applications').delete().neq('id', 'EMPTY_DUMMY_KEY');
+    } catch (e) {
+      console.warn('Supabase DB clear warning:', e);
+    }
+
+    // 3. Clear local applications
+    localStorage.setItem(KEYS.APPLICATIONS, JSON.stringify([]));
   },
 
   getGallery: (): GalleryItem[] => {

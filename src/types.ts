@@ -102,11 +102,20 @@ export interface AdmissionApplication {
   };
   attachedFiles?: {
     id: string;
+    docType?: string;
     title: string;
     fileName: string;
     fileSize: string;
     dataUrl?: string; // Base64 data URL for document preview
+    storagePath?: string; // Supabase Storage Path: admissions/{app_id}/{filename}
+    mimeType?: string;
     uploadedAt: string;
+  }[];
+  statusHistory?: {
+    status: string;
+    remarks?: string;
+    updatedAt: string;
+    updatedBy?: string;
   }[];
 }
 

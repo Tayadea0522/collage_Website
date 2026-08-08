@@ -90,7 +90,38 @@ export const storageService = {
     localStorage.setItem(KEYS.COLLEGE_INFO, JSON.stringify(info));
     (async () => {
       try {
-        const { error } = await supabase.from('college_info').upsert([{ id: 'default', data: info }]);
+        let updatedInfo = { ...info };
+
+        if (updatedInfo.logoImage?.startsWith('data:')) {
+          updatedInfo.logoImage = await supabaseStorageService.uploadImage(updatedInfo.logoImage, 'college');
+        }
+        if (updatedInfo.shaktikumarImage?.startsWith('data:')) {
+          updatedInfo.shaktikumarImage = await supabaseStorageService.uploadImage(updatedInfo.shaktikumarImage, 'college');
+        }
+        if (updatedInfo.deanImage?.startsWith('data:')) {
+          updatedInfo.deanImage = await supabaseStorageService.uploadImage(updatedInfo.deanImage, 'college');
+        }
+        if (updatedInfo.secretaryImage?.startsWith('data:')) {
+          updatedInfo.secretaryImage = await supabaseStorageService.uploadImage(updatedInfo.secretaryImage, 'college');
+        }
+        if (updatedInfo.adminOfficerImage?.startsWith('data:')) {
+          updatedInfo.adminOfficerImage = await supabaseStorageService.uploadImage(updatedInfo.adminOfficerImage, 'college');
+        }
+        if (updatedInfo.heroBanners && updatedInfo.heroBanners.length > 0) {
+          updatedInfo.heroBanners = await Promise.all(
+            updatedInfo.heroBanners.map(async b => {
+              if (b.image?.startsWith('data:')) {
+                const cloudUrl = await supabaseStorageService.uploadImage(b.image, 'hero');
+                return { ...b, image: cloudUrl };
+              }
+              return b;
+            })
+          );
+        }
+
+        localStorage.setItem(KEYS.COLLEGE_INFO, JSON.stringify(updatedInfo));
+
+        const { error } = await supabase.from('college_info').upsert([{ id: 'default', data: updatedInfo }]);
         if (error) console.log('Supabase college_info sync:', error.message);
       } catch (err) {}
     })();
@@ -156,7 +187,20 @@ export const storageService = {
     localStorage.setItem(KEYS.FACULTY, JSON.stringify(faculty));
     (async () => {
       try {
-        const { error } = await supabase.from('faculty').upsert(faculty.map(f => ({
+        const processed = await Promise.all(
+          faculty.map(async f => {
+            if (f.image?.startsWith('data:')) {
+              const cloudUrl = await supabaseStorageService.uploadImage(f.image, 'faculty');
+              if (cloudUrl && !cloudUrl.startsWith('data:')) {
+                return { ...f, image: cloudUrl };
+              }
+            }
+            return f;
+          })
+        );
+        localStorage.setItem(KEYS.FACULTY, JSON.stringify(processed));
+
+        const { error } = await supabase.from('faculty').upsert(processed.map(f => ({
           id: f.id,
           name: f.name,
           department: f.department,
@@ -234,7 +278,20 @@ export const storageService = {
     localStorage.setItem(KEYS.FACILITIES, JSON.stringify(facs));
     (async () => {
       try {
-        const { error } = await supabase.from('facilities').upsert(facs.map(f => ({
+        const processed = await Promise.all(
+          facs.map(async f => {
+            if (f.image?.startsWith('data:')) {
+              const cloudUrl = await supabaseStorageService.uploadImage(f.image, 'facilities');
+              if (cloudUrl && !cloudUrl.startsWith('data:')) {
+                return { ...f, image: cloudUrl };
+              }
+            }
+            return f;
+          })
+        );
+        localStorage.setItem(KEYS.FACILITIES, JSON.stringify(processed));
+
+        const { error } = await supabase.from('facilities').upsert(processed.map(f => ({
           id: f.id,
           title: f.title,
           category: f.category,
@@ -249,26 +306,51 @@ export const storageService = {
     const data = localStorage.getItem(KEYS.APPLICATIONS);
     return data ? JSON.parse(data) : initialApplications;
   },
-  saveApplications: (apps: AdmissionApplication[]): void => {
-    localStorage.setItem(KEYS.APPLICATIONS, JSON.stringify(apps));
-    (async () => {
-      try {
-        const { error } = await supabase.from('admission_applications').upsert(apps.map(a => ({
-          id: a.id,
-          full_name: a.fullName,
-          email: a.email,
-          mobile: a.mobile,
-          status: a.status,
-          data: a
-        })));
-        if (error) console.log('Supabase applications sync:', error.message);
-      } catch (err) {}
-    })();
+  saveApplications: async (apps: AdmissionApplication[]): Promise<{ error?: string }> => {
+    // Sanitize attachedFiles to remove Base64 dataUrl before local or DB storage
+    const sanitizedApps = apps.map(a => {
+      const sanitizedAttachedFiles = (a.attachedFiles || []).map(f => ({
+        id: f.id,
+        docType: f.docType,
+        title: f.title,
+        fileName: f.fileName,
+        fileSize: f.fileSize,
+        storagePath: f.storagePath || '',
+        uploadedAt: f.uploadedAt
+      }));
+      return {
+        ...a,
+        attachedFiles: sanitizedAttachedFiles
+      };
+    });
+
+    localStorage.setItem(KEYS.APPLICATIONS, JSON.stringify(sanitizedApps));
+
+    try {
+      const dbApps = sanitizedApps.map(a => ({
+        id: a.id,
+        full_name: a.fullName,
+        email: a.email,
+        mobile: a.mobile,
+        status: a.status,
+        data: a
+      }));
+
+      const { error } = await supabase.from('admission_applications').upsert(dbApps);
+      if (error) {
+        console.error('Supabase applications DB upsert error:', error.message);
+        return { error: error.message };
+      }
+      return {};
+    } catch (err: any) {
+      console.error('Database applications save exception:', err);
+      return { error: err.message || 'Failed to save application to database' };
+    }
   },
-  addApplication: (app: AdmissionApplication): void => {
+  addApplication: async (app: AdmissionApplication): Promise<{ error?: string }> => {
     const apps = storageService.getApplications();
     const updated = [app, ...apps];
-    storageService.saveApplications(updated);
+    return await storageService.saveApplications(updated);
   },
   updateApplicationStatus: (id: string, status: AdmissionApplication['status'], remarks?: string, updatedBy = 'Admin'): void => {
     const apps = storageService.getApplications();
@@ -334,7 +416,20 @@ export const storageService = {
     localStorage.setItem(KEYS.GALLERY, JSON.stringify(items));
     (async () => {
       try {
-        const { error } = await supabase.from('gallery').upsert(items.map(g => ({
+        const processed = await Promise.all(
+          items.map(async item => {
+            if (item.image?.startsWith('data:')) {
+              const cloudUrl = await supabaseStorageService.uploadImage(item.image, 'gallery');
+              if (cloudUrl && !cloudUrl.startsWith('data:')) {
+                return { ...item, image: cloudUrl };
+              }
+            }
+            return item;
+          })
+        );
+        localStorage.setItem(KEYS.GALLERY, JSON.stringify(processed));
+
+        const { error } = await supabase.from('gallery').upsert(processed.map(g => ({
           id: g.id,
           title: g.title,
           category: g.category,

@@ -103,12 +103,12 @@ export interface AdmissionApplication {
   };
   attachedFiles?: {
     id: string;
-    docType?: string;
+    docType: string;
     title: string;
     fileName: string;
     fileSize: string;
-    dataUrl?: string; // Base64 data URL for document preview
-    storagePath?: string; // Supabase Storage Path: admissions/{app_id}/{filename}
+    storagePath?: string; // Supabase Storage Path: admissions/{app_id}/{docType}_{filename}
+    dataUrl?: string; // Optional legacy or fallback URL
     mimeType?: string;
     uploadedAt: string;
   }[];

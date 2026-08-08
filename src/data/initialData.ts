@@ -354,6 +354,7 @@ export const initialApplications: AdmissionApplication[] = [
     attachedFiles: [
       {
         id: "att-1",
+        docType: "marksheet",
         title: "12th Science Marksheet",
         fileName: "rohan_hsc_marksheet.pdf",
         fileSize: "1.4 MB",
@@ -361,6 +362,7 @@ export const initialApplications: AdmissionApplication[] = [
       },
       {
         id: "att-2",
+        docType: "cetScoreCard",
         title: "MHT-CET Score Card",
         fileName: "cet_scorecard_2026.pdf",
         fileSize: "850 KB",
@@ -418,6 +420,7 @@ export const initialApplications: AdmissionApplication[] = [
     attachedFiles: [
       {
         id: "att-3",
+        docType: "marksheet",
         title: "Diploma Final Year Marksheet",
         fileName: "diploma_marksheet_ananya.pdf",
         fileSize: "2.1 MB",

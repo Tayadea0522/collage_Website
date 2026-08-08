@@ -104,18 +104,32 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Helper for image file to base64 conversion
-  const handleImageFileUpload = (file: File, callback: (base64Url: string) => void) => {
+  // Helper for image file to base64 & Supabase cloud storage conversion
+  const handleImageFileUpload = (file: File, callback: (url: string) => void, folder: string = 'general') => {
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File size exceeds 5MB. Please select a smaller image.');
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size exceeds 10MB. Please select a smaller image.');
       return;
     }
     const reader = new FileReader();
-    reader.onloadend = () => {
+    reader.onloadend = async () => {
       if (typeof reader.result === 'string') {
-        callback(reader.result);
-        showToast('Image uploaded and processed!');
+        const localBase64 = reader.result;
+        callback(localBase64); // Fast local UI preview
+        showToast('Processing image...');
+
+        // Asynchronously upload to Supabase Storage for multi-browser cloud sync
+        try {
+          const cloudUrl = await supabaseStorageService.uploadImage(file, folder);
+          if (cloudUrl && !cloudUrl.startsWith('data:')) {
+            callback(cloudUrl);
+            showToast('Image uploaded and synced to cloud storage!');
+          } else {
+            showToast('Image saved locally!');
+          }
+        } catch (e) {
+          console.warn('Cloud image upload fallback:', e);
+        }
       }
     };
     reader.readAsDataURL(file);

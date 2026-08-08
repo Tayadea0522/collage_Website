@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AdmissionApplication, CollegeInfo } from '../types';
 import { storageService } from '../services/storageService';
 import { supabaseStorageService } from '../services/supabaseStorageService';
@@ -25,7 +25,8 @@ import {
   X,
   FileCheck,
   Building2,
-  BookOpen
+  BookOpen,
+  Loader2
 } from 'lucide-react';
 
 interface AdmissionsProps {
@@ -40,7 +41,8 @@ interface UploadedDoc {
   title: string;
   fileName: string;
   fileSize: string;
-  dataUrl?: string;
+  file: File;
+  previewUrl: string;
   uploadedAt: string;
 }
 
@@ -55,6 +57,8 @@ export const Admissions: React.FC<AdmissionsProps> = ({
   const [formStep, setFormStep] = useState(1);
   const [submittedApp, setSubmittedApp] = useState<AdmissionApplication | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState('');
+  const [submitError, setSubmitError] = useState('');
 
   // Form State
   const [formData, setFormData] = useState({
@@ -104,7 +108,21 @@ export const Admissions: React.FC<AdmissionsProps> = ({
   // Document Attachments State
   const [attachedFiles, setAttachedFiles] = useState<UploadedDoc[]>([]);
   const [docUploadError, setDocUploadError] = useState('');
-  const [previewModalDoc, setPreviewModalDoc] = useState<{ title: string; fileName: string; dataUrl?: string } | null>(null);
+  const [previewModalDoc, setPreviewModalDoc] = useState<{ title: string; fileName: string; url: string } | null>(null);
+
+  // Reference for cleanup on unmount
+  const attachedFilesRef = useRef(attachedFiles);
+  attachedFilesRef.current = attachedFiles;
+
+  useEffect(() => {
+    return () => {
+      attachedFilesRef.current.forEach(f => {
+        if (f.previewUrl) {
+          URL.revokeObjectURL(f.previewUrl);
+        }
+      });
+    };
+  }, []);
 
   // Track State
   const [searchQuery, setSearchQuery] = useState('');
@@ -130,23 +148,44 @@ export const Admissions: React.FC<AdmissionsProps> = ({
     }
   };
 
-  // Real File Upload Handler
+  // Direct File Selection Handler (No Base64 conversion, uses Object URL preview)
   const handleFileUpload = (docType: string, title: string, event: React.ChangeEvent<HTMLInputElement>) => {
     setDocUploadError('');
+    setSubmitError('');
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Reset input so re-selecting the same file fires event
+    event.target.value = '';
+
+    // File size check (max 5 MB)
     if (file.size > 5 * 1024 * 1024) {
-      setDocUploadError(`File '${file.name}' exceeds the maximum allowed size of 5 MB.`);
+      setDocUploadError(`File '${file.name}' exceeds the maximum allowed size of 5 MB. Please choose a smaller file.`);
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      const formattedSize = file.size > 1024 * 1024 
-        ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` 
-        : `${(file.size / 1024).toFixed(1)} KB`;
+    // Extension & format check
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    const allowedExts = ['jpg', 'jpeg', 'png', 'pdf'];
+    const isAllowedMime = file.type.startsWith('image/') || file.type === 'application/pdf';
+    if (!allowedExts.includes(ext) && !isAllowedMime) {
+      setDocUploadError(`Invalid file format for '${file.name}'. Please attach JPG, PNG, or PDF files only.`);
+      return;
+    }
+
+    const formattedSize = file.size > 1024 * 1024 
+      ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` 
+      : `${(file.size / 1024).toFixed(1)} KB`;
+
+    setAttachedFiles(prev => {
+      // Clean up previous Object URL if replacing file for same docType
+      const existing = prev.find(d => d.docType === docType);
+      if (existing && existing.previewUrl) {
+        URL.revokeObjectURL(existing.previewUrl);
+      }
+
+      const filtered = prev.filter(d => d.docType !== docType);
+      const previewUrl = URL.createObjectURL(file);
 
       const newDoc: UploadedDoc = {
         id: `doc-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
@@ -154,63 +193,99 @@ export const Admissions: React.FC<AdmissionsProps> = ({
         title,
         fileName: file.name,
         fileSize: formattedSize,
-        dataUrl,
+        file,
+        previewUrl,
         uploadedAt: new Date().toLocaleDateString('en-IN')
       };
 
-      setAttachedFiles(prev => {
-        const filtered = prev.filter(d => d.docType !== docType);
-        return [...filtered, newDoc];
-      });
-    };
-
-    reader.readAsDataURL(file);
+      return [...filtered, newDoc];
+    });
   };
 
   const handleRemoveFile = (docType: string) => {
-    setAttachedFiles(prev => prev.filter(d => d.docType !== docType));
+    setAttachedFiles(prev => {
+      const target = prev.find(d => d.docType === docType);
+      if (target && target.previewUrl) {
+        URL.revokeObjectURL(target.previewUrl);
+      }
+      return prev.filter(d => d.docType !== docType);
+    });
   };
 
+  // Online Admission Application Submission Handler
   const handleSubmitApplication = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
+    setSubmitError('');
+    setDocUploadError('');
     setIsSubmitting(true);
+
     try {
+      // 1. Mandatory Document Checks
+      const mandatorySlots = [
+        { docType: 'photo', title: 'Passport Size Photograph' },
+        { docType: 'signature', title: 'Candidate Specimen Signature' },
+        { docType: 'marksheet', title: '12th / Diploma / Degree Marksheet' },
+        { docType: 'cetScoreCard', title: 'MHT-CET / ICAR Score Card' },
+        { docType: 'domicile', title: 'Domicile / Birth Certificate' }
+      ];
+
+      const missing = mandatorySlots.filter(s => !attachedFiles.some(f => f.docType === s.docType));
+      if (missing.length > 0) {
+        const missingTitles = missing.map(m => m.title).join(', ');
+        setSubmitError(`Please attach all mandatory documents before submitting: ${missingTitles}.`);
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Generate unique Application ID
       const appNumber = Math.floor(1000 + Math.random() * 9000);
       const newAppId = `LSSCDT-2026-${appNumber}`;
 
-      // Upload files to Supabase Storage bucket
-      const uploadedAttachedFiles = await Promise.all(
-        attachedFiles.map(async (f) => {
-          if (f.dataUrl) {
-            const uploadRes = await supabaseStorageService.uploadDocument(
-              newAppId,
-              f.docType,
-              f.dataUrl,
-              f.fileName
-            );
-            return {
-              id: f.id,
-              docType: f.docType,
-              title: f.title,
-              fileName: f.fileName,
-              fileSize: f.fileSize,
-              dataUrl: f.dataUrl,
-              storagePath: uploadRes.storagePath,
-              uploadedAt: f.uploadedAt
-            };
-          }
-          return {
-            id: f.id,
-            docType: f.docType,
-            title: f.title,
-            fileName: f.fileName,
-            fileSize: f.fileSize,
-            dataUrl: f.dataUrl,
-            uploadedAt: f.uploadedAt
-          };
-        })
-      );
+      // 2. Sequential file uploads to Supabase Storage (admissions/{appId}/{docType}_{sanitizedFileName})
+      const uploadedAttachedFiles: {
+        id: string;
+        docType: string;
+        title: string;
+        fileName: string;
+        fileSize: string;
+        storagePath: string;
+        uploadedAt: string;
+      }[] = [];
 
+      for (let i = 0; i < attachedFiles.length; i++) {
+        const doc = attachedFiles[i];
+        setUploadProgress(`Uploading document ${i + 1} of ${attachedFiles.length}: ${doc.title}...`);
+
+        const uploadRes = await supabaseStorageService.uploadDocument(
+          newAppId,
+          doc.docType,
+          doc.file,
+          doc.fileName
+        );
+
+        if (uploadRes.error || !uploadRes.storagePath) {
+          const errDetail = uploadRes.error || 'Failed to upload document file';
+          setSubmitError(`Document upload failed for ${doc.title} (${doc.fileName}): ${errDetail}. Application submission halted. Please check network/storage configuration and try again.`);
+          setUploadProgress('');
+          setIsSubmitting(false);
+          return; // STOP! Do not create application record if upload failed
+        }
+
+        uploadedAttachedFiles.push({
+          id: doc.id,
+          docType: doc.docType,
+          title: doc.title,
+          fileName: doc.fileName,
+          fileSize: doc.fileSize,
+          storagePath: uploadRes.storagePath,
+          uploadedAt: doc.uploadedAt
+        });
+      }
+
+      // 3. Save Application Record to Supabase Database
+      setUploadProgress('Saving application record to database...');
       const nowIso = new Date().toISOString();
 
       const newApp: AdmissionApplication = {
@@ -277,10 +352,27 @@ export const Admissions: React.FC<AdmissionsProps> = ({
         attachedFiles: uploadedAttachedFiles
       };
 
-      storageService.addApplication(newApp);
+      const saveResult = await storageService.addApplication(newApp);
+      if (saveResult?.error) {
+        setSubmitError(`Failed to save application to database: ${saveResult.error}. Please try again.`);
+        setUploadProgress('');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Cleanup preview URLs and complete step
+      attachedFiles.forEach(f => {
+        if (f.previewUrl) URL.revokeObjectURL(f.previewUrl);
+      });
+      setAttachedFiles([]);
+      setUploadProgress('');
       onRefreshApplications();
       setSubmittedApp(newApp);
       setFormStep(4); // Success Slip View
+    } catch (err: any) {
+      console.error('Submission process exception:', err);
+      setSubmitError(err.message || 'An unexpected error occurred during application submission.');
+      setUploadProgress('');
     } finally {
       setIsSubmitting(false);
     }
@@ -935,11 +1027,11 @@ export const Admissions: React.FC<AdmissionsProps> = ({
                                 </div>
 
                                 <div className="flex items-center gap-2">
-                                  {fileMatch.dataUrl && (
+                                  {fileMatch.previewUrl && (
                                     <button
                                       type="button"
-                                      onClick={() => setPreviewModalDoc({ title: slot.title, fileName: fileMatch.fileName, dataUrl: fileMatch.dataUrl })}
-                                      className="flex-1 bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-1.5 rounded text-[11px] flex items-center justify-center gap-1"
+                                      onClick={() => setPreviewModalDoc({ title: slot.title, fileName: fileMatch.fileName, url: fileMatch.previewUrl })}
+                                      className="flex-1 bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-1.5 rounded text-[11px] flex items-center justify-center gap-1 transition-colors"
                                     >
                                       <Eye className="w-3.5 h-3.5" /> View
                                     </button>
@@ -947,7 +1039,7 @@ export const Admissions: React.FC<AdmissionsProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => handleRemoveFile(slot.docType)}
-                                    className="p-1.5 text-red-600 hover:bg-red-100 rounded border border-red-200"
+                                    className="p-1.5 text-red-600 hover:bg-red-100 rounded border border-red-200 transition-colors"
                                     title="Remove document"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
@@ -980,20 +1072,50 @@ export const Admissions: React.FC<AdmissionsProps> = ({
                     </p>
                   </div>
 
+                  {/* Submission Error Banner */}
+                  {submitError && (
+                    <div className="p-4 bg-red-50 border-2 border-red-300 text-red-900 text-xs rounded-xl flex items-start gap-3 shadow-sm">
+                      <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <strong className="block text-sm font-bold text-red-900">Submission Error</strong>
+                        <span className="leading-relaxed font-medium">{submitError}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sequential Upload Progress Banner */}
+                  {isSubmitting && uploadProgress && (
+                    <div className="p-4 bg-amber-50 border-2 border-amber-300 text-amber-950 text-xs rounded-xl flex items-center gap-3 shadow-sm font-bold">
+                      <Loader2 className="w-5 h-5 text-amber-700 animate-spin shrink-0" />
+                      <span>{uploadProgress}</span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between pt-4 border-t border-slate-100">
                     <button
                       type="button"
+                      disabled={isSubmitting}
                       onClick={() => setFormStep(2)}
-                      className="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-6 py-2.5 rounded-lg text-xs"
+                      className="bg-slate-200 hover:bg-slate-300 disabled:opacity-50 text-slate-800 font-bold px-6 py-2.5 rounded-lg text-xs"
                     >
                       ← Back
                     </button>
                     <button
                       type="submit"
-                      className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold px-8 py-3 rounded-xl text-sm shadow-md flex items-center gap-2"
+                      disabled={isSubmitting}
+                      className="bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-slate-950 font-extrabold px-8 py-3 rounded-xl text-sm shadow-md flex items-center gap-2 transition-all cursor-pointer disabled:cursor-not-allowed"
                     >
-                      <Send className="w-4 h-4" />
-                      <span>Submit Application Online</span>
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                          <span>Submitting Application...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4" />
+                          <span>Submit Application Online</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -1247,23 +1369,29 @@ export const Admissions: React.FC<AdmissionsProps> = ({
                   <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
                     <h4 className="font-bold text-slate-900 text-xs border-b pb-1 text-blue-900">Attached Documents:</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                      {trackedApp.attachedFiles.map((doc) => (
-                        <div key={doc.id} className="p-2 bg-slate-50 rounded border border-slate-200 flex justify-between items-center">
-                          <div>
-                            <span className="font-bold text-slate-800 block">{doc.title}</span>
-                            <span className="text-[10px] text-slate-500 font-mono">{doc.fileName} ({doc.fileSize})</span>
+                      {trackedApp.attachedFiles.map((doc) => {
+                        const fileUrl = doc.storagePath 
+                          ? supabaseStorageService.getFileUrl(doc.storagePath) 
+                          : doc.dataUrl;
+
+                        return (
+                          <div key={doc.id} className="p-2 bg-slate-50 rounded border border-slate-200 flex justify-between items-center">
+                            <div>
+                              <span className="font-bold text-slate-800 block">{doc.title}</span>
+                              <span className="text-[10px] text-slate-500 font-mono">{doc.fileName} ({doc.fileSize})</span>
+                            </div>
+                            {fileUrl && (
+                              <button
+                                type="button"
+                                onClick={() => setPreviewModalDoc({ title: doc.title, fileName: doc.fileName, url: fileUrl })}
+                                className="text-xs text-blue-900 hover:underline font-bold flex items-center gap-1"
+                              >
+                                <Eye className="w-3.5 h-3.5" /> View
+                              </button>
+                            )}
                           </div>
-                          {doc.dataUrl && (
-                            <button
-                              type="button"
-                              onClick={() => setPreviewModalDoc({ title: doc.title, fileName: doc.fileName, dataUrl: doc.dataUrl })}
-                              className="text-xs text-blue-900 hover:underline font-bold flex items-center gap-1"
-                            >
-                              <Eye className="w-3.5 h-3.5" /> View
-                            </button>
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -1316,7 +1444,7 @@ export const Admissions: React.FC<AdmissionsProps> = ({
       {/* Document Lightbox / Modal Preview */}
       {previewModalDoc && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl relative">
+          <div className="bg-white rounded-2xl max-w-3xl w-full p-6 space-y-4 shadow-2xl relative">
             <div className="flex justify-between items-center border-b pb-3">
               <div>
                 <h3 className="font-bold text-slate-900 text-base">{previewModalDoc.title}</h3>
@@ -1324,38 +1452,41 @@ export const Admissions: React.FC<AdmissionsProps> = ({
               </div>
               <button 
                 onClick={() => setPreviewModalDoc(null)} 
-                className="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600"
+                className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="bg-slate-100 rounded-xl p-2 flex items-center justify-center min-h-[300px] max-h-[500px] overflow-auto">
-              {previewModalDoc.dataUrl?.startsWith('data:image/') ? (
-                <img 
-                  src={previewModalDoc.dataUrl} 
-                  alt={previewModalDoc.title} 
-                  className="max-h-[450px] object-contain rounded"
+            <div className="bg-slate-100 rounded-xl p-2 flex items-center justify-center min-h-[350px] max-h-[550px] overflow-auto">
+              {previewModalDoc.fileName.toLowerCase().endsWith('.pdf') || previewModalDoc.url.startsWith('data:application/pdf') ? (
+                <iframe 
+                  src={previewModalDoc.url} 
+                  title={previewModalDoc.title} 
+                  className="w-full h-[500px] rounded border-0 bg-white"
                 />
               ) : (
-                <div className="text-center p-8 space-y-3">
-                  <FileText className="w-16 h-16 text-blue-900 mx-auto" />
-                  <p className="text-xs font-bold text-slate-700">Document Attached (PDF or Binary File)</p>
-                  <a
-                    href={previewModalDoc.dataUrl}
-                    download={previewModalDoc.fileName}
-                    className="inline-flex items-center gap-1.5 bg-[#0A2342] text-amber-400 text-xs font-bold px-4 py-2 rounded-lg"
-                  >
-                    <Download className="w-4 h-4" /> Download File Preview
-                  </a>
-                </div>
+                <img 
+                  src={previewModalDoc.url} 
+                  alt={previewModalDoc.title} 
+                  className="max-h-[500px] object-contain rounded shadow-sm"
+                />
               )}
             </div>
 
-            <div className="flex justify-end pt-2">
+            <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+              <a
+                href={previewModalDoc.url}
+                target="_blank"
+                rel="noreferrer"
+                download={previewModalDoc.fileName}
+                className="inline-flex items-center gap-1.5 bg-[#0A2342] hover:bg-slate-900 text-amber-400 text-xs font-bold px-4 py-2 rounded-lg transition-colors"
+              >
+                <Download className="w-4 h-4" /> Download Original File
+              </a>
               <button
                 onClick={() => setPreviewModalDoc(null)}
-                className="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-5 py-2 rounded-lg text-xs"
+                className="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-5 py-2 rounded-lg text-xs transition-colors"
               >
                 Close Preview
               </button>

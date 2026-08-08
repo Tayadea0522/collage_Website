@@ -221,6 +221,18 @@ export const Admissions: React.FC<AdmissionsProps> = ({
     setDocUploadError('');
     setIsSubmitting(true);
 
+    let uploadedAttachedFiles: {
+      id: string;
+      docType: string;
+      title: string;
+      fileName: string;
+      fileSize: string;
+      storagePath: string;
+      uploadedAt: string;
+    }[] = [];
+
+    let currentAppId = '';
+
     try {
       // 1. Mandatory Document Checks
       const mandatorySlots = [
@@ -239,27 +251,25 @@ export const Admissions: React.FC<AdmissionsProps> = ({
         return;
       }
 
-      // Generate unique Application ID
+      // Generate unique Application ID once per submission attempt
       const appNumber = Math.floor(1000 + Math.random() * 9000);
-      const newAppId = `LSSCDT-2026-${appNumber}`;
+      currentAppId = `LSSCDT-2026-${appNumber}`;
+
+      // Calculate percentages
+      const prevPct = formData.previousTotalMarks > 0 
+        ? Number(((formData.previousObtainedMarks / formData.previousTotalMarks) * 100).toFixed(2)) 
+        : 0;
+      const hscPct = formData.hscTotalMarks > 0 
+        ? Number(((formData.hscPcmMarks / formData.hscTotalMarks) * 100).toFixed(2)) 
+        : 0;
 
       // 2. Sequential file uploads to Supabase Storage (admissions/{appId}/{docType}_{sanitizedFileName})
-      const uploadedAttachedFiles: {
-        id: string;
-        docType: string;
-        title: string;
-        fileName: string;
-        fileSize: string;
-        storagePath: string;
-        uploadedAt: string;
-      }[] = [];
-
       for (let i = 0; i < attachedFiles.length; i++) {
         const doc = attachedFiles[i];
         setUploadProgress(`Uploading document ${i + 1} of ${attachedFiles.length}: ${doc.title}...`);
 
         const uploadRes = await supabaseStorageService.uploadDocument(
-          newAppId,
+          currentAppId,
           doc.docType,
           doc.file,
           doc.fileName
@@ -267,10 +277,15 @@ export const Admissions: React.FC<AdmissionsProps> = ({
 
         if (uploadRes.error || !uploadRes.storagePath) {
           const errDetail = uploadRes.error || 'Failed to upload document file';
-          setSubmitError(`Document upload failed for ${doc.title} (${doc.fileName}): ${errDetail}. Application submission halted. Please check network/storage configuration and try again.`);
+          // Clean up any files uploaded so far for this submission attempt
+          const pathsToClean = uploadedAttachedFiles.map(f => f.storagePath).filter(Boolean);
+          if (pathsToClean.length > 0) {
+            await supabaseStorageService.deleteUploadedFiles(pathsToClean);
+          }
+          setSubmitError(`Document upload failed for ${doc.title} (${doc.fileName}): ${errDetail}. Application submission halted.`);
           setUploadProgress('');
           setIsSubmitting(false);
-          return; // STOP! Do not create application record if upload failed
+          return;
         }
 
         uploadedAttachedFiles.push({
@@ -284,12 +299,12 @@ export const Admissions: React.FC<AdmissionsProps> = ({
         });
       }
 
-      // 3. Save Application Record to Supabase Database
+      // 3. Save Application Record to Supabase Database via INSERT
       setUploadProgress('Saving application record to database...');
       const nowIso = new Date().toISOString();
 
       const newApp: AdmissionApplication = {
-        id: newAppId,
+        id: currentAppId,
         fullName: formData.fullName,
         fatherName: formData.fatherName,
         motherName: formData.motherName,
@@ -353,14 +368,22 @@ export const Admissions: React.FC<AdmissionsProps> = ({
       };
 
       const saveResult = await storageService.addApplication(newApp);
+
       if (saveResult?.error) {
-        setSubmitError(`Failed to save application to database: ${saveResult.error}. Please try again.`);
+        // Clean up uploaded files from Storage if database insertion fails
+        const uploadedPaths = uploadedAttachedFiles.map(f => f.storagePath).filter(Boolean);
+        if (uploadedPaths.length > 0) {
+          setUploadProgress('Cleaning up storage files due to database error...');
+          await supabaseStorageService.deleteUploadedFiles(uploadedPaths);
+        }
+
+        setSubmitError(`Database insertion failed: ${saveResult.error}`);
         setUploadProgress('');
         setIsSubmitting(false);
         return;
       }
 
-      // Cleanup preview URLs and complete step
+      // Cleanup preview URLs and complete step only after DB success
       attachedFiles.forEach(f => {
         if (f.previewUrl) URL.revokeObjectURL(f.previewUrl);
       });
@@ -371,6 +394,15 @@ export const Admissions: React.FC<AdmissionsProps> = ({
       setFormStep(4); // Success Slip View
     } catch (err: any) {
       console.error('Submission process exception:', err);
+      // Clean up uploaded files if an uncaught exception occurred
+      const uploadedPaths = uploadedAttachedFiles.map(f => f.storagePath).filter(Boolean);
+      if (uploadedPaths.length > 0) {
+        try {
+          await supabaseStorageService.deleteUploadedFiles(uploadedPaths);
+        } catch (cleanupErr) {
+          console.error('Cleanup exception:', cleanupErr);
+        }
+      }
       setSubmitError(err.message || 'An unexpected error occurred during application submission.');
       setUploadProgress('');
     } finally {

@@ -251,6 +251,25 @@ export const supabaseStorageService = {
   },
 
   /**
+   * Delete uploaded files directly by array of storage paths (used for cleanup when DB insert fails)
+   */
+  deleteUploadedFiles: async (paths: string[]): Promise<void> => {
+    if (!paths || paths.length === 0) return;
+    try {
+      const validPaths = paths.filter(Boolean);
+      const uniquePaths = Array.from(new Set(validPaths));
+      if (uniquePaths.length > 0) {
+        const { error } = await supabase.storage.from(BUCKET_NAME).remove(uniquePaths);
+        if (error) {
+          console.error('Error cleaning up uploaded files from storage:', error.message);
+        }
+      }
+    } catch (err) {
+      console.error('Exception during storage file cleanup:', err);
+    }
+  },
+
+  /**
    * Clear all documents in storage for admissions reset
    */
   deleteAllStorageFiles: async (): Promise<void> => {

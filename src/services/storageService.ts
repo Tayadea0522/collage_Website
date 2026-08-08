@@ -338,8 +338,14 @@ export const storageService = {
 
       const { error } = await supabase.from('admission_applications').upsert(dbApps);
       if (error) {
-        console.error('Supabase applications DB upsert error:', error.message);
-        return { error: error.message };
+        console.error('Supabase applications DB upsert error:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        const errStr = `[DB ${error.code || 'Error'}]: ${error.message}${error.details ? ` (${error.details})` : ''}${error.hint ? ` - Hint: ${error.hint}` : ''}`;
+        return { error: errStr };
       }
       return {};
     } catch (err: any) {
@@ -348,9 +354,58 @@ export const storageService = {
     }
   },
   addApplication: async (app: AdmissionApplication): Promise<{ error?: string }> => {
-    const apps = storageService.getApplications();
-    const updated = [app, ...apps];
-    return await storageService.saveApplications(updated);
+    // Sanitize attachedFiles for database storage
+    const sanitizedAttachedFiles = (app.attachedFiles || []).map(f => ({
+      id: f.id,
+      docType: f.docType,
+      title: f.title,
+      fileName: f.fileName,
+      fileSize: f.fileSize,
+      storagePath: f.storagePath || '',
+      uploadedAt: f.uploadedAt
+    }));
+
+    const sanitizedApp: AdmissionApplication = {
+      ...app,
+      attachedFiles: sanitizedAttachedFiles
+    };
+
+    const dbRecord = {
+      id: sanitizedApp.id,
+      full_name: sanitizedApp.fullName,
+      email: sanitizedApp.email,
+      mobile: sanitizedApp.mobile,
+      status: sanitizedApp.status,
+      data: sanitizedApp
+    };
+
+    try {
+      // Use INSERT for new candidate application submission
+      const { error } = await supabase
+        .from('admission_applications')
+        .insert([dbRecord]);
+
+      if (error) {
+        console.error('Supabase application INSERT error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        const fullErr = `[DB ${error.code || 'Error'}]: ${error.message}${error.details ? ` - ${error.details}` : ''}${error.hint ? ` (Hint: ${error.hint})` : ''}`;
+        return { error: fullErr };
+      }
+
+      // Sync to localStorage only after DB insert succeeds
+      const apps = storageService.getApplications();
+      const updated = [sanitizedApp, ...apps];
+      localStorage.setItem(KEYS.APPLICATIONS, JSON.stringify(updated));
+
+      return {};
+    } catch (err: any) {
+      console.error('Database application insert exception:', err);
+      return { error: err.message || 'Failed to save application record into database' };
+    }
   },
   updateApplicationStatus: (id: string, status: AdmissionApplication['status'], remarks?: string, updatedBy = 'Admin'): void => {
     const apps = storageService.getApplications();

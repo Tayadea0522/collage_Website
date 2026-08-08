@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
-import { CollegeInfo, Notice, DepartmentInfo, FacultyMember, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser } from '../types';
+import { CollegeInfo, Notice, DepartmentInfo, FacultyMember, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser, DownloadableDocument, NoticeAttachment } from '../types';
 import { storageService } from '../services/storageService';
 import { zipService } from '../services/zipService';
 import { supabaseStorageService } from '../services/supabaseStorageService';
@@ -216,6 +216,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // 2. Notice Form State
   const [noticeList, setNoticeList] = useState<Notice[]>([...notices]);
+  const [editingNotice, setEditingNotice] = useState<Notice | null>(null);
   const [newNotice, setNewNotice] = useState<Partial<Notice>>({
     title: '',
     category: 'Admission',
@@ -223,22 +224,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     isNew: true,
     content: ''
   });
+  const [selectedNoticePdf, setSelectedNoticePdf] = useState<File | null>(null);
+  const [isUploadingNoticePdf, setIsUploadingNoticePdf] = useState<boolean>(false);
+  const [noticePdfError, setNoticePdfError] = useState<string>('');
+  const [existingNoticeAttachment, setExistingNoticeAttachment] = useState<NoticeAttachment | undefined>(undefined);
 
-  const handleAddNotice = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newNotice.title) return;
-    const item: Notice = {
-      id: `n-${Date.now()}`,
-      title: newNotice.title,
-      category: (newNotice.category as Notice['category']) || 'General',
-      date: newNotice.date || 'TODAY',
-      isNew: newNotice.isNew ?? true,
-      content: newNotice.content || ''
-    };
-    const updated = [item, ...noticeList];
-    setNoticeList(updated);
-    storageService.saveNotices(updated);
-    onRefreshAll();
+  const handleOpenNoticeEdit = (notice: Notice) => {
+    setEditingNotice(notice);
+    setNewNotice({
+      title: notice.title,
+      category: notice.category,
+      date: notice.date,
+      isNew: notice.isNew ?? true,
+      content: notice.content || ''
+    });
+    setExistingNoticeAttachment(notice.attachment);
+    setSelectedNoticePdf(null);
+    setNoticePdfError('');
+  };
+
+  const handleCancelNoticeEdit = () => {
+    setEditingNotice(null);
     setNewNotice({
       title: '',
       category: 'Admission',
@@ -246,13 +252,90 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       isNew: true,
       content: ''
     });
-    showToast('New notice published successfully!');
+    setExistingNoticeAttachment(undefined);
+    setSelectedNoticePdf(null);
+    setNoticePdfError('');
+  };
+
+  const handleSaveNoticeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setNoticePdfError('');
+
+    if (!newNotice.title?.trim()) {
+      setNoticePdfError('Notice title is required.');
+      return;
+    }
+
+    let attachment: NoticeAttachment | undefined = existingNoticeAttachment;
+
+    if (selectedNoticePdf) {
+      if (selectedNoticePdf.size > 10 * 1024 * 1024) {
+        setNoticePdfError('Attachment PDF size exceeds 10 MB limit.');
+        return;
+      }
+      if (selectedNoticePdf.type !== 'application/pdf' && !selectedNoticePdf.name.toLowerCase().endsWith('.pdf')) {
+        setNoticePdfError('Only PDF files (.pdf) are allowed as attachments.');
+        return;
+      }
+
+      setIsUploadingNoticePdf(true);
+      const uploadRes = await supabaseStorageService.uploadWebsiteDocument('notices', selectedNoticePdf);
+      setIsUploadingNoticePdf(false);
+
+      if (uploadRes.error) {
+        setNoticePdfError(`PDF upload failed: ${uploadRes.error}`);
+        return;
+      }
+
+      if (existingNoticeAttachment?.storagePath && existingNoticeAttachment.storagePath !== uploadRes.storagePath) {
+        await supabaseStorageService.deleteWebsiteDocument(existingNoticeAttachment.storagePath);
+      }
+
+      attachment = {
+        fileName: uploadRes.fileName,
+        fileSize: uploadRes.fileSize,
+        storagePath: uploadRes.storagePath,
+        fileUrl: uploadRes.publicUrl
+      };
+    }
+
+    const item: Notice = {
+      id: editingNotice ? editingNotice.id : `n-${Date.now()}`,
+      title: newNotice.title.trim(),
+      category: (newNotice.category as Notice['category']) || 'General',
+      date: newNotice.date || new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase(),
+      isNew: newNotice.isNew ?? true,
+      content: newNotice.content || '',
+      attachment
+    };
+
+    let updated: Notice[];
+    if (editingNotice) {
+      updated = noticeList.map(n => n.id === editingNotice.id ? item : n);
+    } else {
+      updated = [item, ...noticeList];
+    }
+
+    setNoticeList(updated);
+    storageService.saveNotices(updated);
+    onRefreshAll();
+    handleCancelNoticeEdit();
+    showToast(editingNotice ? 'Notice updated successfully!' : 'New notice published successfully!');
+  };
+
+  const handleRemoveNoticeAttachment = async () => {
+    if (existingNoticeAttachment?.storagePath) {
+      await supabaseStorageService.deleteWebsiteDocument(existingNoticeAttachment.storagePath);
+    }
+    setExistingNoticeAttachment(undefined);
+    setSelectedNoticePdf(null);
+    showToast('Attachment removed.');
   };
 
   const handleDeleteNotice = (id: string) => {
+    storageService.deleteNotice(id);
     const updated = noticeList.filter(n => n.id !== id);
     setNoticeList(updated);
-    storageService.saveNotices(updated);
     onRefreshAll();
     showToast('Notice deleted.');
   };
@@ -262,6 +345,291 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setNoticeList(updated);
     storageService.saveNotices(updated);
     onRefreshAll();
+  };
+
+  // Downloads CMS State
+  const [downloadsList, setDownloadsList] = useState<DownloadableDocument[]>(storageService.getDownloads());
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+  const [editingDownload, setEditingDownload] = useState<DownloadableDocument | null>(null);
+  const [downloadForm, setDownloadForm] = useState<{
+    title: string;
+    category: string;
+    description: string;
+    displayOrder: number;
+    isActive: boolean;
+  }>({
+    title: '',
+    category: 'Admission',
+    description: '',
+    displayOrder: 1,
+    isActive: true
+  });
+  const [selectedDownloadFile, setSelectedDownloadFile] = useState<File | null>(null);
+  const [downloadUploadProgress, setDownloadUploadProgress] = useState<number>(0);
+  const [isUploadingDownload, setIsUploadingDownload] = useState<boolean>(false);
+  const [downloadFormError, setDownloadFormError] = useState<string>('');
+
+  const handleOpenNewDownloadModal = () => {
+    setEditingDownload(null);
+    setDownloadForm({
+      title: '',
+      category: 'Admission',
+      description: '',
+      displayOrder: downloadsList.length + 1,
+      isActive: true
+    });
+    setSelectedDownloadFile(null);
+    setDownloadFormError('');
+    setDownloadUploadProgress(0);
+    setIsDownloadModalOpen(true);
+  };
+
+  const handleOpenEditDownloadModal = (doc: DownloadableDocument) => {
+    setEditingDownload(doc);
+    setDownloadForm({
+      title: doc.title,
+      category: doc.category || 'Admission',
+      description: doc.description || '',
+      displayOrder: doc.displayOrder || 1,
+      isActive: doc.isActive ?? true
+    });
+    setSelectedDownloadFile(null);
+    setDownloadFormError('');
+    setDownloadUploadProgress(0);
+    setIsDownloadModalOpen(true);
+  };
+
+  const handleSaveDownload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDownloadFormError('');
+
+    if (!downloadForm.title.trim()) {
+      setDownloadFormError('Document title is required.');
+      return;
+    }
+
+    if (!editingDownload && !selectedDownloadFile) {
+      setDownloadFormError('Please select a PDF file to upload.');
+      return;
+    }
+
+    if (selectedDownloadFile) {
+      if (selectedDownloadFile.size > 10 * 1024 * 1024) {
+        setDownloadFormError('File size exceeds the maximum allowed limit of 10 MB.');
+        return;
+      }
+      if (selectedDownloadFile.type !== 'application/pdf' && !selectedDownloadFile.name.toLowerCase().endsWith('.pdf')) {
+        setDownloadFormError('Only PDF documents (.pdf) are allowed.');
+        return;
+      }
+
+      const duplicate = downloadsList.find(
+        d => (!editingDownload || d.id !== editingDownload.id) &&
+             (d.title.toLowerCase().trim() === downloadForm.title.toLowerCase().trim() ||
+              d.fileName.toLowerCase() === selectedDownloadFile.name.toLowerCase())
+      );
+      if (duplicate) {
+        setDownloadFormError('A document with this title or file name already exists.');
+        return;
+      }
+    }
+
+    setIsUploadingDownload(true);
+    setDownloadUploadProgress(10);
+
+    let storagePath = editingDownload?.storagePath || '';
+    let publicUrl = editingDownload?.fileUrl || '';
+    let fileName = editingDownload?.fileName || '';
+    let fileSize = editingDownload?.fileSize || '';
+
+    if (selectedDownloadFile) {
+      const uploadRes = await supabaseStorageService.uploadWebsiteDocument(
+        'downloads',
+        selectedDownloadFile,
+        (percent) => setDownloadUploadProgress(percent)
+      );
+
+      if (uploadRes.error) {
+        setIsUploadingDownload(false);
+        setDownloadFormError(`Upload failed: ${uploadRes.error}`);
+        return;
+      }
+
+      if (editingDownload?.storagePath && editingDownload.storagePath !== uploadRes.storagePath) {
+        await supabaseStorageService.deleteWebsiteDocument(editingDownload.storagePath);
+      }
+
+      storagePath = uploadRes.storagePath;
+      publicUrl = uploadRes.publicUrl;
+      fileName = uploadRes.fileName;
+      fileSize = uploadRes.fileSize;
+    }
+
+    const docItem: DownloadableDocument = {
+      id: editingDownload ? editingDownload.id : `dl-${Date.now()}`,
+      title: downloadForm.title.trim(),
+      category: downloadForm.category,
+      description: downloadForm.description.trim(),
+      fileName: fileName || 'document.pdf',
+      storagePath,
+      fileSize: fileSize || '1.0 MB',
+      fileUrl: publicUrl,
+      displayOrder: Number(downloadForm.displayOrder) || 1,
+      isActive: downloadForm.isActive,
+      createdAt: editingDownload ? editingDownload.createdAt : new Date().toISOString().split('T')[0],
+      updatedAt: new Date().toISOString().split('T')[0]
+    };
+
+    let updated: DownloadableDocument[];
+    if (editingDownload) {
+      updated = downloadsList.map(d => d.id === editingDownload.id ? docItem : d);
+    } else {
+      updated = [docItem, ...downloadsList];
+    }
+
+    setDownloadsList(updated);
+    storageService.saveDownloads(updated);
+    setIsUploadingDownload(false);
+    setIsDownloadModalOpen(false);
+    onRefreshAll();
+    showToast(editingDownload ? 'Document updated successfully!' : 'New PDF document uploaded successfully!');
+  };
+
+  const handleDeleteDownload = async (doc: DownloadableDocument) => {
+    const confirmed = window.confirm(`Are you sure you want to delete this document?\n\nTitle: "${doc.title}"\nFile: ${doc.fileName}\n\nThis action will delete the file from website storage and remove its metadata.`);
+    if (!confirmed) return;
+
+    if (doc.storagePath) {
+      await supabaseStorageService.deleteWebsiteDocument(doc.storagePath);
+    }
+
+    storageService.deleteDownload(doc.id);
+    const updated = downloadsList.filter(d => d.id !== doc.id);
+    setDownloadsList(updated);
+    onRefreshAll();
+    showToast('Document deleted successfully.');
+  };
+
+  const handleToggleDownloadActive = (doc: DownloadableDocument) => {
+    const updated = downloadsList.map(d => d.id === doc.id ? { ...d, isActive: !d.isActive } : d);
+    setDownloadsList(updated);
+    storageService.saveDownloads(updated);
+    onRefreshAll();
+    showToast(`Document ${!doc.isActive ? 'activated' : 'deactivated'}.`);
+  };
+
+  // Department Management State
+  const [deptList, setDeptList] = useState<DepartmentInfo[]>([...departments]);
+  const [isDeptModalOpen, setIsDeptModalOpen] = useState<boolean>(false);
+  const [editingDept, setEditingDept] = useState<DepartmentInfo | null>(null);
+  const [deptForm, setDeptForm] = useState<{
+    name: string;
+    code: string;
+    head: string;
+    description: string;
+    labsStr: string;
+    keySubjectsStr: string;
+    image: string;
+    isActive: boolean;
+    displayOrder: number;
+  }>({
+    name: '',
+    code: '',
+    head: '',
+    description: '',
+    labsStr: '',
+    keySubjectsStr: '',
+    image: 'https://images.unsplash.com/photo-1527153857715-3908f2bae5e8?auto=format&fit=crop&w=800&q=80',
+    isActive: true,
+    displayOrder: 1
+  });
+
+  const handleOpenNewDeptModal = () => {
+    setEditingDept(null);
+    setDeptForm({
+      name: '',
+      code: '',
+      head: '',
+      description: '',
+      labsStr: '',
+      keySubjectsStr: '',
+      image: 'https://images.unsplash.com/photo-1527153857715-3908f2bae5e8?auto=format&fit=crop&w=800&q=80',
+      isActive: true,
+      displayOrder: deptList.length + 1
+    });
+    setIsDeptModalOpen(true);
+  };
+
+  const handleOpenEditDeptModal = (dept: DepartmentInfo) => {
+    setEditingDept(dept);
+    setDeptForm({
+      name: dept.name,
+      code: dept.code,
+      head: dept.head || dept.headOfDepartment || '',
+      description: dept.description,
+      labsStr: (dept.labs || []).join(', '),
+      keySubjectsStr: (dept.keySubjects || []).join(', '),
+      image: dept.image || 'https://images.unsplash.com/photo-1527153857715-3908f2bae5e8?auto=format&fit=crop&w=800&q=80',
+      isActive: dept.isActive ?? true,
+      displayOrder: dept.displayOrder || 1
+    });
+    setIsDeptModalOpen(true);
+  };
+
+  const handleSaveDepartmentSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!deptForm.name.trim() || !deptForm.code.trim()) return;
+
+    const labs = deptForm.labsStr.split(',').map(s => s.trim()).filter(Boolean);
+    const keySubjects = deptForm.keySubjectsStr.split(',').map(s => s.trim()).filter(Boolean);
+
+    const deptItem: DepartmentInfo = {
+      id: editingDept ? editingDept.id : (deptForm.code.toLowerCase().replace(/[^a-z0-9]/g, '') || `dept-${Date.now()}`),
+      name: deptForm.name.trim(),
+      code: deptForm.code.trim().toUpperCase(),
+      head: deptForm.head.trim(),
+      headOfDepartment: deptForm.head.trim(),
+      description: deptForm.description.trim(),
+      labs: labs.length > 0 ? labs : ['Specialized Practical Laboratory'],
+      keySubjects: keySubjects.length > 0 ? keySubjects : ['Core Dairy Course'],
+      image: deptForm.image.trim() || 'https://images.unsplash.com/photo-1527153857715-3908f2bae5e8?auto=format&fit=crop&w=800&q=80',
+      isActive: deptForm.isActive,
+      displayOrder: Number(deptForm.displayOrder) || 1
+    };
+
+    let updated: DepartmentInfo[];
+    if (editingDept) {
+      updated = deptList.map(d => d.id === editingDept.id ? deptItem : d);
+    } else {
+      updated = [...deptList, deptItem];
+    }
+
+    setDeptList(updated);
+    storageService.saveDepartments(updated);
+    onRefreshAll();
+    setIsDeptModalOpen(false);
+    showToast(editingDept ? 'Department updated successfully!' : 'New department added successfully!');
+  };
+
+  const handleToggleDeptActive = (dept: DepartmentInfo) => {
+    const updated = deptList.map(d => d.id === dept.id ? { ...d, isActive: !(d.isActive ?? true) } : d);
+    setDeptList(updated);
+    storageService.saveDepartments(updated);
+    onRefreshAll();
+    showToast(`Department '${dept.name}' ${dept.isActive ? 'deactivated' : 'activated'}.`);
+  };
+
+  const handleDeleteDepartmentConfirm = (dept: DepartmentInfo) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to permanently delete the department '${dept.name}'?\n\nTip: Deactivating the department is recommended to safely hide it from the public website while preserving academic records.\n\nClick OK to permanently delete.`
+    );
+    if (!confirmed) return;
+
+    storageService.deleteDepartment(dept.id);
+    const updated = deptList.filter(d => d.id !== dept.id);
+    setDeptList(updated);
+    onRefreshAll();
+    showToast(`Department '${dept.name}' deleted.`);
   };
 
   // 3. Events Form State
@@ -1829,27 +2197,208 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         {/* TAB 4: DEPARTMENTS */}
         {activeTab === 'departments' && (
           <div className="space-y-6">
-            <h2 className="text-xl font-bold font-serif text-[#0A2342]">
-              Academic Departments Overview
-            </h2>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 pb-4">
+              <div>
+                <h2 className="text-xl font-bold font-serif text-[#0A2342] flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-[#D97706]" />
+                  Academic Department Management
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Manage specialized academic divisions, HOD details, laboratories, and courses
+                </p>
+              </div>
+
+              <button
+                onClick={handleOpenNewDeptModal}
+                className="bg-[#D97706] hover:bg-amber-600 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow-sm transition-all shrink-0"
+              >
+                <Plus className="w-4 h-4" /> Add Department
+              </button>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {departments.map((d) => (
-                <div key={d.id} className="bg-[#F0F4F8] p-6 rounded-2xl border border-slate-200 space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="font-mono text-xs font-bold text-[#D97706] bg-amber-100 px-2 py-0.5 rounded">
-                      [{d.code}]
-                    </span>
-                    <span className="text-xs text-slate-500 font-bold">5 Faculty Members</span>
+              {deptList.map((d) => (
+                <div key={d.id} className="bg-[#F0F4F8] p-6 rounded-2xl border border-slate-200 space-y-4 flex flex-col justify-between shadow-sm">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="font-mono text-xs font-bold text-[#D97706] bg-amber-100 px-2.5 py-0.5 rounded border border-amber-200">
+                        [{d.code}]
+                      </span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${d.isActive !== false ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}`}>
+                        {d.isActive !== false ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+
+                    <h3 className="font-bold text-[#0A2342] text-base font-serif">{d.name}</h3>
+                    <p className="text-xs text-slate-600 line-clamp-2">{d.description}</p>
+
+                    <div className="text-xs text-slate-700 font-semibold border-t border-slate-200 pt-2 space-y-1">
+                      <div><strong className="text-slate-900">HOD:</strong> {d.head || d.headOfDepartment || 'Not assigned'}</div>
+                      <div className="text-[11px] text-slate-500">
+                        Labs: {d.labs?.length || 0} testing facilities
+                      </div>
+                    </div>
                   </div>
-                  <h3 className="font-bold text-[#0A2342] text-base font-serif">{d.name}</h3>
-                  <p className="text-xs text-slate-600 line-clamp-2">{d.description}</p>
-                  <div className="text-xs text-slate-700 font-semibold border-t border-slate-200 pt-2">
-                    HOD: {d.headOfDepartment}
+
+                  <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-2">
+                    <button
+                      onClick={() => handleToggleDeptActive(d)}
+                      className={`px-2.5 py-1.5 rounded-lg font-bold text-xs border ${d.isActive !== false ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100' : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'}`}
+                    >
+                      {d.isActive !== false ? 'Deactivate' : 'Activate'}
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleOpenEditDeptModal(d)}
+                        className="p-1.5 bg-white text-slate-700 hover:text-blue-600 rounded-lg border border-slate-300"
+                        title="Edit department"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteDepartmentConfirm(d)}
+                        className="p-1.5 bg-white text-slate-700 hover:text-red-600 rounded-lg border border-slate-300"
+                        title="Delete department"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
+
+            {/* Department Add/Edit Modal */}
+            {isDeptModalOpen && (
+              <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-xl w-full shadow-2xl border border-slate-200 relative space-y-5 max-h-[90vh] overflow-y-auto">
+                  <button
+                    onClick={() => setIsDeptModalOpen(false)}
+                    className="absolute top-4 right-4 p-1 text-slate-400 hover:text-slate-900 rounded-full"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+
+                  <h3 className="text-lg font-bold font-serif text-[#0A2342]">
+                    {editingDept ? 'Edit Academic Department' : 'Create New Academic Department'}
+                  </h3>
+
+                  <form onSubmit={handleSaveDepartmentSubmit} className="space-y-4 text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Department Name *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Dairy Microbiology"
+                          value={deptForm.name}
+                          onChange={(e) => setDeptForm({ ...deptForm, name: e.target.value })}
+                          className="w-full p-2.5 rounded-lg border border-slate-300 font-medium"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Department Code *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. DM"
+                          value={deptForm.code}
+                          onChange={(e) => setDeptForm({ ...deptForm, code: e.target.value })}
+                          className="w-full p-2.5 rounded-lg border border-slate-300 font-mono font-bold uppercase"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Head of Department (HOD) Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Dr. Ramesh C. Deshmukh"
+                        value={deptForm.head}
+                        onChange={(e) => setDeptForm({ ...deptForm, head: e.target.value })}
+                        className="w-full p-2.5 rounded-lg border border-slate-300 font-medium"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Department Overview / Description</label>
+                      <textarea
+                        rows={3}
+                        placeholder="Detailed explanation of research focus, specialized technology, and academic scope..."
+                        value={deptForm.description}
+                        onChange={(e) => setDeptForm({ ...deptForm, description: e.target.value })}
+                        className="w-full p-2.5 rounded-lg border border-slate-300"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Laboratories (Comma separated)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Quality Control Lab, Starter Culture Lab, Microbial Fermentation Room"
+                        value={deptForm.labsStr}
+                        onChange={(e) => setDeptForm({ ...deptForm, labsStr: e.target.value })}
+                        className="w-full p-2.5 rounded-lg border border-slate-300"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Key Courses / Subjects Taught (Comma separated)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Dairy Microbiology, Starter Cultures, Fermented Milks, Quality Assurance"
+                        value={deptForm.keySubjectsStr}
+                        onChange={(e) => setDeptForm({ ...deptForm, keySubjectsStr: e.target.value })}
+                        className="w-full p-2.5 rounded-lg border border-slate-300"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Department Banner Image URL</label>
+                      <input
+                        type="text"
+                        placeholder="https://..."
+                        value={deptForm.image}
+                        onChange={(e) => setDeptForm({ ...deptForm, image: e.target.value })}
+                        className="w-full p-2.5 rounded-lg border border-slate-300 text-slate-600 font-mono text-[11px]"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <input
+                        type="checkbox"
+                        id="deptActiveCheck"
+                        checked={deptForm.isActive}
+                        onChange={(e) => setDeptForm({ ...deptForm, isActive: e.target.checked })}
+                        className="w-4 h-4 rounded text-amber-600"
+                      />
+                      <label htmlFor="deptActiveCheck" className="font-bold text-slate-800 cursor-pointer">
+                        Active (Visible on public website)
+                      </label>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-3 border-t">
+                      <button
+                        type="button"
+                        onClick={() => setIsDeptModalOpen(false)}
+                        className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs hover:bg-slate-200"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-5 py-2 bg-[#D97706] hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs shadow"
+                      >
+                        {editingDept ? 'Save Department Changes' : 'Create Department'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -2131,10 +2680,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         {/* TAB 7: NOTICES MANAGER */}
         {activeTab === 'notices' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <form onSubmit={handleAddNotice} className="bg-[#F0F4F8] p-6 rounded-2xl border border-slate-200 space-y-4 h-fit">
-              <h3 className="font-bold text-[#0A2342] text-base font-serif border-b pb-2 flex items-center gap-2">
-                <Plus className="w-4 h-4 text-[#D97706]" /> Publish New Notice
-              </h3>
+            <form onSubmit={handleSaveNoticeSubmit} className="bg-[#F0F4F8] p-6 rounded-2xl border border-slate-200 space-y-4 h-fit">
+              <div className="flex justify-between items-center border-b pb-2">
+                <h3 className="font-bold text-[#0A2342] text-base font-serif flex items-center gap-2">
+                  <Plus className="w-4 h-4 text-[#D97706]" /> {editingNotice ? 'Edit Notice / Circular' : 'Publish New Notice'}
+                </h3>
+                {editingNotice && (
+                  <button
+                    type="button"
+                    onClick={handleCancelNoticeEdit}
+                    className="text-[10px] bg-slate-200 text-slate-700 hover:bg-slate-300 font-bold px-2 py-0.5 rounded"
+                  >
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
+
+              {noticePdfError && (
+                <div className="bg-red-50 text-red-700 p-2.5 rounded-xl border border-red-200 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{noticePdfError}</span>
+                </div>
+              )}
 
               <div className="space-y-3 text-xs">
                 <div>
@@ -2143,16 +2710,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     type="text"
                     required
                     placeholder="e.g. Schedule for In-Plant Training"
-                    value={newNotice.title}
+                    value={newNotice.title || ''}
                     onChange={(e) => setNewNotice({ ...newNotice, title: e.target.value })}
-                    className="w-full p-2.5 rounded-lg border border-slate-300 outline-none"
+                    className="w-full p-2.5 rounded-lg border border-slate-300 outline-none font-medium bg-white"
                   />
                 </div>
 
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Category *</label>
                   <select
-                    value={newNotice.category}
+                    value={newNotice.category || 'Admission'}
                     onChange={(e) => setNewNotice({ ...newNotice, category: e.target.value as Notice['category'] })}
                     className="w-full p-2.5 rounded-lg border border-slate-300 outline-none bg-white font-bold"
                   >
@@ -2168,46 +2735,118 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <label className="block font-bold text-slate-700 mb-1">Notice Description</label>
                   <textarea
                     rows={3}
-                    placeholder="Full text of notice..."
-                    value={newNotice.content}
+                    placeholder="Full text content of circular..."
+                    value={newNotice.content || ''}
                     onChange={(e) => setNewNotice({ ...newNotice, content: e.target.value })}
-                    className="w-full p-2.5 rounded-lg border border-slate-300 outline-none"
+                    className="w-full p-2.5 rounded-lg border border-slate-300 outline-none bg-white"
                   />
+                </div>
+
+                {/* Notice Attachment PDF Field */}
+                <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-2">
+                  <label className="block font-bold text-[#0A2342] flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-[#D97706]" />
+                    Attachment PDF (Optional)
+                  </label>
+
+                  {existingNoticeAttachment && !selectedNoticePdf && (
+                    <div className="bg-amber-50 p-2.5 rounded-lg border border-amber-200 flex items-center justify-between gap-2 text-[11px]">
+                      <div className="truncate">
+                        <span className="font-bold text-slate-800 block truncate">{existingNoticeAttachment.fileName}</span>
+                        <span className="text-slate-500 font-mono">{existingNoticeAttachment.fileSize} PDF attached</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRemoveNoticeAttachment}
+                        className="text-red-600 hover:text-red-800 font-bold shrink-0 text-[10px] underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+
+                  <input
+                    type="file"
+                    accept="application/pdf,.pdf"
+                    onChange={(e) => setSelectedNoticePdf(e.target.files?.[0] || null)}
+                    className="w-full p-1.5 rounded-lg border border-slate-300 text-xs bg-slate-50"
+                  />
+                  <p className="text-[10px] text-slate-500">Allowed format: PDF only. Maximum size: 10 MB.</p>
+
+                  {selectedNoticePdf && (
+                    <div className="bg-emerald-50 p-2 rounded-lg border border-emerald-200 text-[11px] flex justify-between items-center text-emerald-900">
+                      <span className="font-semibold truncate">{selectedNoticePdf.name}</span>
+                      <span className="font-mono font-bold">{(selectedNoticePdf.size / (1024 * 1024)).toFixed(2)} MB</span>
+                    </div>
+                  )}
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full bg-[#D97706] text-slate-950 font-bold py-2.5 rounded-lg text-xs"
+                  disabled={isUploadingNoticePdf}
+                  className="w-full bg-[#D97706] hover:bg-amber-600 disabled:bg-slate-300 text-slate-950 font-bold py-2.5 rounded-lg text-xs shadow transition-all flex items-center justify-center gap-1.5"
                 >
-                  Publish Notice
+                  {isUploadingNoticePdf ? 'Uploading PDF...' : editingNotice ? 'Update Notice' : 'Publish Notice'}
                 </button>
               </div>
             </form>
 
             <div className="lg:col-span-2 space-y-4">
               <h3 className="font-bold text-slate-900 text-base font-serif border-b pb-2">
-                Published Circulars ({noticeList.length})
+                Published Circulars & Notices ({noticeList.length})
               </h3>
 
               <div className="divide-y divide-slate-100 space-y-2">
                 {noticeList.map((n) => (
-                  <div key={n.id} className="py-3 flex items-start justify-between gap-4">
-                    <div className="space-y-1">
+                  <div key={n.id} className="py-3.5 flex items-start justify-between gap-4 bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="space-y-1.5 flex-1">
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-blue-100 text-blue-900">
                           {n.category}
                         </span>
                         <span className="text-xs text-slate-400 font-mono">{n.date}</span>
+                        {n.isNew && (
+                          <span className="text-[9px] font-extrabold bg-red-600 text-white px-1.5 py-0.5 rounded uppercase">NEW</span>
+                        )}
                       </div>
                       <h4 className="text-xs font-bold text-slate-900">{n.title}</h4>
+                      {n.content && <p className="text-[11px] text-slate-600 line-clamp-2">{n.content}</p>}
+
+                      {n.attachment && (n.attachment.fileUrl || n.attachment.storagePath) && (
+                        <div className="pt-1">
+                          <a
+                            href={n.attachment.fileUrl || supabaseStorageService.getWebsiteDocumentUrl(n.attachment.storagePath)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#0A2342] hover:text-[#D97706] bg-amber-50 px-2.5 py-1 rounded border border-amber-200 transition-colors"
+                          >
+                            <FileText className="w-3.5 h-3.5 text-[#D97706]" />
+                            📄 View PDF ({n.attachment.fileSize || 'PDF'})
+                          </a>
+                        </div>
+                      )}
                     </div>
 
-                    <button
-                      onClick={() => handleDeleteNotice(n.id)}
-                      className="p-1.5 text-slate-400 hover:text-red-600 rounded"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => handleOpenNoticeEdit(n)}
+                        className="p-1.5 text-slate-500 hover:text-blue-600 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200"
+                        title="Edit Notice"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Are you sure you want to delete notice "${n.title}"?`)) {
+                            handleDeleteNotice(n.id);
+                          }
+                        }}
+                        className="p-1.5 text-slate-500 hover:text-red-600 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200"
+                        title="Delete Notice"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -2282,27 +2921,233 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         {/* TAB 9: DOWNLOADS */}
         {activeTab === 'downloads' && (
           <div className="space-y-6">
-            <h2 className="text-xl font-bold font-serif text-[#0A2342]">
-              Downloadable Forms & Brochure CMS
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[
-                { name: 'Admission Prospectus 2026-27', size: '2.4 MB PDF' },
-                { name: 'B.Tech Syllabus (ICAR Vth Deans)', size: '1.8 MB PDF' },
-                { name: 'Offline Application Form', size: '450 KB PDF' },
-                { name: 'Scholarship & Caste Claim Checklist', size: '320 KB PDF' },
-              ].map((doc, idx) => (
-                <div key={idx} className="bg-[#F0F4F8] p-5 rounded-xl border border-slate-200 flex justify-between items-center">
-                  <div>
-                    <div className="font-bold text-xs text-[#0A2342]">{doc.name}</div>
-                    <div className="text-[10px] text-slate-500 font-mono">{doc.size}</div>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 pb-4">
+              <div>
+                <h2 className="text-xl font-bold font-serif text-[#0A2342] flex items-center gap-2">
+                  <Download className="w-5 h-5 text-[#D97706]" />
+                  Downloadable Documents & Forms Management
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Upload and manage public prospectus, syllabi, application forms, and checklists (PDF only, max 10MB)
+                </p>
+              </div>
+
+              <button
+                onClick={handleOpenNewDownloadModal}
+                className="bg-[#D97706] hover:bg-amber-600 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow-sm transition-all shrink-0"
+              >
+                <Plus className="w-4 h-4" /> Upload New Document
+              </button>
+            </div>
+
+            {/* Downloads Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+              {downloadsList.map((doc) => (
+                <div key={doc.id} className="bg-[#F0F4F8] p-5 rounded-2xl border border-slate-200 space-y-4 flex flex-col justify-between shadow-sm">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-[#D97706] bg-amber-100 px-2.5 py-0.5 rounded border border-amber-200">
+                        {doc.category}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${doc.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}`}>
+                          {doc.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-mono bg-white px-2 py-0.5 rounded border border-slate-200">
+                          {doc.fileSize}
+                        </span>
+                      </div>
+                    </div>
+
+                    <h3 className="font-bold text-[#0A2342] text-base font-serif">{doc.title}</h3>
+                    {doc.description && (
+                      <p className="text-xs text-slate-600 leading-relaxed">{doc.description}</p>
+                    )}
+                    <div className="text-[10px] text-slate-400 font-mono">
+                      File: {doc.fileName}
+                    </div>
                   </div>
-                  <button className="p-2 bg-white text-[#D97706] rounded-lg border border-slate-200">
-                    <Download className="w-4 h-4" />
-                  </button>
+
+                  <div className="pt-3 border-t border-slate-200/80 flex items-center justify-between gap-2">
+                    <a
+                      href={doc.fileUrl || supabaseStorageService.getWebsiteDocumentUrl(doc.storagePath)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 bg-white text-[#0A2342] hover:bg-slate-100 font-bold text-xs rounded-lg border border-slate-300 flex items-center gap-1.5 transition-colors"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-[#D97706]" /> View / Download
+                    </a>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleToggleDownloadActive(doc)}
+                        className={`px-2.5 py-1.5 rounded-lg font-bold text-xs border ${doc.isActive ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100' : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'}`}
+                        title={doc.isActive ? 'Deactivate document' : 'Activate document'}
+                      >
+                        {doc.isActive ? 'Deactivate' : 'Activate'}
+                      </button>
+
+                      <button
+                        onClick={() => handleOpenEditDownloadModal(doc)}
+                        className="p-1.5 bg-white text-slate-700 hover:text-blue-600 rounded-lg border border-slate-300"
+                        title="Edit metadata / replace file"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteDownload(doc)}
+                        className="p-1.5 bg-white text-slate-700 hover:text-red-600 rounded-lg border border-slate-300"
+                        title="Delete document"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
+
+            {/* Upload/Edit Download Modal */}
+            {isDownloadModalOpen && (
+              <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-lg w-full shadow-2xl border border-slate-200 relative space-y-5">
+                  <button
+                    onClick={() => setIsDownloadModalOpen(false)}
+                    className="absolute top-4 right-4 p-1 text-slate-400 hover:text-slate-900 rounded-full"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+
+                  <h3 className="text-lg font-bold font-serif text-[#0A2342]">
+                    {editingDownload ? 'Edit Document Details' : 'Upload New Downloadable PDF'}
+                  </h3>
+
+                  {downloadFormError && (
+                    <div className="bg-red-50 text-red-700 p-3 rounded-xl border border-red-200 text-xs flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{downloadFormError}</span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleSaveDownload} className="space-y-4 text-xs">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Document Title *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Admission Prospectus 2026-27"
+                        value={downloadForm.title}
+                        onChange={(e) => setDownloadForm({ ...downloadForm, title: e.target.value })}
+                        className="w-full p-2.5 rounded-lg border border-slate-300 font-medium"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Category *</label>
+                        <select
+                          value={downloadForm.category}
+                          onChange={(e) => setDownloadForm({ ...downloadForm, category: e.target.value })}
+                          className="w-full p-2.5 rounded-lg border border-slate-300 font-bold bg-white"
+                        >
+                          <option value="Admission">Admission</option>
+                          <option value="Academic">Academic</option>
+                          <option value="Form">Form</option>
+                          <option value="Checklist">Checklist</option>
+                          <option value="General">General</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Display Order</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={downloadForm.displayOrder}
+                          onChange={(e) => setDownloadForm({ ...downloadForm, displayOrder: parseInt(e.target.value) || 1 })}
+                          className="w-full p-2.5 rounded-lg border border-slate-300"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Description</label>
+                      <textarea
+                        rows={2}
+                        placeholder="Brief summary or details about this document..."
+                        value={downloadForm.description}
+                        onChange={(e) => setDownloadForm({ ...downloadForm, description: e.target.value })}
+                        className="w-full p-2.5 rounded-lg border border-slate-300"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        PDF File {editingDownload ? '(Optional - upload to replace current file)' : '*'}
+                      </label>
+                      <input
+                        type="file"
+                        accept="application/pdf,.pdf"
+                        required={!editingDownload}
+                        onChange={(e) => setSelectedDownloadFile(e.target.files?.[0] || null)}
+                        className="w-full p-2 rounded-lg border border-slate-300 bg-slate-50 text-xs"
+                      />
+                      <p className="text-[10px] text-slate-500 mt-1">Allowed format: PDF only. Maximum file size: 10 MB.</p>
+                      {selectedDownloadFile && (
+                        <div className="mt-2 bg-amber-50 p-2 rounded-lg border border-amber-200 text-slate-800 text-[11px] flex justify-between items-center">
+                          <span className="font-semibold truncate">{selectedDownloadFile.name}</span>
+                          <span className="font-mono font-bold text-amber-800">{(selectedDownloadFile.size / (1024 * 1024)).toFixed(2)} MB</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <input
+                        type="checkbox"
+                        id="docActiveCheck"
+                        checked={downloadForm.isActive}
+                        onChange={(e) => setDownloadForm({ ...downloadForm, isActive: e.target.checked })}
+                        className="w-4 h-4 rounded text-amber-600"
+                      />
+                      <label htmlFor="docActiveCheck" className="font-bold text-slate-800 cursor-pointer">
+                        Active (Visible on public website)
+                      </label>
+                    </div>
+
+                    {isUploadingDownload && (
+                      <div className="space-y-1 pt-2">
+                        <div className="flex justify-between text-[11px] font-bold text-slate-600">
+                          <span>Uploading PDF file to storage...</span>
+                          <span>{downloadUploadProgress}%</span>
+                        </div>
+                        <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                          <div className="bg-[#D97706] h-full transition-all duration-300" style={{ width: `${downloadUploadProgress}%` }}></div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex justify-end gap-3 pt-3 border-t">
+                      <button
+                        type="button"
+                        onClick={() => setIsDownloadModalOpen(false)}
+                        className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs hover:bg-slate-200"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isUploadingDownload}
+                        className="px-5 py-2 bg-[#D97706] hover:bg-amber-600 disabled:bg-slate-300 text-slate-950 font-bold rounded-lg text-xs shadow flex items-center gap-1.5"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        {isUploadingDownload ? 'Uploading...' : editingDownload ? 'Update Document' : 'Upload & Save Document'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

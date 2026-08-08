@@ -1,4 +1,4 @@
-import { CollegeInfo, DepartmentInfo, Facility, FacultyMember, Notice, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser } from '../types';
+import { CollegeInfo, DepartmentInfo, Facility, FacultyMember, Notice, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser, DownloadableDocument } from '../types';
 
 export const initialCollegeInfo: CollegeInfo = {
   name: "Late Shaktikumar Sancheti College of Dairy Technology",
@@ -497,6 +497,53 @@ export const initialAdminUsers: AdminUser[] = [
     securityQuestion: "What degree program is offered?",
     securityAnswer: "B.Tech Dairy",
     createdAt: "2026-02-01"
+  }
+];
+
+export const initialDownloads: DownloadableDocument[] = [
+  {
+    id: "dl-1",
+    title: "Admission Prospectus 2026-27",
+    category: "Admission",
+    description: "Complete official admission prospectus and brochure with seat matrix, fee structure, and eligibility criteria for B.Tech Dairy Technology.",
+    fileName: "Admission_Prospectus_2026_27.pdf",
+    fileSize: "2.4 MB",
+    displayOrder: 1,
+    isActive: true,
+    createdAt: "2026-01-10"
+  },
+  {
+    id: "dl-2",
+    title: "B.Tech Syllabus (ICAR Vth Deans)",
+    category: "Academic",
+    description: "Approved ICAR Vth Deans committee semester-wise curriculum, syllabus, credit distribution and examination scheme.",
+    fileName: "BTech_Syllabus_ICAR_Vth_Deans.pdf",
+    fileSize: "1.8 MB",
+    displayOrder: 2,
+    isActive: true,
+    createdAt: "2026-01-12"
+  },
+  {
+    id: "dl-3",
+    title: "Offline Application Form",
+    category: "Form",
+    description: "Printable offline candidate application form for spot admissions, direct counseling and management quota seats.",
+    fileName: "Offline_Application_Form_2026.pdf",
+    fileSize: "450 KB",
+    displayOrder: 3,
+    isActive: true,
+    createdAt: "2026-01-15"
+  },
+  {
+    id: "dl-4",
+    title: "Scholarship & Caste Claim Checklist",
+    category: "Checklist",
+    description: "Mandatory document verification checklist for SC, ST, OBC, VJ/NT, SBC and EWS category scholarship claims.",
+    fileName: "Scholarship_Caste_Claim_Checklist.pdf",
+    fileSize: "320 KB",
+    displayOrder: 4,
+    isActive: true,
+    createdAt: "2026-01-20"
   }
 ];
 

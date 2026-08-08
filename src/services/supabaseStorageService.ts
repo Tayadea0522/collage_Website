@@ -2,6 +2,7 @@ import { supabase } from '../supabaseClient';
 import { AdmissionApplication } from '../types';
 
 export const BUCKET_NAME = 'admissions';
+export const PUBLIC_BUCKET_NAME = 'website_documents';
 
 const sanitizeFileName = (fileName: string): string => {
   const extension = fileName.includes('.')
@@ -312,5 +313,156 @@ export const supabaseStorageService = {
     } catch (err) {
       console.error('Error clearing storage bucket:', err);
     }
+  },
+
+  /**
+   * Upload a public website document (PDF for Downloads or Notice Attachments) to website_documents bucket
+   */
+  uploadWebsiteDocument: async (
+    folder: 'downloads' | 'notices',
+    file: File,
+    onProgress?: (percent: number) => void
+  ): Promise<{ storagePath: string; publicUrl: string; fileName: string; fileSize: string; error?: string }> => {
+    try {
+      if (!file) {
+        return { storagePath: '', publicUrl: '', fileName: '', fileSize: '', error: 'No file provided' };
+      }
+
+      // Check max size: 10 MB
+      const maxBytes = 10 * 1024 * 1024;
+      if (file.size > maxBytes) {
+        return {
+          storagePath: '',
+          publicUrl: '',
+          fileName: file.name,
+          fileSize: (file.size / (1024 * 1024)).toFixed(1) + ' MB',
+          error: 'File size exceeds maximum allowed limit of 10 MB'
+        };
+      }
+
+      // Check allowed type: PDF
+      if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+        return {
+          storagePath: '',
+          publicUrl: '',
+          fileName: file.name,
+          fileSize: (file.size / 1024).toFixed(0) + ' KB',
+          error: 'Only PDF documents (.pdf) are allowed'
+        };
+      }
+
+      const uniqueId = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID().substring(0, 8)
+        : Math.random().toString(36).substring(2, 10);
+
+      const safeFileName = sanitizeFileName(file.name);
+      const filePath = `${folder}/${Date.now()}_${uniqueId}_${safeFileName}`;
+      const fileSizeStr = file.size > 1024 * 1024 
+        ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
+        : (file.size / 1024).toFixed(0) + ' KB';
+
+      if (onProgress) onProgress(30);
+
+      // Attempt upload to website_documents bucket first, fallback to admissions if bucket not provisioned
+      let uploadBucket = PUBLIC_BUCKET_NAME;
+      let { data, error } = await supabase.storage
+        .from(uploadBucket)
+        .upload(filePath, file, {
+          contentType: 'application/pdf',
+          upsert: true
+        });
+
+      if (error && (error.message?.includes('bucket not found') || error.message?.includes('not found'))) {
+        console.warn('website_documents bucket not found, attempting fallback to public_assets in admissions bucket');
+        uploadBucket = BUCKET_NAME;
+        const fallbackPath = `website_public/${filePath}`;
+        const fallbackRes = await supabase.storage
+          .from(uploadBucket)
+          .upload(fallbackPath, file, {
+            contentType: 'application/pdf',
+            upsert: true
+          });
+        data = fallbackRes.data;
+        error = fallbackRes.error;
+      }
+
+      if (onProgress) onProgress(80);
+
+      if (error) {
+        console.error('Website document upload error:', error.message);
+        return {
+          storagePath: '',
+          publicUrl: '',
+          fileName: file.name,
+          fileSize: fileSizeStr,
+          error: error.message
+        };
+      }
+
+      const path = data?.path || filePath;
+      const { data: pubData } = supabase.storage.from(uploadBucket).getPublicUrl(path);
+      let publicUrl = pubData?.publicUrl || '';
+
+      if (!publicUrl) {
+        const { data: signedData } = await supabase.storage.from(uploadBucket).createSignedUrl(path, 315360000);
+        publicUrl = signedData?.signedUrl || '';
+      }
+
+      if (onProgress) onProgress(100);
+
+      return {
+        storagePath: `${uploadBucket}:${path}`,
+        publicUrl,
+        fileName: file.name,
+        fileSize: fileSizeStr
+      };
+    } catch (err: any) {
+      console.error('Exception in uploadWebsiteDocument:', err);
+      return {
+        storagePath: '',
+        publicUrl: '',
+        fileName: file.name,
+        fileSize: '',
+        error: err.message || 'Failed to upload PDF file'
+      };
+    }
+  },
+
+  /**
+   * Delete a website document from storage
+   */
+  deleteWebsiteDocument: async (storagePath: string): Promise<void> => {
+    if (!storagePath) return;
+    try {
+      let bucket = PUBLIC_BUCKET_NAME;
+      let path = storagePath;
+      if (storagePath.includes(':')) {
+        const parts = storagePath.split(':');
+        bucket = parts[0];
+        path = parts[1];
+      }
+      await supabase.storage.from(bucket).remove([path]);
+    } catch (err) {
+      console.error('Error deleting website document from storage:', err);
+    }
+  },
+
+  /**
+   * Get public download or view URL for a website document
+   */
+  getWebsiteDocumentUrl: (storagePath?: string, fallbackUrl?: string): string => {
+    if (fallbackUrl) return fallbackUrl;
+    if (!storagePath) return '';
+    if (storagePath.startsWith('http://') || storagePath.startsWith('https://')) return storagePath;
+
+    let bucket = PUBLIC_BUCKET_NAME;
+    let path = storagePath;
+    if (storagePath.includes(':')) {
+      const parts = storagePath.split(':');
+      bucket = parts[0];
+      path = parts[1];
+    }
+    const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+    return data?.publicUrl || '';
   }
 };

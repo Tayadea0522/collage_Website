@@ -1,3 +1,10 @@
+export interface NoticeAttachment {
+  fileName: string;
+  fileSize: string;
+  storagePath: string;
+  fileUrl?: string;
+}
+
 export interface Notice {
   id: string;
   title: string;
@@ -6,6 +13,7 @@ export interface Notice {
   isNew?: boolean;
   link?: string;
   content?: string;
+  attachment?: NoticeAttachment;
 }
 
 export interface FacultyMember {
@@ -27,10 +35,28 @@ export interface DepartmentInfo {
   name: string;
   code: string;
   head: string;
+  headOfDepartment?: string;
   description: string;
   labs: string[];
   keySubjects: string[];
   image: string;
+  isActive?: boolean;
+  displayOrder?: number;
+}
+
+export interface DownloadableDocument {
+  id: string;
+  title: string;
+  category: string;
+  description?: string;
+  fileName: string;
+  storagePath?: string;
+  fileSize: string;
+  fileUrl?: string;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Facility {

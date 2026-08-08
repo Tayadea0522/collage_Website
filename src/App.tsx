@@ -8,9 +8,11 @@ import {
   AdmissionApplication, 
   GalleryItem,
   CollegeEvent,
-  AdminUser
+  AdminUser,
+  DownloadableDocument
 } from './types';
 import { storageService } from './services/storageService';
+import { supabaseStorageService } from './services/supabaseStorageService';
 
 // Layout & Core Pages
 import { Header } from './components/Header';
@@ -40,7 +42,10 @@ import {
   CheckCircle2, 
   Building2,
   Users,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Download,
+  Eye,
+  FileCheck
 } from 'lucide-react';
 
 export default function App() {
@@ -55,6 +60,8 @@ export default function App() {
   const [facilities, setFacilities] = useState<Facility[]>(storageService.getFacilities());
   const [applications, setApplications] = useState<AdmissionApplication[]>(storageService.getApplications());
   const [gallery, setGallery] = useState<GalleryItem[]>(storageService.getGallery());
+
+  const [downloads, setDownloads] = useState<DownloadableDocument[]>(storageService.getDownloads());
 
   // Multi-Admin Auth State
   const [currentAdminUser, setCurrentAdminUser] = useState<AdminUser | null>(null);
@@ -83,6 +90,7 @@ export default function App() {
     setFacilities(storageService.getFacilities());
     setApplications(storageService.getApplications());
     setGallery(storageService.getGallery());
+    setDownloads(storageService.getDownloads());
   };
 
   const handleAdminLogout = () => {
@@ -223,6 +231,11 @@ export default function App() {
                             NEW
                           </span>
                         )}
+                        {n.attachment && (
+                          <span className="text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-200 px-1.5 py-0.5 rounded flex items-center gap-1">
+                            📄 PDF
+                          </span>
+                        )}
                       </div>
                       <h3 className="text-base font-bold text-slate-900 hover:text-amber-600">
                         {n.title}
@@ -281,6 +294,61 @@ export default function App() {
               </div>
             </div>
 
+          </div>
+        )}
+
+        {currentTab === 'downloads' && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-8 py-10 space-y-8">
+            <div className="bg-gradient-to-r from-[#071931] via-[#0A2342] to-[#071931] text-white p-8 sm:p-12 rounded-2xl shadow-lg border border-amber-500/30">
+              <div className="max-w-3xl space-y-3">
+                <span className="text-xs font-bold uppercase tracking-widest text-amber-400 bg-amber-500/20 px-3 py-1 rounded-full border border-amber-400/30">
+                  Official Downloads Corner
+                </span>
+                <h1 className="text-3xl sm:text-4xl font-extrabold font-serif text-white">
+                  Downloadable Forms, Syllabus & Prospectus
+                </h1>
+                <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+                  Access official academic documents, ICAR Deans Vth syllabus, offline admission forms, and scholarship claim checklists.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {downloads.filter(d => d.isActive !== false).map((doc) => (
+                <div key={doc.id} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow space-y-4 flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-3 py-1 rounded-lg border border-amber-200">
+                        {doc.category}
+                      </span>
+                      <span className="text-xs text-slate-500 font-mono font-semibold bg-slate-100 px-2.5 py-1 rounded">
+                        {doc.fileSize}
+                      </span>
+                    </div>
+
+                    <h2 className="text-lg font-bold font-serif text-[#0A2342]">{doc.title}</h2>
+                    {doc.description && (
+                      <p className="text-xs text-slate-600 leading-relaxed">{doc.description}</p>
+                    )}
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <span className="text-[11px] text-slate-400 font-mono">
+                      {doc.fileName}
+                    </span>
+
+                    <a
+                      href={doc.fileUrl || supabaseStorageService.getWebsiteDocumentUrl(doc.storagePath)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-[#0A2342] hover:bg-[#D97706] text-white hover:text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow transition-all"
+                    >
+                      <Download className="w-4 h-4" /> Download PDF
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -427,6 +495,27 @@ export default function App() {
             <p className="text-xs text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200">
               {selectedNoticeModal.content || "Official circular issued by Office of Dean, Late Shaktikumar Sancheti College of Dairy Technology."}
             </p>
+
+            {selectedNoticeModal.attachment && (selectedNoticeModal.attachment.fileUrl || selectedNoticeModal.attachment.storagePath) && (
+              <div className="bg-amber-50 p-3.5 rounded-xl border border-amber-200/80 flex items-center justify-between gap-3">
+                <div className="truncate">
+                  <span className="font-bold text-slate-800 text-xs block truncate">
+                    📄 {selectedNoticeModal.attachment.fileName}
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-mono">
+                    {selectedNoticeModal.attachment.fileSize || 'PDF Document'}
+                  </span>
+                </div>
+                <a
+                  href={selectedNoticeModal.attachment.fileUrl || supabaseStorageService.getWebsiteDocumentUrl(selectedNoticeModal.attachment.storagePath)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-[#0A2342] hover:bg-[#D97706] text-white hover:text-slate-950 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shrink-0 shadow transition-colors"
+                >
+                  <Eye className="w-3.5 h-3.5" /> View / Download PDF
+                </a>
+              </div>
+            )}
 
             <div className="flex justify-end pt-2">
               <button

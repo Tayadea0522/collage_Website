@@ -1,5 +1,5 @@
-import { CollegeInfo, DepartmentInfo, Facility, FacultyMember, Notice, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser } from '../types';
-import { initialCollegeInfo, initialDepartments, initialFacilities, initialFaculty, initialNotices, initialApplications, initialGallery, initialEvents, initialAdminUsers } from '../data/initialData';
+import { CollegeInfo, DepartmentInfo, Facility, FacultyMember, Notice, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser, DownloadableDocument } from '../types';
+import { initialCollegeInfo, initialDepartments, initialFacilities, initialFaculty, initialNotices, initialApplications, initialGallery, initialEvents, initialAdminUsers, initialDownloads } from '../data/initialData';
 import { supabase } from '../supabaseClient';
 import { supabaseStorageService } from './supabaseStorageService';
 
@@ -12,7 +12,8 @@ const KEYS = {
   FACILITIES: 'lsscdt_facilities_v2',
   APPLICATIONS: 'lsscdt_applications_v2',
   GALLERY: 'lsscdt_gallery_v2',
-  ADMIN_USERS: 'lsscdt_admin_users_v2'
+  ADMIN_USERS: 'lsscdt_admin_users_v2',
+  DOWNLOADS: 'lsscdt_downloads_v2'
 };
 
 export const storageService = {
@@ -146,6 +147,22 @@ export const storageService = {
       } catch (err) {}
     })();
   },
+  deleteNotice: (id: string): void => {
+    const notices = storageService.getNotices();
+    const target = notices.find(n => n.id === id);
+    const filtered = notices.filter(n => n.id !== id);
+    localStorage.setItem(KEYS.NOTICES, JSON.stringify(filtered));
+
+    if (target?.attachment?.storagePath) {
+      supabaseStorageService.deleteWebsiteDocument(target.attachment.storagePath);
+    }
+
+    (async () => {
+      try {
+        await supabase.from('notices').delete().eq('id', id);
+      } catch (err) {}
+    })();
+  },
 
   getEvents: (): CollegeEvent[] => {
     const data = localStorage.getItem(KEYS.EVENTS);
@@ -213,24 +230,12 @@ export const storageService = {
 
   getDepartments: (): DepartmentInfo[] => {
     const data = localStorage.getItem(KEYS.DEPARTMENTS);
-    if (!data) return initialDepartments;
+    if (!data) {
+      localStorage.setItem(KEYS.DEPARTMENTS, JSON.stringify(initialDepartments));
+      return initialDepartments;
+    }
     try {
-      const parsed: DepartmentInfo[] = JSON.parse(data);
-      const updated = initialDepartments.map(init => {
-        const found = parsed.find(p => p.id === init.id);
-        if (found) {
-          return {
-            ...found,
-            name: init.name,
-            code: init.code
-          };
-        }
-        return init;
-      });
-      const customDepts = parsed.filter(p => !initialDepartments.some(init => init.id === p.id));
-      const result = [...updated, ...customDepts];
-      localStorage.setItem(KEYS.DEPARTMENTS, JSON.stringify(result));
-      return result;
+      return JSON.parse(data);
     } catch {
       return initialDepartments;
     }
@@ -245,6 +250,67 @@ export const storageService = {
           data: d
         })));
         if (error) console.log('Supabase departments sync:', error.message);
+      } catch (err) {}
+    })();
+  },
+  deleteDepartment: (id: string): void => {
+    const depts = storageService.getDepartments();
+    const filtered = depts.filter(d => d.id !== id);
+    localStorage.setItem(KEYS.DEPARTMENTS, JSON.stringify(filtered));
+    (async () => {
+      try {
+        await supabase.from('departments').delete().eq('id', id);
+      } catch (err) {}
+    })();
+  },
+
+  getDownloads: (): DownloadableDocument[] => {
+    const data = localStorage.getItem(KEYS.DOWNLOADS);
+    if (!data) {
+      localStorage.setItem(KEYS.DOWNLOADS, JSON.stringify(initialDownloads));
+      return initialDownloads;
+    }
+    try {
+      return JSON.parse(data);
+    } catch {
+      return initialDownloads;
+    }
+  },
+  saveDownloads: (downloads: DownloadableDocument[]): void => {
+    localStorage.setItem(KEYS.DOWNLOADS, JSON.stringify(downloads));
+    (async () => {
+      try {
+        const { error } = await supabase.from('downloads').upsert(downloads.map(d => ({
+          id: d.id,
+          title: d.title,
+          category: d.category,
+          description: d.description || '',
+          file_name: d.fileName,
+          storage_path: d.storagePath || '',
+          file_size: d.fileSize,
+          display_order: d.displayOrder,
+          is_active: d.isActive,
+          created_at: d.createdAt,
+          updated_at: d.updatedAt || new Date().toISOString(),
+          data: d
+        })));
+        if (error) console.log('Supabase downloads sync:', error.message);
+      } catch (err) {}
+    })();
+  },
+  deleteDownload: (id: string): void => {
+    const downloads = storageService.getDownloads();
+    const target = downloads.find(d => d.id === id);
+    const filtered = downloads.filter(d => d.id !== id);
+    localStorage.setItem(KEYS.DOWNLOADS, JSON.stringify(filtered));
+
+    if (target?.storagePath) {
+      supabaseStorageService.deleteWebsiteDocument(target.storagePath);
+    }
+
+    (async () => {
+      try {
+        await supabase.from('downloads').delete().eq('id', id);
       } catch (err) {}
     })();
   },
@@ -507,7 +573,8 @@ export const storageService = {
         facsRes,
         galleryRes,
         infoRes,
-        adminRes
+        adminRes,
+        downloadsRes
       ] = await Promise.allSettled([
         supabase.from('admission_applications').select('*'),
         supabase.from('notices').select('*'),
@@ -517,7 +584,8 @@ export const storageService = {
         supabase.from('facilities').select('*'),
         supabase.from('gallery').select('*'),
         supabase.from('college_info').select('*'),
-        supabase.from('admin_users').select('*')
+        supabase.from('admin_users').select('*'),
+        supabase.from('downloads').select('*')
       ]);
 
       if (appsRes.status === 'fulfilled' && appsRes.value.data && appsRes.value.data.length > 0) {
@@ -556,6 +624,10 @@ export const storageService = {
       if (adminRes.status === 'fulfilled' && adminRes.value.data && adminRes.value.data.length > 0) {
         const loadedAdmins = adminRes.value.data.map(row => row.data || row);
         localStorage.setItem(KEYS.ADMIN_USERS, JSON.stringify(loadedAdmins));
+      }
+      if (downloadsRes.status === 'fulfilled' && downloadsRes.value.data && downloadsRes.value.data.length > 0) {
+        const loadedDownloads = downloadsRes.value.data.map(row => row.data || row);
+        localStorage.setItem(KEYS.DOWNLOADS, JSON.stringify(loadedDownloads));
       }
 
       return true;

@@ -1370,25 +1370,22 @@ export const Admissions: React.FC<AdmissionsProps> = ({
                     <h4 className="font-bold text-slate-900 text-xs border-b pb-1 text-blue-900">Attached Documents:</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                       {trackedApp.attachedFiles.map((doc) => {
-                        const fileUrl = doc.storagePath 
-                          ? supabaseStorageService.getFileUrl(doc.storagePath) 
-                          : doc.dataUrl;
-
                         return (
                           <div key={doc.id} className="p-2 bg-slate-50 rounded border border-slate-200 flex justify-between items-center">
                             <div>
                               <span className="font-bold text-slate-800 block">{doc.title}</span>
                               <span className="text-[10px] text-slate-500 font-mono">{doc.fileName} ({doc.fileSize})</span>
                             </div>
-                            {fileUrl && (
-                              <button
-                                type="button"
-                                onClick={() => setPreviewModalDoc({ title: doc.title, fileName: doc.fileName, url: fileUrl })}
-                                className="text-xs text-blue-900 hover:underline font-bold flex items-center gap-1"
-                              >
-                                <Eye className="w-3.5 h-3.5" /> View
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const url = await supabaseStorageService.getSignedUrl(doc.storagePath || '', doc.dataUrl);
+                                setPreviewModalDoc({ title: doc.title, fileName: doc.fileName, url });
+                              }}
+                              className="text-xs text-blue-900 hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5" /> View
+                            </button>
                           </div>
                         );
                       })}

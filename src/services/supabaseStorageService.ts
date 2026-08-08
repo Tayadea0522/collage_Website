@@ -3,6 +3,23 @@ import { AdmissionApplication } from '../types';
 
 export const BUCKET_NAME = 'admissions';
 
+const sanitizeFileName = (fileName: string): string => {
+  const extension = fileName.includes('.')
+    ? fileName.substring(fileName.lastIndexOf('.')).toLowerCase()
+    : '';
+
+  const baseName = fileName
+    .substring(0, fileName.lastIndexOf('.') || fileName.length)
+    .normalize('NFKD')
+    .replace(/[^\w\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+
+  return `${baseName || 'document'}${extension}`;
+};
+
 export const supabaseStorageService = {
   /**
    * Ensure bucket existence check or instructions
@@ -11,7 +28,7 @@ export const supabaseStorageService = {
 
   /**
    * Upload a single document directly to Supabase Storage bucket
-   * Path: admissions/{applicationId}/{docType}_{sanitizedFileName}
+   * Path: {applicationId}/{docType}_{uniqueId}_{safeFileName}
    */
   uploadDocument: async (
     applicationId: string,
@@ -20,8 +37,12 @@ export const supabaseStorageService = {
     fileName: string
   ): Promise<{ storagePath: string; error?: string }> => {
     try {
-      const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const filePath = `admissions/${applicationId}/${docType}_${sanitizedFileName}`;
+      const uniqueId = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : Math.random().toString(36).substring(2, 10);
+
+      const safeFileName = sanitizeFileName(fileName);
+      const filePath = `${applicationId}/${docType}_${uniqueId}_${safeFileName}`;
 
       let fileBody: File | Blob;
       let contentType = 'application/octet-stream';
@@ -54,7 +75,7 @@ export const supabaseStorageService = {
         .from(BUCKET_NAME)
         .upload(filePath, fileBody, {
           contentType,
-          upsert: true
+          upsert: false
         });
 
       if (error) {
@@ -267,6 +288,10 @@ export const supabaseStorageService = {
     } catch (err) {
       console.error('Exception during storage file cleanup:', err);
     }
+  },
+
+  deleteFilesByPaths: async (paths: string[]): Promise<void> => {
+    return supabaseStorageService.deleteUploadedFiles(paths);
   },
 
   /**

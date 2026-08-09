@@ -49,6 +49,8 @@ export const PopupBannerManager: React.FC<PopupBannerManagerProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
+  const [imageError, setImageError] = useState(false);
+
   useEffect(() => {
     setIsActive(popup.isActive);
     setTitle(popup.title || '');
@@ -59,6 +61,7 @@ export const PopupBannerManager: React.FC<PopupBannerManagerProps> = ({
     setDisplayFrequency(popup.displayFrequency || 'once_per_session');
     setStartDate(popup.startDate || '');
     setEndDate(popup.endDate || '');
+    setImageError(false);
   }, [popup]);
 
   const handleImageFile = async (file: File) => {
@@ -73,10 +76,12 @@ export const PopupBannerManager: React.FC<PopupBannerManagerProps> = ({
     }
 
     setIsUploading(true);
+    setImageError(false);
     try {
       const url = await supabaseStorageService.uploadImage(file, 'banners');
       if (url) {
         setImageUrl(url);
+        setImageError(false);
         showToast('Banner image uploaded successfully!');
       } else {
         alert('Failed to upload image. Please try again.');
@@ -204,11 +209,12 @@ export const PopupBannerManager: React.FC<PopupBannerManagerProps> = ({
               <span className="text-xs text-slate-400 font-medium">Recommended: 1200 x 600px (Max 5MB)</span>
             </div>
 
-            {imageUrl ? (
+            {imageUrl && !imageError ? (
               <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-900 group">
                 <img 
                   src={imageUrl} 
                   alt="Popup Banner Preview" 
+                  onError={() => setImageError(true)}
                   className="w-full h-48 sm:h-56 object-cover"
                 />
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 p-4">

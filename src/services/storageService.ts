@@ -574,60 +574,88 @@ export const storageService = {
       return initialPopupBanner;
     }
   },
-  savePopupBanner: (banner: PopupBanner): void => {
+  savePopupBanner: async (banner: PopupBanner): Promise<PopupBanner> => {
     const updatedBanner = {
       ...banner,
       updatedAt: new Date().toISOString()
     };
     localStorage.setItem(KEYS.POPUP_BANNER, JSON.stringify(updatedBanner));
-    (async () => {
-      try {
-        let processedBanner = { ...updatedBanner };
-        if (processedBanner.imageUrl?.startsWith('data:')) {
-          const cloudUrl = await supabaseStorageService.uploadImage(processedBanner.imageUrl, 'banners');
-          if (cloudUrl && !cloudUrl.startsWith('data:')) {
-            processedBanner.imageUrl = cloudUrl;
-          }
-        }
-        localStorage.setItem(KEYS.POPUP_BANNER, JSON.stringify(processedBanner));
 
-        // Check if ID is a valid UUID or find an existing row in Supabase
-        let targetId = processedBanner.id;
-        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId);
-        if (!isUuid) {
-          const { data: existingRows } = await supabase.from('popup_banners').select('id').limit(1);
-          if (existingRows && existingRows.length > 0 && existingRows[0].id) {
-            targetId = existingRows[0].id;
-            processedBanner.id = targetId;
-            localStorage.setItem(KEYS.POPUP_BANNER, JSON.stringify(processedBanner));
-          }
+    let processedBanner = { ...updatedBanner };
+    try {
+      if (processedBanner.imageUrl?.startsWith('data:')) {
+        const cloudUrl = await supabaseStorageService.uploadImage(processedBanner.imageUrl, 'banners');
+        if (cloudUrl && !cloudUrl.startsWith('data:')) {
+          processedBanner.imageUrl = cloudUrl;
         }
+      }
+      localStorage.setItem(KEYS.POPUP_BANNER, JSON.stringify(processedBanner));
 
-        const recordToUpsert: any = {
-          is_active: Boolean(processedBanner.isActive),
-          title: processedBanner.title || '',
-          description: processedBanner.description || '',
-          image_url: processedBanner.imageUrl || '',
-          button_text: processedBanner.buttonText || '',
-          button_url: processedBanner.buttonUrl || '',
-          display_frequency: processedBanner.displayFrequency || 'once_per_session',
-          start_date: processedBanner.startDate ? processedBanner.startDate : null,
-          end_date: processedBanner.endDate ? processedBanner.endDate : null,
-          created_at: processedBanner.createdAt || new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          data: processedBanner
+      // Check if ID is a valid UUID or find an existing row in Supabase
+      let targetId = processedBanner.id;
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId);
+      if (!isUuid) {
+        const { data: existingRows } = await supabase.from('popup_banners').select('id').limit(1);
+        if (existingRows && existingRows.length > 0 && existingRows[0].id) {
+          targetId = existingRows[0].id;
+          processedBanner.id = targetId;
+          localStorage.setItem(KEYS.POPUP_BANNER, JSON.stringify(processedBanner));
+        }
+      }
+
+      const recordToUpsert: any = {
+        is_active: Boolean(processedBanner.isActive),
+        title: processedBanner.title || '',
+        description: processedBanner.description || '',
+        image_url: processedBanner.imageUrl || '',
+        button_text: processedBanner.buttonText || '',
+        button_url: processedBanner.buttonUrl || '',
+        display_frequency: processedBanner.displayFrequency || 'once_per_session',
+        start_date: processedBanner.startDate ? processedBanner.startDate : null,
+        end_date: processedBanner.endDate ? processedBanner.endDate : null,
+        created_at: processedBanner.createdAt || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        data: processedBanner
+      };
+
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId)) {
+        recordToUpsert.id = targetId;
+      }
+
+      const { data: savedRows, error } = await supabase
+        .from('popup_banners')
+        .upsert([recordToUpsert])
+        .select();
+
+      if (error) {
+        console.warn('Supabase popup_banners sync warning:', error.message);
+      } else if (savedRows && savedRows.length > 0) {
+        const row = savedRows[0];
+        const d = (row.data && typeof row.data === 'object') ? row.data : {};
+        const savedPopup: PopupBanner = {
+          id: row.id || d.id || processedBanner.id,
+          isActive: Boolean(row.is_active),
+          title: row.title || d.title || '',
+          description: row.description || d.description || '',
+          imageUrl: row.image_url || d.imageUrl || '',
+          buttonText: row.button_text || d.buttonText || '',
+          buttonUrl: row.button_url || d.buttonUrl || '',
+          displayFrequency: row.display_frequency || d.displayFrequency || 'once_per_session',
+          startDate: row.start_date || d.startDate || '',
+          endDate: row.end_date || d.endDate || '',
+          createdAt: row.created_at || d.createdAt || new Date().toISOString(),
+          updatedAt: row.updated_at || d.updatedAt || new Date().toISOString()
         };
+        localStorage.setItem(KEYS.POPUP_BANNER, JSON.stringify(savedPopup));
+        return savedPopup;
+      }
+    } catch (err) {
+      console.warn('savePopupBanner error:', err);
+    }
 
-        if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId)) {
-          recordToUpsert.id = targetId;
-        }
-
-        const { error } = await supabase.from('popup_banners').upsert([recordToUpsert]);
-        if (error) console.log('Supabase popup_banners sync:', error.message);
-      } catch (err) {}
-    })();
+    return processedBanner;
   },
-  deletePopupBanner: (): void => {
+  deletePopupBanner: async (): Promise<void> => {
     const defaultOff: PopupBanner = {
       ...initialPopupBanner,
       isActive: false,
@@ -639,8 +667,9 @@ export const storageService = {
       updatedAt: new Date().toISOString()
     };
     localStorage.setItem(KEYS.POPUP_BANNER, JSON.stringify(defaultOff));
-    (async () => {
-      try {
+    try {
+      const { data: existingRows } = await supabase.from('popup_banners').select('id').limit(1);
+      if (existingRows && existingRows.length > 0 && existingRows[0].id) {
         await supabase.from('popup_banners').update({
           is_active: false,
           title: '',
@@ -652,9 +681,9 @@ export const storageService = {
           end_date: null,
           updated_at: new Date().toISOString(),
           data: defaultOff
-        }).neq('id', '00000000-0000-0000-0000-000000000000');
-      } catch (err) {}
-    })();
+        }).eq('id', existingRows[0].id);
+      }
+    } catch (err) {}
   },
 
   // Fetch and hydrate state from Supabase
@@ -729,7 +758,8 @@ export const storageService = {
       }
       if (popupRes.status === 'fulfilled' && popupRes.value.data && popupRes.value.data.length > 0) {
         const rows = popupRes.value.data;
-        const activeRow = rows.find((r: any) => r.is_active === true) || rows[0];
+        const sortedRows = [...rows].sort((a, b) => new Date(b.updated_at || b.created_at || 0).getTime() - new Date(a.updated_at || a.created_at || 0).getTime());
+        const activeRow = sortedRows[0];
         const d = (activeRow.data && typeof activeRow.data === 'object' && Object.keys(activeRow.data).length > 0) ? activeRow.data : {};
         
         const loadedPopup: PopupBanner = {

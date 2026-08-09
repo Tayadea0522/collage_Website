@@ -118,6 +118,16 @@ export const supabaseStorageService = {
       let contentType = 'image/jpeg';
       let fileName = `img_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.jpg`;
 
+      // Helper to convert File to base64 Data URL as foolproof fallback
+      const fileToDataUrl = (file: File): Promise<string> => {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => resolve('');
+          reader.readAsDataURL(file);
+        });
+      };
+
       if (typeof fileOrDataUrl === 'string') {
         if (!fileOrDataUrl.startsWith('data:')) {
           // Already an HTTP or HTTPS URL
@@ -148,24 +158,36 @@ export const supabaseStorageService = {
 
       const filePath = `public_assets/${folder}/${fileName}`;
 
-      const { data, error } = await supabase.storage
-        .from(BUCKET_NAME)
-        .upload(filePath, fileBody, {
-          contentType,
-          upsert: true
-        });
+      // Candidates for buckets: 'popup-banners' if folder === 'banners', otherwise BUCKET_NAME ('admissions')
+      const targetBuckets = folder === 'banners' ? ['popup-banners', BUCKET_NAME] : [BUCKET_NAME, 'popup-banners'];
 
-      if (!error && data?.path) {
-        const { data: pubData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(data.path);
-        if (pubData?.publicUrl) {
-          return pubData.publicUrl;
+      for (const bucket of targetBuckets) {
+        try {
+          const { data, error } = await supabase.storage
+            .from(bucket)
+            .upload(filePath, fileBody, {
+              contentType,
+              upsert: true
+            });
+
+          if (!error && data?.path) {
+            const { data: pubData } = supabase.storage.from(bucket).getPublicUrl(data.path);
+            if (pubData?.publicUrl) {
+              return pubData.publicUrl;
+            }
+            const { data: signedData } = await supabase.storage.from(bucket).createSignedUrl(data.path, 315360000);
+            if (signedData?.signedUrl) {
+              return signedData.signedUrl;
+            }
+          }
+        } catch (e) {
+          // try next bucket
         }
-        const { data: signedData } = await supabase.storage.from(BUCKET_NAME).createSignedUrl(data.path, 315360000);
-        if (signedData?.signedUrl) {
-          return signedData.signedUrl;
-        }
-      } else if (error) {
-        console.warn('Supabase storage image upload warning:', error.message);
+      }
+
+      if (typeof fileOrDataUrl !== 'string') {
+        const fallbackUrl = await fileToDataUrl(fileOrDataUrl);
+        if (fallbackUrl) return fallbackUrl;
       }
     } catch (err: any) {
       console.warn('Supabase storage image upload exception:', err);

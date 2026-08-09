@@ -3606,14 +3606,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           <div className="space-y-6">
             <PopupBannerManager
               popup={popupBanner}
-              onSave={(updated) => {
+              onSave={async (updated) => {
                 setPopupBanner(updated);
-                storageService.savePopupBanner(updated);
+                const saved = await storageService.savePopupBanner(updated);
+                if (saved) setPopupBanner(saved);
+                onRefreshAll();
               }}
-              onDelete={() => {
-                storageService.deletePopupBanner();
+              onDelete={async () => {
+                await storageService.deletePopupBanner();
                 const fresh = storageService.getPopupBanner();
                 setPopupBanner(fresh);
+                onRefreshAll();
               }}
               onPreview={(b) => {
                 setPreviewPopup(b);

@@ -1,5 +1,5 @@
-import React from 'react';
-import { X, ExternalLink, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, ExternalLink, ArrowRight, Image as ImageIcon } from 'lucide-react';
 import { PopupBanner } from '../types';
 
 interface PopupBannerModalProps {
@@ -15,6 +15,12 @@ export const PopupBannerModal: React.FC<PopupBannerModalProps> = ({
   onClose,
   isPreview = false
 }) => {
+  const [imageError, setImageError] = useState(false);
+
+  useEffect(() => {
+    setImageError(false);
+  }, [popup?.imageUrl, isOpen]);
+
   if (!isOpen || !popup) return null;
 
   // Don't display if disabled (unless in admin preview mode)
@@ -62,14 +68,23 @@ export const PopupBannerModal: React.FC<PopupBannerModalProps> = ({
         )}
 
         {/* Banner Image */}
-        {popup.imageUrl && (
+        {popup.imageUrl && !imageError ? (
           <div className="relative w-full bg-slate-900 max-h-64 sm:max-h-80 overflow-hidden flex items-center justify-center shrink-0">
             <img
               src={popup.imageUrl}
               alt={popup.title || 'Announcement'}
+              onError={() => setImageError(true)}
               className="w-full h-full object-cover max-h-64 sm:max-h-80"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+          </div>
+        ) : (
+          /* Subtle Header Banner when no image or image failed */
+          <div className="w-full bg-[#0A2342] text-amber-400 p-6 pt-10 text-center border-b border-amber-500/20 shrink-0">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-amber-400/10 border border-amber-400/30 mb-2">
+              <ImageIcon className="w-6 h-6 text-amber-400" />
+            </div>
+            <p className="text-xs font-bold uppercase tracking-wider text-amber-300/80">College Announcement</p>
           </div>
         )}
 

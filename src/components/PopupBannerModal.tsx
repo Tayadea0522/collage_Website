@@ -16,9 +16,11 @@ export const PopupBannerModal: React.FC<PopupBannerModalProps> = ({
   isPreview = false
 }) => {
   const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
 
   useEffect(() => {
     setImageError(false);
+    setImageLoading(true);
   }, [popup?.imageUrl, isOpen]);
 
   if (!isOpen || !popup) return null;
@@ -44,10 +46,10 @@ export const PopupBannerModal: React.FC<PopupBannerModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-fadeIn">
+    <div className="fixed inset-0 z-[100] bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fadeIn">
       {/* Modal Container */}
       <div 
-        className="relative bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-100 max-w-lg sm:max-w-xl w-full flex flex-col my-auto max-h-[90vh] text-slate-800 animate-scaleUp"
+        className="relative bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-100 max-w-lg sm:max-w-xl w-full flex flex-col my-auto max-h-[calc(100vh-1.5rem)] text-slate-800 animate-scaleUp overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
@@ -55,7 +57,7 @@ export const PopupBannerModal: React.FC<PopupBannerModalProps> = ({
           onClick={onClose}
           type="button"
           aria-label="Close popup"
-          className="absolute top-3 right-3 z-30 bg-slate-900/60 hover:bg-slate-900/90 text-white rounded-full p-2 transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-amber-400"
+          className="absolute top-3 right-3 z-30 bg-slate-900/70 hover:bg-slate-900/90 text-white rounded-full p-2 transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-amber-400"
         >
           <X className="w-5 h-5" />
         </button>
@@ -67,16 +69,26 @@ export const PopupBannerModal: React.FC<PopupBannerModalProps> = ({
           </div>
         )}
 
-        {/* Banner Image */}
+        {/* Banner Image - Natural aspect ratio, full width, height auto */}
         {popup.imageUrl && !imageError ? (
-          <div className="relative w-full bg-slate-900 max-h-64 sm:max-h-80 overflow-hidden flex items-center justify-center shrink-0">
+          <div className="relative w-full bg-slate-50 overflow-hidden shrink-0 flex items-center justify-center min-h-[100px]">
+            {imageLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-slate-400 z-10 py-10">
+                <div className="w-6 h-6 border-2 border-slate-300 border-t-amber-500 rounded-full animate-spin" />
+              </div>
+            )}
             <img
               src={popup.imageUrl}
               alt={popup.title || 'Announcement'}
-              onError={() => setImageError(true)}
-              className="w-full h-full object-cover max-h-64 sm:max-h-80"
+              onLoad={() => setImageLoading(false)}
+              onError={() => {
+                setImageError(true);
+                setImageLoading(false);
+              }}
+              className={`w-full h-auto block object-contain transition-opacity duration-300 ${
+                imageLoading ? 'opacity-0' : 'opacity-100'
+              }`}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
           </div>
         ) : (
           /* Subtle Header Banner when no image or image failed */
@@ -89,7 +101,7 @@ export const PopupBannerModal: React.FC<PopupBannerModalProps> = ({
         )}
 
         {/* Content Section */}
-        <div className="p-6 sm:p-7 flex-1 overflow-y-auto space-y-4">
+        <div className="p-5 sm:p-7 flex-1 space-y-3 sm:space-y-4">
           {popup.title && (
             <h3 className="text-xl sm:text-2xl font-bold font-serif text-[#0A2342] leading-tight">
               {popup.title}
@@ -124,11 +136,11 @@ export const PopupBannerModal: React.FC<PopupBannerModalProps> = ({
         </div>
 
         {/* Modal Footer Note */}
-        <div className="bg-slate-50 border-t border-slate-100 px-6 py-3 flex items-center justify-between text-xs text-slate-500">
+        <div className="bg-slate-50 border-t border-slate-100 px-5 sm:px-6 py-3 flex items-center justify-between text-xs text-slate-500 shrink-0">
           <span className="font-medium text-[#0A2342]">Late Shaktikumar Sancheti College of Dairy Technology</span>
           <button 
             onClick={onClose}
-            className="text-slate-500 hover:text-slate-800 underline font-medium"
+            className="text-slate-500 hover:text-slate-800 underline font-medium ml-2"
           >
             Dismiss
           </button>

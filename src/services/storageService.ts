@@ -17,6 +17,11 @@ const KEYS = {
   POPUP_BANNER: 'lsscdt_popup_banner_v2'
 };
 
+const isInvalidOrPrivateUrl = (url: string | undefined | null): boolean => {
+  if (!url) return false;
+  return url.startsWith('data:') || url.startsWith('blob:') || url.includes('/storage/v1/object/public/admissions/');
+};
+
 export const storageService = {
   getAdminUsers: (): AdminUser[] => {
     const data = localStorage.getItem(KEYS.ADMIN_USERS);
@@ -88,45 +93,54 @@ export const storageService = {
       return initialCollegeInfo;
     }
   },
-  saveCollegeInfo: (info: CollegeInfo): void => {
+  saveCollegeInfo: async (info: CollegeInfo): Promise<CollegeInfo> => {
     localStorage.setItem(KEYS.COLLEGE_INFO, JSON.stringify(info));
-    (async () => {
-      try {
-        let updatedInfo = { ...info };
+    try {
+      let updatedInfo = { ...info };
 
-        if (updatedInfo.logoImage?.startsWith('data:')) {
-          updatedInfo.logoImage = await supabaseStorageService.uploadImage(updatedInfo.logoImage, 'college');
-        }
-        if (updatedInfo.shaktikumarImage?.startsWith('data:')) {
-          updatedInfo.shaktikumarImage = await supabaseStorageService.uploadImage(updatedInfo.shaktikumarImage, 'college');
-        }
-        if (updatedInfo.deanImage?.startsWith('data:')) {
-          updatedInfo.deanImage = await supabaseStorageService.uploadImage(updatedInfo.deanImage, 'college');
-        }
-        if (updatedInfo.secretaryImage?.startsWith('data:')) {
-          updatedInfo.secretaryImage = await supabaseStorageService.uploadImage(updatedInfo.secretaryImage, 'college');
-        }
-        if (updatedInfo.adminOfficerImage?.startsWith('data:')) {
-          updatedInfo.adminOfficerImage = await supabaseStorageService.uploadImage(updatedInfo.adminOfficerImage, 'college');
-        }
-        if (updatedInfo.heroBanners && updatedInfo.heroBanners.length > 0) {
-          updatedInfo.heroBanners = await Promise.all(
-            updatedInfo.heroBanners.map(async b => {
-              if (b.image?.startsWith('data:')) {
-                const cloudUrl = await supabaseStorageService.uploadImage(b.image, 'hero');
+      if (isInvalidOrPrivateUrl(updatedInfo.logoImage)) {
+        const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.logoImage!, 'college');
+        if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.logoImage = cloudUrl;
+      }
+      if (isInvalidOrPrivateUrl(updatedInfo.shaktikumarImage)) {
+        const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.shaktikumarImage!, 'college');
+        if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.shaktikumarImage = cloudUrl;
+      }
+      if (isInvalidOrPrivateUrl(updatedInfo.deanImage)) {
+        const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.deanImage!, 'college');
+        if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.deanImage = cloudUrl;
+      }
+      if (isInvalidOrPrivateUrl(updatedInfo.secretaryImage)) {
+        const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.secretaryImage!, 'college');
+        if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.secretaryImage = cloudUrl;
+      }
+      if (isInvalidOrPrivateUrl(updatedInfo.adminOfficerImage)) {
+        const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.adminOfficerImage!, 'college');
+        if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.adminOfficerImage = cloudUrl;
+      }
+      if (updatedInfo.heroBanners && updatedInfo.heroBanners.length > 0) {
+        updatedInfo.heroBanners = await Promise.all(
+          updatedInfo.heroBanners.map(async b => {
+            if (isInvalidOrPrivateUrl(b.image)) {
+              const cloudUrl = await supabaseStorageService.uploadImage(b.image, 'hero');
+              if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) {
                 return { ...b, image: cloudUrl };
               }
-              return b;
-            })
-          );
-        }
+            }
+            return b;
+          })
+        );
+      }
 
-        localStorage.setItem(KEYS.COLLEGE_INFO, JSON.stringify(updatedInfo));
+      localStorage.setItem(KEYS.COLLEGE_INFO, JSON.stringify(updatedInfo));
 
-        const { error } = await supabase.from('college_info').upsert([{ id: 'default', data: updatedInfo }]);
-        if (error) console.log('Supabase college_info sync:', error.message);
-      } catch (err) {}
-    })();
+      const { error } = await supabase.from('college_info').upsert([{ id: 'default', data: updatedInfo }]);
+      if (error) console.warn('Supabase college_info sync:', error.message);
+      return updatedInfo;
+    } catch (err) {
+      console.warn('saveCollegeInfo error:', err);
+      return info;
+    }
   },
 
   getNotices: (): Notice[] => {
@@ -201,32 +215,33 @@ export const storageService = {
       return initialFaculty;
     }
   },
-  saveFaculty: (faculty: FacultyMember[]): void => {
+  saveFaculty: async (faculty: FacultyMember[]): Promise<FacultyMember[]> => {
     localStorage.setItem(KEYS.FACULTY, JSON.stringify(faculty));
-    (async () => {
-      try {
-        const processed = await Promise.all(
-          faculty.map(async f => {
-            if (f.image?.startsWith('data:')) {
-              const cloudUrl = await supabaseStorageService.uploadImage(f.image, 'faculty');
-              if (cloudUrl && !cloudUrl.startsWith('data:')) {
-                return { ...f, image: cloudUrl };
-              }
+    try {
+      const processed = await Promise.all(
+        faculty.map(async f => {
+          if (isInvalidOrPrivateUrl(f.image)) {
+            const cloudUrl = await supabaseStorageService.uploadImage(f.image, 'faculty');
+            if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) {
+              return { ...f, image: cloudUrl };
             }
-            return f;
-          })
-        );
-        localStorage.setItem(KEYS.FACULTY, JSON.stringify(processed));
+          }
+          return f;
+        })
+      );
+      localStorage.setItem(KEYS.FACULTY, JSON.stringify(processed));
 
-        const { error } = await supabase.from('faculty').upsert(processed.map(f => ({
-          id: f.id,
-          name: f.name,
-          department: f.department,
-          data: f
-        })));
-        if (error) console.log('Supabase faculty sync:', error.message);
-      } catch (err) {}
-    })();
+      const { error } = await supabase.from('faculty').upsert(processed.map(f => ({
+        id: f.id,
+        name: f.name,
+        department: f.department,
+        data: f
+      })));
+      if (error) console.warn('Supabase faculty sync:', error.message);
+      return processed;
+    } catch (err) {
+      return faculty;
+    }
   },
 
   getDepartments: (): DepartmentInfo[] => {
@@ -341,32 +356,33 @@ export const storageService = {
       return initialFacilities;
     }
   },
-  saveFacilities: (facs: Facility[]): void => {
+  saveFacilities: async (facs: Facility[]): Promise<Facility[]> => {
     localStorage.setItem(KEYS.FACILITIES, JSON.stringify(facs));
-    (async () => {
-      try {
-        const processed = await Promise.all(
-          facs.map(async f => {
-            if (f.image?.startsWith('data:')) {
-              const cloudUrl = await supabaseStorageService.uploadImage(f.image, 'facilities');
-              if (cloudUrl && !cloudUrl.startsWith('data:')) {
-                return { ...f, image: cloudUrl };
-              }
+    try {
+      const processed = await Promise.all(
+        facs.map(async f => {
+          if (isInvalidOrPrivateUrl(f.image)) {
+            const cloudUrl = await supabaseStorageService.uploadImage(f.image, 'facilities');
+            if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) {
+              return { ...f, image: cloudUrl };
             }
-            return f;
-          })
-        );
-        localStorage.setItem(KEYS.FACILITIES, JSON.stringify(processed));
+          }
+          return f;
+        })
+      );
+      localStorage.setItem(KEYS.FACILITIES, JSON.stringify(processed));
 
-        const { error } = await supabase.from('facilities').upsert(processed.map(f => ({
-          id: f.id,
-          title: f.title,
-          category: f.category,
-          data: f
-        })));
-        if (error) console.log('Supabase facilities sync:', error.message);
-      } catch (err) {}
-    })();
+      const { error } = await supabase.from('facilities').upsert(processed.map(f => ({
+        id: f.id,
+        title: f.title,
+        category: f.category,
+        data: f
+      })));
+      if (error) console.warn('Supabase facilities sync:', error.message);
+      return processed;
+    } catch (err) {
+      return facs;
+    }
   },
 
   getApplications: (): AdmissionApplication[] => {
@@ -534,32 +550,33 @@ export const storageService = {
     const data = localStorage.getItem(KEYS.GALLERY);
     return data ? JSON.parse(data) : initialGallery;
   },
-  saveGallery: (items: GalleryItem[]): void => {
+  saveGallery: async (items: GalleryItem[]): Promise<GalleryItem[]> => {
     localStorage.setItem(KEYS.GALLERY, JSON.stringify(items));
-    (async () => {
-      try {
-        const processed = await Promise.all(
-          items.map(async item => {
-            if (item.image?.startsWith('data:')) {
-              const cloudUrl = await supabaseStorageService.uploadImage(item.image, 'gallery');
-              if (cloudUrl && !cloudUrl.startsWith('data:')) {
-                return { ...item, image: cloudUrl };
-              }
+    try {
+      const processed = await Promise.all(
+        items.map(async item => {
+          if (isInvalidOrPrivateUrl(item.image)) {
+            const cloudUrl = await supabaseStorageService.uploadImage(item.image, 'gallery');
+            if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) {
+              return { ...item, image: cloudUrl };
             }
-            return item;
-          })
-        );
-        localStorage.setItem(KEYS.GALLERY, JSON.stringify(processed));
+          }
+          return item;
+        })
+      );
+      localStorage.setItem(KEYS.GALLERY, JSON.stringify(processed));
 
-        const { error } = await supabase.from('gallery').upsert(processed.map(g => ({
-          id: g.id,
-          title: g.title,
-          category: g.category,
-          data: g
-        })));
-        if (error) console.log('Supabase gallery sync:', error.message);
-      } catch (err) {}
-    })();
+      const { error } = await supabase.from('gallery').upsert(processed.map(g => ({
+        id: g.id,
+        title: g.title,
+        category: g.category,
+        data: g
+      })));
+      if (error) console.warn('Supabase gallery sync:', error.message);
+      return processed;
+    } catch (err) {
+      return items;
+    }
   },
 
   getPopupBanner: (): PopupBanner => {
@@ -583,9 +600,9 @@ export const storageService = {
 
     let processedBanner = { ...updatedBanner };
     try {
-      if (processedBanner.imageUrl?.startsWith('data:')) {
+      if (isInvalidOrPrivateUrl(processedBanner.imageUrl)) {
         const cloudUrl = await supabaseStorageService.uploadImage(processedBanner.imageUrl, 'banners');
-        if (cloudUrl && !cloudUrl.startsWith('data:')) {
+        if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) {
           processedBanner.imageUrl = cloudUrl;
         }
       }

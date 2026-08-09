@@ -129,25 +129,43 @@ export const supabaseStorageService = {
       };
 
       if (typeof fileOrDataUrl === 'string') {
-        if (!fileOrDataUrl.startsWith('data:')) {
-          // Already an HTTP or HTTPS URL
+        if (!fileOrDataUrl.startsWith('data:') && !fileOrDataUrl.includes('/storage/v1/object/public/admissions/')) {
+          // Already a valid public HTTP or HTTPS URL (and not in private admissions bucket)
           return fileOrDataUrl;
         }
-        const parts = fileOrDataUrl.split(';base64,');
-        if (parts.length === 2) {
-          const match = fileOrDataUrl.match(/data:(.*?);/);
-          if (match) contentType = match[1];
-          const ext = contentType.split('/')[1] || 'jpg';
-          fileName = `img_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
-          const byteString = atob(parts[1]);
-          const ab = new ArrayBuffer(byteString.length);
-          const ia = new Uint8Array(ab);
-          for (let i = 0; i < byteString.length; i++) {
-            ia[i] = byteString.charCodeAt(i);
+        if (fileOrDataUrl.includes('/storage/v1/object/public/admissions/')) {
+          try {
+            // Re-fetch image blob from admissions bucket if authenticated
+            const res = await fetch(fileOrDataUrl);
+            if (res.ok) {
+              const blob = await res.blob();
+              fileBody = blob;
+              contentType = blob.type || 'image/jpeg';
+              const ext = contentType.split('/')[1] || 'jpg';
+              fileName = `img_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+            } else {
+              return fileOrDataUrl;
+            }
+          } catch (e) {
+            return fileOrDataUrl;
           }
-          fileBody = new Blob([ab], { type: contentType });
         } else {
-          return fileOrDataUrl;
+          const parts = fileOrDataUrl.split(';base64,');
+          if (parts.length === 2) {
+            const match = fileOrDataUrl.match(/data:(.*?);/);
+            if (match) contentType = match[1];
+            const ext = contentType.split('/')[1] || 'jpg';
+            fileName = `img_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+            const byteString = atob(parts[1]);
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+              ia[i] = byteString.charCodeAt(i);
+            }
+            fileBody = new Blob([ab], { type: contentType });
+          } else {
+            return fileOrDataUrl;
+          }
         }
       } else {
         fileBody = fileOrDataUrl;
@@ -156,10 +174,21 @@ export const supabaseStorageService = {
         fileName = `img_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
       }
 
+      // Check for authenticated Supabase session before upload
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.warn('Supabase storage image upload: No authenticated session found');
+        if (typeof fileOrDataUrl !== 'string') {
+          const fallbackUrl = await fileToDataUrl(fileOrDataUrl);
+          if (fallbackUrl) return fallbackUrl;
+        }
+        return typeof fileOrDataUrl === 'string' ? fileOrDataUrl : '';
+      }
+
       const filePath = `public_assets/${folder}/${fileName}`;
 
-      // Candidates for buckets: 'popup-banners' if folder === 'banners', otherwise BUCKET_NAME ('admissions')
-      const targetBuckets = folder === 'banners' ? ['popup-banners', BUCKET_NAME] : [BUCKET_NAME, 'popup-banners'];
+      // Candidates for public buckets: 'popup-banners' (which has public read SELECT RLS policy for anon/authenticated)
+      const targetBuckets = ['popup-banners', PUBLIC_BUCKET_NAME];
 
       for (const bucket of targetBuckets) {
         try {
@@ -179,6 +208,8 @@ export const supabaseStorageService = {
             if (signedData?.signedUrl) {
               return signedData.signedUrl;
             }
+          } else if (error) {
+            console.warn(`Upload to bucket ${bucket} returned error:`, error.message);
           }
         } catch (e) {
           // try next bucket

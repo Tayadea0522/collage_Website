@@ -187,15 +187,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   // 1. College Info Form State
   const [infoForm, setInfoForm] = useState<CollegeInfo>({ ...collegeInfo });
 
-  const handleSaveInfo = (e: React.FormEvent) => {
+  const handleSaveInfo = async (e: React.FormEvent) => {
     e.preventDefault();
-    storageService.saveCollegeInfo(infoForm);
+    showToast('Uploading images to permanent cloud storage...');
+    const saved = await storageService.saveCollegeInfo(infoForm);
+    if (saved) setInfoForm(saved);
     onRefreshAll();
     showToast('College details, banners & leadership images saved successfully!');
   };
 
   // Banner Actions
-  const handleAddBanner = () => {
+  const handleAddBanner = async () => {
     const newBanner = {
       id: `b-${Date.now()}`,
       title: 'New College Banner',
@@ -205,12 +207,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     };
     const updated = { ...infoForm, heroBanners: [...(infoForm.heroBanners || []), newBanner] };
     setInfoForm(updated);
-    storageService.saveCollegeInfo(updated);
+    const saved = await storageService.saveCollegeInfo(updated);
+    if (saved) setInfoForm(saved);
     onRefreshAll();
     showToast('New hero banner added!');
   };
 
-  const handleRemoveBanner = (id: string) => {
+  const handleRemoveBanner = async (id: string) => {
     if ((infoForm.heroBanners || []).length <= 1) {
       alert('You must keep at least one banner image.');
       return;
@@ -218,7 +221,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     const updatedBanners = infoForm.heroBanners.filter(b => b.id !== id);
     const updated = { ...infoForm, heroBanners: updatedBanners };
     setInfoForm(updated);
-    storageService.saveCollegeInfo(updated);
+    const saved = await storageService.saveCollegeInfo(updated);
+    if (saved) setInfoForm(saved);
     onRefreshAll();
     showToast('Banner removed.');
   };

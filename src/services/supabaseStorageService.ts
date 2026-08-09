@@ -187,32 +187,27 @@ export const supabaseStorageService = {
 
       const filePath = `public_assets/${folder}/${fileName}`;
 
-      // Candidates for public buckets: 'popup-banners' (which has public read SELECT RLS policy for anon/authenticated)
-      const targetBuckets = ['popup-banners', PUBLIC_BUCKET_NAME];
+      // PUBLIC MEDIA MUST strictly use 'popup-banners' bucket without falling back to private 'admissions'
+      const publicBucket = 'popup-banners';
+      const { data, error } = await supabase.storage
+        .from(publicBucket)
+        .upload(filePath, fileBody, {
+          contentType,
+          upsert: true
+        });
 
-      for (const bucket of targetBuckets) {
-        try {
-          const { data, error } = await supabase.storage
-            .from(bucket)
-            .upload(filePath, fileBody, {
-              contentType,
-              upsert: true
-            });
+      if (error) {
+        console.error(`Public image upload to ${publicBucket} failed:`, error.message);
+        throw new Error(`Failed to upload public image to ${publicBucket}: ${error.message}`);
+      }
 
-          if (!error && data?.path) {
-            const { data: pubData } = supabase.storage.from(bucket).getPublicUrl(data.path);
-            if (pubData?.publicUrl) {
-              return pubData.publicUrl;
-            }
-            const { data: signedData } = await supabase.storage.from(bucket).createSignedUrl(data.path, 315360000);
-            if (signedData?.signedUrl) {
-              return signedData.signedUrl;
-            }
-          } else if (error) {
-            console.warn(`Upload to bucket ${bucket} returned error:`, error.message);
+      if (data?.path) {
+        const { data: pubData } = supabase.storage.from(publicBucket).getPublicUrl(data.path);
+        if (pubData?.publicUrl) {
+          // Validate that the URL does not point to private admissions bucket
+          if (!pubData.publicUrl.includes('/storage/v1/object/public/admissions/')) {
+            return pubData.publicUrl;
           }
-        } catch (e) {
-          // try next bucket
         }
       }
 
@@ -221,7 +216,8 @@ export const supabaseStorageService = {
         if (fallbackUrl) return fallbackUrl;
       }
     } catch (err: any) {
-      console.warn('Supabase storage image upload exception:', err);
+      console.error('Supabase public image upload failed:', err.message || err);
+      throw err;
     }
 
     return typeof fileOrDataUrl === 'string' ? fileOrDataUrl : '';

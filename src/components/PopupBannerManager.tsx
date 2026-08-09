@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { PopupBanner } from '../types';
 import { supabaseStorageService } from '../services/supabaseStorageService';
+import { supabase } from '../supabaseClient.js';
 
 interface PopupBannerManagerProps {
   popup: PopupBanner;
@@ -72,6 +73,12 @@ export const PopupBannerManager: React.FC<PopupBannerManagerProps> = ({
 
     if (file.size > 5 * 1024 * 1024) {
       alert('File size exceeds 5MB limit. Please upload a smaller image.');
+      return;
+    }
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      alert('Supabase authentication session is missing. Please log in again.');
       return;
     }
 

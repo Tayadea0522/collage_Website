@@ -14,6 +14,7 @@ import {
 } from './types';
 import { storageService } from './services/storageService';
 import { supabaseStorageService } from './services/supabaseStorageService';
+import { supabase } from './supabaseClient.js';
 
 // Layout & Core Pages
 import { Header } from './components/Header';
@@ -80,12 +81,60 @@ export default function App() {
   // Gallery Filter State
   const [galleryFilter, setGalleryFilter] = useState<string>('All');
 
-  // Sync from Supabase on load
+  // Sync from Supabase on load & manage Supabase Auth session
   useEffect(() => {
+    const syncAuthUser = async (session: any) => {
+      if (session?.user) {
+        try {
+          const { data: adminRows } = await supabase
+            .from('admin_users')
+            .select('*')
+            .or(`auth_user_id.eq.${session.user.id},email.ilike.${session.user.email}`);
+
+          if (adminRows && adminRows.length > 0) {
+            const dbAdmin = adminRows[0];
+            const matchedUser: AdminUser = {
+              id: dbAdmin.id || session.user.id,
+              name: dbAdmin.name || session.user.email?.split('@')[0] || 'Administrator',
+              username: dbAdmin.username || session.user.email?.split('@')[0] || 'admin',
+              email: dbAdmin.email || session.user.email || '',
+              mobile: dbAdmin.mobile || '9822100001',
+              role: dbAdmin.role || 'Super Admin',
+              securityQuestion: 'What is the college code?',
+              securityAnswer: 'LSSCDT',
+              password: '',
+              createdAt: dbAdmin.created_at || new Date().toISOString().split('T')[0]
+            };
+            setCurrentAdminUser(matchedUser);
+            setIsAdminLoggedIn(true);
+          }
+        } catch (e) {
+          console.warn('Admin user sync error:', e);
+        }
+      }
+    };
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) syncAuthUser(session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        syncAuthUser(session);
+      } else {
+        setIsAdminLoggedIn(false);
+        setCurrentAdminUser(null);
+      }
+    });
+
     storageService.syncFromSupabase().then(() => {
       refreshAllData();
       checkAndShowPopup();
     });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const checkAndShowPopup = () => {
@@ -154,7 +203,10 @@ export default function App() {
     setPopupBanner(storageService.getPopupBanner());
   };
 
-  const handleAdminLogout = () => {
+  const handleAdminLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {}
     setIsAdminLoggedIn(false);
     setCurrentAdminUser(null);
     setCurrentTab('home');

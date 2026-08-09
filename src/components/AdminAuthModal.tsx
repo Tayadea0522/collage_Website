@@ -62,48 +62,80 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
     setSignInError('');
 
     const trimmedIdent = usernameInput.trim();
+    if (!trimmedIdent || !passwordInput) {
+      setSignInError('Please enter both username/email and password.');
+      return;
+    }
 
-    if (trimmedIdent.includes('@')) {
-      try {
-        const { data, error: authError } = await supabase.auth.signInWithPassword({
-          email: trimmedIdent,
-          password: passwordInput,
-        });
-
-        if (!authError && data?.user) {
-          const matchedUser: AdminUser = adminUsers.find(
-            u => u.email.toLowerCase() === trimmedIdent.toLowerCase()
-          ) || {
-            id: data.user.id,
-            name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Administrator',
-            username: data.user.email?.split('@')[0] || 'admin',
-            email: data.user.email || '',
-            mobile: '9822100000',
-            role: 'Super Admin',
-            securityQuestion: 'What is the college code?',
-            securityAnswer: 'LSSCDT',
-            password: passwordInput,
-            createdAt: new Date().toISOString().split('T')[0]
-          };
-          onLoginSuccess(matchedUser);
-          onClose();
-          return;
+    let targetEmail = trimmedIdent;
+    if (!trimmedIdent.includes('@')) {
+      if (trimmedIdent.toLowerCase() === 'admin') {
+        targetEmail = 'akshayjamode21@gmail.com';
+      } else {
+        const localMatch = adminUsers.find(
+          u => u.username.toLowerCase() === trimmedIdent.toLowerCase()
+        );
+        if (localMatch && localMatch.email && localMatch.email.includes('@')) {
+          targetEmail = localMatch.email;
+        } else {
+          try {
+            const { data: dbAdmin } = await supabase
+              .from('admin_users')
+              .select('email')
+              .eq('username', trimmedIdent)
+              .maybeSingle();
+            if (dbAdmin && dbAdmin.email) {
+              targetEmail = dbAdmin.email;
+            }
+          } catch (err) {}
         }
-      } catch (err) {
-        // Fall back to local check below
       }
     }
 
-    const match = adminUsers.find(
-      u => (u.username.toLowerCase() === trimmedIdent.toLowerCase() || u.email.toLowerCase() === trimmedIdent.toLowerCase()) &&
-           u.password === passwordInput
-    );
+    try {
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: targetEmail,
+        password: passwordInput,
+      });
 
-    if (match) {
-      onLoginSuccess(match);
+      if (authError || !data?.user || !data?.session) {
+        setSignInError(authError?.message || 'Invalid Administrator username/email or password.');
+        return;
+      }
+
+      // Verify session exists
+      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: userData } = await supabase.auth.getUser();
+
+      console.log('Supabase Auth login successful');
+      console.log('User ID:', userData?.user?.id);
+      console.log('Session exists:', !!sessionData?.session);
+
+      // Verify admin user record in public.admin_users
+      const { data: adminRows } = await supabase
+        .from('admin_users')
+        .select('*')
+        .or(`auth_user_id.eq.${data.user.id},email.ilike.${data.user.email}`);
+
+      const matchedAdminRecord = adminRows && adminRows.length > 0 ? adminRows[0] : null;
+
+      const matchedUser: AdminUser = {
+        id: matchedAdminRecord?.id || data.user.id,
+        name: matchedAdminRecord?.name || data.user.user_metadata?.name || 'Administrator',
+        username: matchedAdminRecord?.username || data.user.email?.split('@')[0] || 'admin',
+        email: matchedAdminRecord?.email || data.user.email || targetEmail,
+        mobile: matchedAdminRecord?.mobile || '9822100000',
+        role: matchedAdminRecord?.role || 'Super Admin',
+        securityQuestion: matchedAdminRecord?.security_question || 'What is the college code?',
+        securityAnswer: matchedAdminRecord?.security_answer || 'LSSCDT',
+        password: passwordInput,
+        createdAt: matchedAdminRecord?.created_at || new Date().toISOString().split('T')[0]
+      };
+
+      onLoginSuccess(matchedUser);
       onClose();
-    } else {
-      setSignInError('Invalid Administrator username/email or password.');
+    } catch (err: any) {
+      setSignInError(err?.message || 'Authentication failed. Please try again.');
     }
   };
 

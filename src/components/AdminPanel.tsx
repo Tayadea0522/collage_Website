@@ -3224,6 +3224,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
 
                 <div>
+                  <label className="font-bold text-slate-700">Managing Trust / Samiti Details</label>
+                  <textarea
+                    rows={2}
+                    value={infoForm.trustName || ''}
+                    onChange={(e) => setInfoForm({ ...infoForm, trustName: e.target.value })}
+                    className="w-full p-2 rounded border border-slate-300 font-medium bg-white text-slate-800"
+                    placeholder="Managing Trust Name & Registration details..."
+                  />
+                </div>
+
+                <div>
                   <label className="font-bold text-slate-700">Tagline</label>
                   <input
                     type="text"

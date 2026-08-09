@@ -78,16 +78,9 @@ export const storageService = {
     if (!data) return initialCollegeInfo;
     try {
       const parsed: CollegeInfo = JSON.parse(data);
-      if (
-        !parsed.affiliation?.includes('मपाविवि') || 
-        !parsed.approval?.includes('DAHD') || 
-        !parsed.trustName || 
-        !parsed.trustName.includes('Registration No')
-      ) {
+      if (!parsed.trustName) {
         const updated = {
           ...parsed,
-          affiliation: initialCollegeInfo.affiliation,
-          approval: initialCollegeInfo.approval,
           trustName: initialCollegeInfo.trustName
         };
         localStorage.setItem(KEYS.COLLEGE_INFO, JSON.stringify(updated));
@@ -768,7 +761,7 @@ export const storageService = {
       if (infoRes.status === 'fulfilled' && infoRes.value.data && infoRes.value.data.length > 0) {
         const row = infoRes.value.data[0];
         const loadedInfo = { ...(row.data || row) };
-        if (!loadedInfo.trustName || !loadedInfo.trustName.includes('Registration No')) {
+        if (!loadedInfo.trustName) {
           loadedInfo.trustName = initialCollegeInfo.trustName;
         }
         localStorage.setItem(KEYS.COLLEGE_INFO, JSON.stringify(loadedInfo));

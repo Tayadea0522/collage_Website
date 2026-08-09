@@ -1,5 +1,5 @@
-import { CollegeInfo, DepartmentInfo, Facility, FacultyMember, Notice, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser, DownloadableDocument } from '../types';
-import { initialCollegeInfo, initialDepartments, initialFacilities, initialFaculty, initialNotices, initialApplications, initialGallery, initialEvents, initialAdminUsers, initialDownloads } from '../data/initialData';
+import { CollegeInfo, DepartmentInfo, Facility, FacultyMember, Notice, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser, DownloadableDocument, PopupBanner } from '../types';
+import { initialCollegeInfo, initialDepartments, initialFacilities, initialFaculty, initialNotices, initialApplications, initialGallery, initialEvents, initialAdminUsers, initialDownloads, initialPopupBanner } from '../data/initialData';
 import { supabase } from '../supabaseClient';
 import { supabaseStorageService } from './supabaseStorageService';
 
@@ -13,7 +13,8 @@ const KEYS = {
   APPLICATIONS: 'lsscdt_applications_v2',
   GALLERY: 'lsscdt_gallery_v2',
   ADMIN_USERS: 'lsscdt_admin_users_v2',
-  DOWNLOADS: 'lsscdt_downloads_v2'
+  DOWNLOADS: 'lsscdt_downloads_v2',
+  POPUP_BANNER: 'lsscdt_popup_banner_v2'
 };
 
 export const storageService = {
@@ -561,6 +562,73 @@ export const storageService = {
     })();
   },
 
+  getPopupBanner: (): PopupBanner => {
+    const data = localStorage.getItem(KEYS.POPUP_BANNER);
+    if (!data) {
+      localStorage.setItem(KEYS.POPUP_BANNER, JSON.stringify(initialPopupBanner));
+      return initialPopupBanner;
+    }
+    try {
+      return JSON.parse(data);
+    } catch {
+      return initialPopupBanner;
+    }
+  },
+  savePopupBanner: (banner: PopupBanner): void => {
+    const updatedBanner = {
+      ...banner,
+      updatedAt: new Date().toISOString()
+    };
+    localStorage.setItem(KEYS.POPUP_BANNER, JSON.stringify(updatedBanner));
+    (async () => {
+      try {
+        let processedBanner = { ...updatedBanner };
+        if (processedBanner.imageUrl?.startsWith('data:')) {
+          const cloudUrl = await supabaseStorageService.uploadImage(processedBanner.imageUrl, 'banners');
+          if (cloudUrl && !cloudUrl.startsWith('data:')) {
+            processedBanner.imageUrl = cloudUrl;
+          }
+        }
+        localStorage.setItem(KEYS.POPUP_BANNER, JSON.stringify(processedBanner));
+
+        const { error } = await supabase.from('popup_banners').upsert([{
+          id: processedBanner.id || 'default',
+          is_active: processedBanner.isActive,
+          title: processedBanner.title || '',
+          description: processedBanner.description || '',
+          image_url: processedBanner.imageUrl || '',
+          button_text: processedBanner.buttonText || '',
+          button_url: processedBanner.buttonUrl || '',
+          display_frequency: processedBanner.displayFrequency || 'once_per_session',
+          start_date: processedBanner.startDate || '',
+          end_date: processedBanner.endDate || '',
+          created_at: processedBanner.createdAt || new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          data: processedBanner
+        }]);
+        if (error) console.log('Supabase popup_banners sync:', error.message);
+      } catch (err) {}
+    })();
+  },
+  deletePopupBanner: (): void => {
+    const defaultOff: PopupBanner = {
+      ...initialPopupBanner,
+      isActive: false,
+      title: '',
+      description: '',
+      imageUrl: '',
+      buttonText: '',
+      buttonUrl: '',
+      updatedAt: new Date().toISOString()
+    };
+    localStorage.setItem(KEYS.POPUP_BANNER, JSON.stringify(defaultOff));
+    (async () => {
+      try {
+        await supabase.from('popup_banners').delete().neq('id', 'EMPTY_DUMMY');
+      } catch (err) {}
+    })();
+  },
+
   // Fetch and hydrate state from Supabase
   syncFromSupabase: async (): Promise<boolean> => {
     try {
@@ -574,7 +642,8 @@ export const storageService = {
         galleryRes,
         infoRes,
         adminRes,
-        downloadsRes
+        downloadsRes,
+        popupRes
       ] = await Promise.allSettled([
         supabase.from('admission_applications').select('*'),
         supabase.from('notices').select('*'),
@@ -585,7 +654,8 @@ export const storageService = {
         supabase.from('gallery').select('*'),
         supabase.from('college_info').select('*'),
         supabase.from('admin_users').select('*'),
-        supabase.from('downloads').select('*')
+        supabase.from('downloads').select('*'),
+        supabase.from('popup_banners').select('*')
       ]);
 
       if (appsRes.status === 'fulfilled' && appsRes.value.data && appsRes.value.data.length > 0) {
@@ -629,6 +699,23 @@ export const storageService = {
         const loadedDownloads = downloadsRes.value.data.map(row => row.data || row);
         localStorage.setItem(KEYS.DOWNLOADS, JSON.stringify(loadedDownloads));
       }
+      if (popupRes.status === 'fulfilled' && popupRes.value.data && popupRes.value.data.length > 0) {
+        const row = popupRes.value.data[0];
+        const loadedPopup = row.data || {
+          id: row.id,
+          isActive: row.is_active,
+          title: row.title,
+          description: row.description,
+          imageUrl: row.image_url,
+          buttonText: row.button_text,
+          buttonUrl: row.button_url,
+          displayFrequency: row.display_frequency,
+          startDate: row.start_date,
+          endDate: row.end_date,
+          createdAt: row.created_at
+        };
+        localStorage.setItem(KEYS.POPUP_BANNER, JSON.stringify(loadedPopup));
+      }
 
       return true;
     } catch (err) {
@@ -647,6 +734,7 @@ export const storageService = {
     localStorage.setItem(KEYS.APPLICATIONS, JSON.stringify(initialApplications));
     localStorage.setItem(KEYS.GALLERY, JSON.stringify(initialGallery));
     localStorage.setItem(KEYS.ADMIN_USERS, JSON.stringify(initialAdminUsers));
+    localStorage.setItem(KEYS.POPUP_BANNER, JSON.stringify(initialPopupBanner));
   }
 };
 

@@ -229,3 +229,20 @@ export interface AdminUser {
   securityAnswer: string;
   createdAt: string;
 }
+
+export interface PopupBanner {
+  id: string;
+  isActive: boolean;
+  title?: string;
+  description?: string;
+  imageUrl?: string;
+  storagePath?: string;
+  buttonText?: string;
+  buttonUrl?: string;
+  displayFrequency: 'every_visit' | 'once_per_session' | 'once_per_day';
+  startDate?: string;
+  endDate?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+

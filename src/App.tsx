@@ -9,7 +9,8 @@ import {
   GalleryItem,
   CollegeEvent,
   AdminUser,
-  DownloadableDocument
+  DownloadableDocument,
+  PopupBanner
 } from './types';
 import { storageService } from './services/storageService';
 import { supabaseStorageService } from './services/supabaseStorageService';
@@ -28,6 +29,7 @@ import { Faculties } from './components/Faculties';
 import { Admissions } from './components/Admissions';
 import { AdminPanel } from './components/AdminPanel';
 import { AdminAuthModal } from './components/AdminAuthModal';
+import { PopupBannerModal } from './components/PopupBannerModal';
 
 import { 
   X, 
@@ -63,6 +65,10 @@ export default function App() {
 
   const [downloads, setDownloads] = useState<DownloadableDocument[]>(storageService.getDownloads());
 
+  // Public Website Popup State
+  const [popupBanner, setPopupBanner] = useState<PopupBanner | null>(() => storageService.getPopupBanner());
+  const [showPublicPopup, setShowPublicPopup] = useState<boolean>(false);
+
   // Multi-Admin Auth State
   const [currentAdminUser, setCurrentAdminUser] = useState<AdminUser | null>(null);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
@@ -78,8 +84,62 @@ export default function App() {
   useEffect(() => {
     storageService.syncFromSupabase().then(() => {
       refreshAllData();
+      checkAndShowPopup();
     });
   }, []);
+
+  const checkAndShowPopup = () => {
+    const popup = storageService.getPopupBanner();
+    setPopupBanner(popup);
+
+    if (!popup || !popup.isActive) {
+      setShowPublicPopup(false);
+      return;
+    }
+
+    // Schedule dates check
+    const today = new Date().toISOString().split('T')[0];
+    if (popup.startDate && today < popup.startDate) {
+      setShowPublicPopup(false);
+      return;
+    }
+    if (popup.endDate && today > popup.endDate) {
+      setShowPublicPopup(false);
+      return;
+    }
+
+    // Display frequency check
+    if (popup.displayFrequency === 'once_per_session') {
+      const isDismissed = sessionStorage.getItem('lsscdt_popup_dismissed');
+      if (isDismissed === 'true') {
+        setShowPublicPopup(false);
+        return;
+      }
+    } else if (popup.displayFrequency === 'once_per_day') {
+      const dismissedDate = localStorage.getItem('lsscdt_popup_dismissed_date');
+      if (dismissedDate === today) {
+        setShowPublicPopup(false);
+        return;
+      }
+    }
+
+    // Show popup after slight delay
+    setTimeout(() => {
+      setShowPublicPopup(true);
+    }, 800);
+  };
+
+  const handleClosePublicPopup = () => {
+    setShowPublicPopup(false);
+    if (popupBanner) {
+      const today = new Date().toISOString().split('T')[0];
+      if (popupBanner.displayFrequency === 'once_per_session') {
+        sessionStorage.setItem('lsscdt_popup_dismissed', 'true');
+      } else if (popupBanner.displayFrequency === 'once_per_day') {
+        localStorage.setItem('lsscdt_popup_dismissed_date', today);
+      }
+    }
+  };
 
   const refreshAllData = () => {
     setCollegeInfo(storageService.getCollegeInfo());
@@ -91,6 +151,7 @@ export default function App() {
     setApplications(storageService.getApplications());
     setGallery(storageService.getGallery());
     setDownloads(storageService.getDownloads());
+    setPopupBanner(storageService.getPopupBanner());
   };
 
   const handleAdminLogout = () => {
@@ -528,6 +589,13 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Public Website Popup Modal */}
+      <PopupBannerModal
+        popup={popupBanner}
+        isOpen={showPublicPopup}
+        onClose={handleClosePublicPopup}
+      />
 
     </div>
   );

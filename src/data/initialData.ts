@@ -1,4 +1,4 @@
-import { CollegeInfo, DepartmentInfo, Facility, FacultyMember, Notice, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser, DownloadableDocument } from '../types';
+import { CollegeInfo, DepartmentInfo, Facility, FacultyMember, Notice, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser, DownloadableDocument, PopupBanner } from '../types';
 
 export const initialCollegeInfo: CollegeInfo = {
   name: "Late Shaktikumar Sancheti College of Dairy Technology",
@@ -546,4 +546,19 @@ export const initialDownloads: DownloadableDocument[] = [
     createdAt: "2026-01-20"
   }
 ];
+
+export const initialPopupBanner: PopupBanner = {
+  id: "banner-default",
+  isActive: true,
+  title: "Admissions Open 2026-27 | B.Tech Dairy Technology",
+  description: "Applications invited for B.Tech Dairy Technology (4-Year Degree) & Direct 2nd Year Lateral Entry. State Govt. approved & MAFSU Nagpur affiliated.",
+  imageUrl: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80",
+  buttonText: "Apply Online Now",
+  buttonUrl: "#admissions",
+  displayFrequency: "once_per_session",
+  startDate: "",
+  endDate: "",
+  createdAt: "2026-06-01"
+};
+
 

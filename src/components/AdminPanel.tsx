@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
-import { CollegeInfo, Notice, DepartmentInfo, FacultyMember, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser, DownloadableDocument, NoticeAttachment } from '../types';
+import { CollegeInfo, Notice, DepartmentInfo, FacultyMember, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser, DownloadableDocument, NoticeAttachment, PopupBanner } from '../types';
 import { storageService } from '../services/storageService';
 import { zipService } from '../services/zipService';
 import { supabaseStorageService } from '../services/supabaseStorageService';
 import { printApplicationSlip, downloadApplicationSlip } from '../utils/printUtils';
+import { PopupBannerManager } from './PopupBannerManager';
+import { PopupBannerModal } from './PopupBannerModal';
 import { 
   Lock, 
   LogOut, 
@@ -30,6 +32,7 @@ import {
   LayoutGrid,
   GraduationCap,
   Download,
+  Bell,
   Printer,
   Settings,
   Phone,
@@ -79,12 +82,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     | 'notices' 
     | 'events' 
     | 'downloads' 
+    | 'popup'
     | 'info' 
     | 'contact' 
     | 'admin_users';
 
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Popup Banner state
+  const [popupBanner, setPopupBanner] = useState<PopupBanner>(() => storageService.getPopupBanner());
+  const [previewPopup, setPreviewPopup] = useState<PopupBanner | null>(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   // Admin Users management state
   const [showAddAdminModal, setShowAddAdminModal] = useState(false);
@@ -1079,6 +1088,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     { id: 'notices', label: 'Notices', icon: FileText },
     { id: 'events', label: 'Events', icon: Calendar },
     { id: 'downloads', label: 'Downloads', icon: Download },
+    { id: 'popup', label: 'Popup Banner', icon: Bell },
     { id: 'info', label: 'Content CMS', icon: Sliders },
     { id: 'contact', label: 'Contact Info', icon: Phone },
     { id: 'admin_users', label: 'Admin Users', icon: UserCheck },
@@ -3588,6 +3598,37 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 />
               </div>
             </div>
+          </div>
+        )}
+
+        {/* TAB 11: WEBSITE POPUP / ANNOUNCEMENT BANNER */}
+        {activeTab === 'popup' && (
+          <div className="space-y-6">
+            <PopupBannerManager
+              popup={popupBanner}
+              onSave={(updated) => {
+                setPopupBanner(updated);
+                storageService.savePopupBanner(updated);
+              }}
+              onDelete={() => {
+                storageService.deletePopupBanner();
+                const fresh = storageService.getPopupBanner();
+                setPopupBanner(fresh);
+              }}
+              onPreview={(b) => {
+                setPreviewPopup(b);
+                setShowPreviewModal(true);
+              }}
+              showToast={showToast}
+            />
+
+            {/* Admin Popup Preview Modal */}
+            <PopupBannerModal
+              popup={previewPopup}
+              isOpen={showPreviewModal}
+              onClose={() => setShowPreviewModal(false)}
+              isPreview={true}
+            />
           </div>
         )}
 

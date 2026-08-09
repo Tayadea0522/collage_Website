@@ -591,21 +591,38 @@ export const storageService = {
         }
         localStorage.setItem(KEYS.POPUP_BANNER, JSON.stringify(processedBanner));
 
-        const { error } = await supabase.from('popup_banners').upsert([{
-          id: processedBanner.id || 'default',
-          is_active: processedBanner.isActive,
+        // Check if ID is a valid UUID or find an existing row in Supabase
+        let targetId = processedBanner.id;
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId);
+        if (!isUuid) {
+          const { data: existingRows } = await supabase.from('popup_banners').select('id').limit(1);
+          if (existingRows && existingRows.length > 0 && existingRows[0].id) {
+            targetId = existingRows[0].id;
+            processedBanner.id = targetId;
+            localStorage.setItem(KEYS.POPUP_BANNER, JSON.stringify(processedBanner));
+          }
+        }
+
+        const recordToUpsert: any = {
+          is_active: Boolean(processedBanner.isActive),
           title: processedBanner.title || '',
           description: processedBanner.description || '',
           image_url: processedBanner.imageUrl || '',
           button_text: processedBanner.buttonText || '',
           button_url: processedBanner.buttonUrl || '',
           display_frequency: processedBanner.displayFrequency || 'once_per_session',
-          start_date: processedBanner.startDate || '',
-          end_date: processedBanner.endDate || '',
+          start_date: processedBanner.startDate ? processedBanner.startDate : null,
+          end_date: processedBanner.endDate ? processedBanner.endDate : null,
           created_at: processedBanner.createdAt || new Date().toISOString(),
           updated_at: new Date().toISOString(),
           data: processedBanner
-        }]);
+        };
+
+        if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId)) {
+          recordToUpsert.id = targetId;
+        }
+
+        const { error } = await supabase.from('popup_banners').upsert([recordToUpsert]);
         if (error) console.log('Supabase popup_banners sync:', error.message);
       } catch (err) {}
     })();
@@ -624,7 +641,18 @@ export const storageService = {
     localStorage.setItem(KEYS.POPUP_BANNER, JSON.stringify(defaultOff));
     (async () => {
       try {
-        await supabase.from('popup_banners').delete().neq('id', 'EMPTY_DUMMY');
+        await supabase.from('popup_banners').update({
+          is_active: false,
+          title: '',
+          description: '',
+          image_url: '',
+          button_text: '',
+          button_url: '',
+          start_date: null,
+          end_date: null,
+          updated_at: new Date().toISOString(),
+          data: defaultOff
+        }).neq('id', '00000000-0000-0000-0000-000000000000');
       } catch (err) {}
     })();
   },
@@ -700,19 +728,23 @@ export const storageService = {
         localStorage.setItem(KEYS.DOWNLOADS, JSON.stringify(loadedDownloads));
       }
       if (popupRes.status === 'fulfilled' && popupRes.value.data && popupRes.value.data.length > 0) {
-        const row = popupRes.value.data[0];
-        const loadedPopup = row.data || {
-          id: row.id,
-          isActive: row.is_active,
-          title: row.title,
-          description: row.description,
-          imageUrl: row.image_url,
-          buttonText: row.button_text,
-          buttonUrl: row.button_url,
-          displayFrequency: row.display_frequency,
-          startDate: row.start_date,
-          endDate: row.end_date,
-          createdAt: row.created_at
+        const rows = popupRes.value.data;
+        const activeRow = rows.find((r: any) => r.is_active === true) || rows[0];
+        const d = (activeRow.data && typeof activeRow.data === 'object' && Object.keys(activeRow.data).length > 0) ? activeRow.data : {};
+        
+        const loadedPopup: PopupBanner = {
+          id: activeRow.id || d.id || 'banner-default',
+          isActive: activeRow.is_active !== undefined && activeRow.is_active !== null ? Boolean(activeRow.is_active) : (d.isActive ?? false),
+          title: activeRow.title || d.title || '',
+          description: activeRow.description || d.description || '',
+          imageUrl: activeRow.image_url || d.imageUrl || '',
+          buttonText: activeRow.button_text || d.buttonText || '',
+          buttonUrl: activeRow.button_url || d.buttonUrl || '',
+          displayFrequency: activeRow.display_frequency || d.displayFrequency || 'once_per_session',
+          startDate: activeRow.start_date || d.startDate || '',
+          endDate: activeRow.end_date || d.endDate || '',
+          createdAt: activeRow.created_at || d.createdAt || new Date().toISOString(),
+          updatedAt: activeRow.updated_at || d.updatedAt || new Date().toISOString()
         };
         localStorage.setItem(KEYS.POPUP_BANNER, JSON.stringify(loadedPopup));
       }

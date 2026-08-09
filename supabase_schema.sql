@@ -122,3 +122,39 @@ USING (bucket_id = 'admissions');
 -- ==============================================================================
 -- SCHEMA & STORAGE CONFIGURATION COMPLETE!
 -- ==============================================================================
+
+-- 6. Create Popup Banners Table & RLS Policies
+CREATE TABLE IF NOT EXISTS public.popup_banners (
+    id VARCHAR(100) PRIMARY KEY DEFAULT 'banner-default',
+    is_active BOOLEAN DEFAULT FALSE,
+    title TEXT DEFAULT '',
+    description TEXT DEFAULT '',
+    image_url TEXT DEFAULT '',
+    button_text TEXT DEFAULT '',
+    button_url TEXT DEFAULT '',
+    display_frequency VARCHAR(50) DEFAULT 'once_per_session',
+    start_date VARCHAR(20) DEFAULT '',
+    end_date VARCHAR(20) DEFAULT '',
+    data JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE public.popup_banners ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow public select for popup_banners"
+ON public.popup_banners FOR SELECT
+USING (true);
+
+CREATE POLICY "Allow public/admin insert for popup_banners"
+ON public.popup_banners FOR INSERT
+WITH CHECK (true);
+
+CREATE POLICY "Allow public/admin update for popup_banners"
+ON public.popup_banners FOR UPDATE
+USING (true);
+
+CREATE POLICY "Allow public/admin delete for popup_banners"
+ON public.popup_banners FOR DELETE
+USING (true);
+

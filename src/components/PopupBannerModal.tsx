@@ -49,7 +49,7 @@ export const PopupBannerModal: React.FC<PopupBannerModalProps> = ({
     <div className="fixed inset-0 z-[100] bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fadeIn">
       {/* Modal Container */}
       <div 
-        className="relative bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-100 max-w-lg sm:max-w-xl w-full flex flex-col my-auto max-h-[calc(100vh-1.5rem)] text-slate-800 animate-scaleUp overflow-y-auto"
+        className="relative bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-lg sm:max-w-2xl md:max-w-3xl lg:max-w-4xl w-full flex flex-col my-auto max-h-[calc(100vh-2rem)] text-slate-800 animate-scaleUp overflow-y-auto overflow-x-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
@@ -69,11 +69,11 @@ export const PopupBannerModal: React.FC<PopupBannerModalProps> = ({
           </div>
         )}
 
-        {/* Banner Image - Natural aspect ratio, full width, height auto */}
+        {/* Banner Image - Pure block flow with natural aspect ratio driving height */}
         {popup.imageUrl && !imageError ? (
-          <div className="relative w-full bg-slate-50 overflow-hidden shrink-0 flex items-center justify-center min-h-[100px]">
+          <div className="relative w-full bg-slate-50 shrink-0">
             {imageLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-slate-400 z-10 py-10">
+              <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-slate-400 z-10 py-12">
                 <div className="w-6 h-6 border-2 border-slate-300 border-t-amber-500 rounded-full animate-spin" />
               </div>
             )}
@@ -85,8 +85,8 @@ export const PopupBannerModal: React.FC<PopupBannerModalProps> = ({
                 setImageError(true);
                 setImageLoading(false);
               }}
-              className={`w-full h-auto block object-contain transition-opacity duration-300 ${
-                imageLoading ? 'opacity-0' : 'opacity-100'
+              className={`w-full h-auto block transition-opacity duration-300 ${
+                imageLoading ? 'opacity-0 min-h-[120px]' : 'opacity-100'
               }`}
             />
           </div>

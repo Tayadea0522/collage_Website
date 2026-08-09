@@ -91,7 +91,7 @@ export const Footer: React.FC<FooterProps> = ({
                   Malkapur, MH
                 </p>
                 <p className="text-[10px] text-amber-300 font-medium">
-                  Managed by {collegeInfo.trustName || 'Late. Madanlalji Kisanlalji Sancheti Seva Samiti, Malkapur'}
+                  Managed by {collegeInfo.trustName || 'Late. Madanlalji - Kisanlalji Sancheti Seva Samiti, Malkapur (Registration No. Maharashtra 2563/Date. 14/07/92 buldhana F2652/Date. 20/01/93)'}
                 </p>
               </div>
             </div>

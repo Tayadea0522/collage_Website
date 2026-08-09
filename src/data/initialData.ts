@@ -4,7 +4,7 @@ export const initialCollegeInfo: CollegeInfo = {
   name: "Late Shaktikumar Sancheti College of Dairy Technology",
   shortName: "LSSCDT",
   tagline: "College of Dairy Technology",
-  trustName: "Late. Madanlalji Kisanlalji Sancheti Seva Samiti, Malkapur",
+  trustName: "Late. Madanlalji - Kisanlalji Sancheti Seva Samiti, Malkapur (Registration No. Maharashtra 2563/Date. 14/07/92 buldhana F2652/Date. 20/01/93)",
   logoImage: "/logo.svg",
   affiliation: "Affiliated to Maharashtra Animal & Fishery Sciences University (MAFSU), Nagpur ( मपाविवि/प.वि./शा./स.शा.अ.(60)/ नस्ती क्र. 281/739/26 17/07/2026)",
   approval: "Approved by the State Government of Maharashtra (DAHD-12024/73/2026-AH(1696785) 16/07/2026)",

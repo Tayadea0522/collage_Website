@@ -135,7 +135,7 @@ export const Header: React.FC<HeaderProps> = ({
                 College of Dairy Technology
               </p>
               <p className="text-[10px] sm:text-[11px] font-semibold text-slate-600 tracking-tight">
-                Managed by {collegeInfo.trustName || 'Late. Madanlalji Kisanlalji Sancheti Seva Samiti, Malkapur'}
+                Managed by {collegeInfo.trustName || 'Late. Madanlalji - Kisanlalji Sancheti Seva Samiti, Malkapur (Registration No. Maharashtra 2563/Date. 14/07/92 buldhana F2652/Date. 20/01/93)'}
               </p>
             </div>
           </div>

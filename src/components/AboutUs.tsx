@@ -20,7 +20,7 @@ export const AboutUs: React.FC<AboutUsProps> = ({ collegeInfo }) => {
             {collegeInfo.name}
           </h1>
           <p className="text-amber-300 font-bold text-sm sm:text-base">
-            Managed by {collegeInfo.trustName || 'Late. Madanlalji Kisanlalji Sancheti Seva Samiti, Malkapur'}
+            Managed by {collegeInfo.trustName || 'Late. Madanlalji - Kisanlalji Sancheti Seva Samiti, Malkapur (Registration No. Maharashtra 2563/Date. 14/07/92 buldhana F2652/Date. 20/01/93)'}
           </p>
           <p className="text-slate-200 text-sm sm:text-base leading-relaxed">
             {collegeInfo.tagline}

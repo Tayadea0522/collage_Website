@@ -99,6 +99,12 @@ export const storageService = {
       if (!loadedInfo.trustName) {
         loadedInfo.trustName = initialCollegeInfo.trustName;
       }
+      if (!loadedInfo.leftLogoImage) {
+        loadedInfo.leftLogoImage = loadedInfo.logoImage || initialCollegeInfo.leftLogoImage || '/logo.svg';
+      }
+      if (!loadedInfo.rightLogoImage) {
+        loadedInfo.rightLogoImage = initialCollegeInfo.rightLogoImage || '/logo.svg';
+      }
       return loadedInfo;
     } catch {
       return initialCollegeInfo;
@@ -113,6 +119,19 @@ export const storageService = {
         if (isInvalidOrPrivateUrl(updatedInfo.logoImage)) {
           const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.logoImage!, 'college');
           if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.logoImage = cloudUrl;
+        }
+        if (isInvalidOrPrivateUrl(updatedInfo.leftLogoImage)) {
+          const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.leftLogoImage!, 'college');
+          if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) {
+            updatedInfo.leftLogoImage = cloudUrl;
+            if (!updatedInfo.logoImage || isInvalidOrPrivateUrl(updatedInfo.logoImage)) {
+              updatedInfo.logoImage = cloudUrl;
+            }
+          }
+        }
+        if (isInvalidOrPrivateUrl(updatedInfo.rightLogoImage)) {
+          const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.rightLogoImage!, 'college');
+          if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.rightLogoImage = cloudUrl;
         }
         if (isInvalidOrPrivateUrl(updatedInfo.shaktikumarImage)) {
           const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.shaktikumarImage!, 'college');

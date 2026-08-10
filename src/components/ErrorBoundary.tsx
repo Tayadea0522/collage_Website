@@ -12,24 +12,31 @@ interface State {
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
-    hasError: false,
-    error: null
-  };
+  declare props: Props;
+  declare state: State;
+  declare setState: Component<Props, State>['setState'];
 
-  public static getDerivedStateFromError(error: Error): State {
+  constructor(props: Props) {
+    super(props);
+    this.state = {
+      hasError: false,
+      error: null
+    };
+  }
+
+  static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
   }
 
-  public handleReset = () => {
+  handleReset = () => {
     this.setState({ hasError: false, error: null });
   };
 
-  public render() {
+  render() {
     if (this.state.hasError) {
       return (
         <div className="p-8 max-w-2xl mx-auto my-12 bg-white rounded-2xl border border-red-200 shadow-xl space-y-4 text-center">

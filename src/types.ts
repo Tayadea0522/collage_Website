@@ -160,6 +160,8 @@ export interface CollegeInfo {
   shortName: string;
   tagline: string;
   logoImage?: string;
+  leftLogoImage?: string;
+  rightLogoImage?: string;
   trustName?: string;
   affiliation: string;
   approval: string;

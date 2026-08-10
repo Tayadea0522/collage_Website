@@ -3170,9 +3170,185 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           <form onSubmit={handleSaveInfo} className="space-y-6">
             <div className="flex justify-between items-center border-b pb-3">
               <h2 className="text-xl font-bold font-serif text-[#0A2342]">Website Content CMS</h2>
-              <button type="submit" className="bg-[#D97706] text-slate-950 font-bold px-4 py-2 rounded-lg text-xs shadow">
-                Save All Changes
+              <button type="submit" className="bg-[#D97706] text-slate-950 hover:bg-amber-600 font-bold px-5 py-2 rounded-lg text-xs shadow flex items-center gap-1.5">
+                <Save className="w-4 h-4" /> Save All Changes
               </button>
+            </div>
+
+            {/* HEADER / WEBSITE BRANDING SECTION */}
+            <div className="bg-[#F0F4F8] p-6 rounded-2xl border border-slate-200 space-y-5">
+              <div className="border-b border-slate-200/80 pb-3 flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-[#0A2342] text-base font-serif flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#D97706]" />
+                    HEADER / WEBSITE BRANDING
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Configure the two independent college logos displayed on the left and right sides of the main header banner.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                {/* LEFT LOGO */}
+                <div className="bg-white p-5 rounded-xl border border-slate-200 space-y-4 shadow-sm flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between border-b pb-2">
+                      <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                        <ImageIcon className="w-3.5 h-3.5 text-[#0A2342]" />
+                        LEFT LOGO
+                      </h4>
+                      <span className="text-[10px] bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded border border-blue-200">
+                        Header Left Position
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
+                        Current Logo Preview
+                      </label>
+                      <div className="w-full h-32 rounded-xl bg-slate-50 border-2 border-dashed border-slate-300 p-3 flex items-center justify-center relative group">
+                        {(infoForm.leftLogoImage || infoForm.logoImage) ? (
+                          <img
+                            src={infoForm.leftLogoImage || infoForm.logoImage}
+                            alt="Left Logo Preview"
+                            className="max-h-28 max-w-full object-contain"
+                          />
+                        ) : (
+                          <div className="text-center text-slate-400 text-xs">
+                            No Left Logo Set
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="text-[11px] text-slate-600 space-y-0.5 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                      <div className="font-bold text-slate-800">Recommended Specifications:</div>
+                      <div>Format: PNG / JPG / SVG</div>
+                      <div>Transparent PNG preferred for best appearance.</div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-3 border-t border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <label className="flex-1 cursor-pointer bg-[#0A2342] hover:bg-slate-900 text-amber-400 font-bold px-3 py-2 rounded-lg text-xs text-center transition-colors shadow-sm flex items-center justify-center gap-1.5">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>{(infoForm.leftLogoImage || infoForm.logoImage) ? 'Replace Left Logo' : 'Upload New Left Logo'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              handleImageFileUpload(file, (url) => {
+                                setInfoForm(prev => ({
+                                  ...prev,
+                                  leftLogoImage: url,
+                                  logoImage: url
+                                }));
+                              }, 'header_logos');
+                            }
+                          }}
+                        />
+                      </label>
+
+                      {(infoForm.leftLogoImage || infoForm.logoImage) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setInfoForm(prev => ({ ...prev, leftLogoImage: '', logoImage: '' }));
+                            showToast('Left logo removed. Click "Save All Changes" to update.');
+                          }}
+                          className="px-3 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold rounded-lg text-xs border border-rose-200 transition-colors shrink-0"
+                        >
+                          Remove Logo
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* RIGHT LOGO */}
+                <div className="bg-white p-5 rounded-xl border border-slate-200 space-y-4 shadow-sm flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between border-b pb-2">
+                      <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                        <ImageIcon className="w-3.5 h-3.5 text-[#0A2342]" />
+                        RIGHT LOGO
+                      </h4>
+                      <span className="text-[10px] bg-amber-50 text-amber-800 font-bold px-2 py-0.5 rounded border border-amber-200">
+                        Header Right Position
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
+                        Current Logo Preview
+                      </label>
+                      <div className="w-full h-32 rounded-xl bg-slate-50 border-2 border-dashed border-slate-300 p-3 flex items-center justify-center relative group">
+                        {infoForm.rightLogoImage ? (
+                          <img
+                            src={infoForm.rightLogoImage}
+                            alt="Right Logo Preview"
+                            className="max-h-28 max-w-full object-contain"
+                          />
+                        ) : (
+                          <div className="text-center text-slate-400 text-xs">
+                            No Right Logo Set
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="text-[11px] text-slate-600 space-y-0.5 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                      <div className="font-bold text-slate-800">Recommended Specifications:</div>
+                      <div>Format: PNG / JPG / SVG</div>
+                      <div>Transparent PNG preferred for best appearance.</div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-3 border-t border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <label className="flex-1 cursor-pointer bg-[#0A2342] hover:bg-slate-900 text-amber-400 font-bold px-3 py-2 rounded-lg text-xs text-center transition-colors shadow-sm flex items-center justify-center gap-1.5">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>{infoForm.rightLogoImage ? 'Replace Right Logo' : 'Upload New Right Logo'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              handleImageFileUpload(file, (url) => {
+                                setInfoForm(prev => ({
+                                  ...prev,
+                                  rightLogoImage: url
+                                }));
+                              }, 'header_logos');
+                            }
+                          }}
+                        />
+                      </label>
+
+                      {infoForm.rightLogoImage && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setInfoForm(prev => ({ ...prev, rightLogoImage: '' }));
+                            showToast('Right logo removed. Click "Save All Changes" to update.');
+                          }}
+                          className="px-3 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold rounded-lg text-xs border border-rose-200 transition-colors shrink-0"
+                        >
+                          Remove Logo
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+              </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-xs">

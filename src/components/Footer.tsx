@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CollegeInfo } from '../types';
 import { 
   FileText, 
@@ -13,7 +13,8 @@ import {
   BookOpen,
   Building2,
   Image as ImageIcon,
-  Award
+  Award,
+  ExternalLink
 } from 'lucide-react';
 
 interface FooterProps {
@@ -21,6 +22,107 @@ interface FooterProps {
   onNavigate: (tab: string) => void;
   onOpenAdmin: () => void;
 }
+
+interface InstitutionalLink {
+  id: string;
+  name: string;
+  fullName: string;
+  url: string;
+  logo: string;
+  fallbackLogo?: string;
+  accentColor: string;
+}
+
+const INSTITUTIONAL_LINKS: InstitutionalLink[] = [
+  {
+    id: 'icar',
+    name: 'ICAR',
+    fullName: 'Indian Council of Agricultural Research',
+    url: 'https://icar.gov.in/',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/2/21/Logo_of_the_Indian_Council_of_Agricultural_Research.svg',
+    fallbackLogo: 'https://icar.gov.in/sites/default/files/icar-logo.png',
+    accentColor: '#16a34a',
+  },
+  {
+    id: 'dbt',
+    name: 'DBT',
+    fullName: 'Department of Biotechnology',
+    url: 'https://dbtindia.gov.in/',
+    logo: 'https://dbtindia.gov.in/sites/default/files/dbt-logo.png',
+    fallbackLogo: 'https://dbt.gov.in/sites/default/files/dbt-logo.png',
+    accentColor: '#2563eb',
+  },
+  {
+    id: 'mhcet',
+    name: 'MH-CET',
+    fullName: 'State CET Cell, Maharashtra State',
+    url: 'https://cetcell.mahacet.org/',
+    logo: 'https://cetcell.mahacet.org/wp-content/uploads/2023/12/cet_cell_logo.png',
+    fallbackLogo: 'https://cetcell.mahacet.org/wp-content/uploads/2021/08/logo.png',
+    accentColor: '#ea580c',
+  },
+  {
+    id: 'mafsu',
+    name: 'MAFSU',
+    fullName: 'Maharashtra Animal & Fishery Sciences University',
+    url: 'https://www.mafsu.ac.in/',
+    logo: 'https://www.mafsu.ac.in/images/mafsu_logo.png',
+    fallbackLogo: 'https://www.mafsu.ac.in/images/logo.png',
+    accentColor: '#0284c7',
+  },
+];
+
+const QuickLinkCard: React.FC<{ item: InstitutionalLink }> = ({ item }) => {
+  const [imgSrc, setImgSrc] = useState<string>(item.logo);
+  const [hasError, setHasError] = useState<boolean>(false);
+
+  const handleError = () => {
+    if (item.fallbackLogo && imgSrc !== item.fallbackLogo) {
+      setImgSrc(item.fallbackLogo);
+    } else {
+      setHasError(true);
+    }
+  };
+
+  return (
+    <a
+      href={item.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="bg-[#123158]/90 hover:bg-[#183B6B] border border-blue-400/20 hover:border-amber-400/50 rounded-xl p-4 sm:p-5 flex items-center justify-between gap-4 transition-all duration-200 group hover:-translate-y-0.5 shadow-sm hover:shadow-md cursor-pointer"
+    >
+      <div className="flex items-center gap-3.5 min-w-0">
+        <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-lg p-1.5 shrink-0 flex items-center justify-center shadow-inner overflow-hidden">
+          {!hasError ? (
+            <img
+              src={imgSrc}
+              alt={`${item.name} Logo`}
+              onError={handleError}
+              referrerPolicy="no-referrer"
+              className="w-full h-full object-contain"
+            />
+          ) : (
+            <div 
+              style={{ backgroundColor: item.accentColor }} 
+              className="w-full h-full text-white font-black text-xs sm:text-sm rounded flex items-center justify-center tracking-tight text-center px-1"
+            >
+              {item.name}
+            </div>
+          )}
+        </div>
+        <div className="min-w-0">
+          <div className="text-base sm:text-lg font-bold text-white group-hover:text-amber-300 transition-colors tracking-wide">
+            {item.name}
+          </div>
+          <div className="text-xs text-slate-300 truncate group-hover:text-slate-100 transition-colors">
+            {item.fullName}
+          </div>
+        </div>
+      </div>
+      <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-amber-400 shrink-0 transition-colors" />
+    </a>
+  );
+};
 
 export const Footer: React.FC<FooterProps> = ({
   collegeInfo,
@@ -184,6 +286,18 @@ export const Footer: React.FC<FooterProps> = ({
             </div>
           </div>
 
+        </div>
+
+        {/* Institutional Quick Links Section */}
+        <div className="mt-12 pt-8 border-t border-blue-900/60 space-y-4">
+          <h4 className="text-lg sm:text-xl font-bold text-white font-serif tracking-wide">
+            Quick Links
+          </h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {INSTITUTIONAL_LINKS.map((item) => (
+              <QuickLinkCard key={item.id} item={item} />
+            ))}
+          </div>
         </div>
 
         {/* Bottom Bar */}

@@ -218,6 +218,18 @@ export const Home: React.FC<HomeProps> = ({
           <div className="space-y-8 sm:space-y-10">
             {[
               {
+                id: 'president',
+                roleKey: "President's Message",
+                name: collegeInfo.presidentName || "Shri Madanlalji Sancheti",
+                designation: collegeInfo.presidentDesignation || "President",
+                institution: collegeInfo.presidentInstitution || "Late Shaktikumar Sancheti College of Dairy Technology, Malkapur",
+                message: collegeInfo.presidentMessage || "Our mission is to build a modern center of excellence in dairy technology that empowers students with cutting-edge knowledge, practical skills, and moral values to lead and transform the dairy sector.",
+                image: collegeInfo.presidentImage || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+                badgeColor: "bg-[#0A2342] text-amber-400",
+                accentBorder: "border-l-4 border-l-[#0A2342]",
+                photoOnLeft: true
+              },
+              {
                 id: 'dean',
                 roleKey: "Dean's Message",
                 name: collegeInfo.deanName || "Dr. P. L. Chaudhari",
@@ -225,9 +237,9 @@ export const Home: React.FC<HomeProps> = ({
                 institution: collegeInfo.deanInstitution || "Late Shaktikumar Sancheti College of Dairy Technology, Malkapur",
                 message: collegeInfo.deanMessage || "Welcome to Late Shaktikumar Sancheti College of Dairy Technology. Our institution is committed to providing world-class education in dairy science and technology. We nurture students to become skilled professionals who contribute to India's dairy industry.",
                 image: collegeInfo.deanImage || "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=300&q=80",
-                badgeColor: "bg-[#0A2342] text-amber-400",
-                accentBorder: "border-l-4 border-l-[#0A2342]",
-                photoOnLeft: true
+                badgeColor: "bg-[#D97706] text-white",
+                accentBorder: "border-l-4 border-l-[#D97706]",
+                photoOnLeft: false
               },
               {
                 id: 'secretary',
@@ -237,9 +249,9 @@ export const Home: React.FC<HomeProps> = ({
                 institution: collegeInfo.secretaryInstitution || "Late Shaktikumar Sancheti College of Dairy Technology, Malkapur",
                 message: collegeInfo.secretaryMessage || "It is our commitment to build an institution that not only imparts technical knowledge but also shapes the character and values of our students. LSSCDT stands as a symbol of our dedication to rural development and the dairy industry of India.",
                 image: collegeInfo.secretaryImage || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80",
-                badgeColor: "bg-[#D97706] text-white",
-                accentBorder: "border-l-4 border-l-[#D97706]",
-                photoOnLeft: false
+                badgeColor: "bg-indigo-900 text-amber-300",
+                accentBorder: "border-l-4 border-l-indigo-900",
+                photoOnLeft: true
               },
               {
                 id: 'adminOfficer',
@@ -251,18 +263,6 @@ export const Home: React.FC<HomeProps> = ({
                 image: collegeInfo.adminOfficerImage || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80",
                 badgeColor: "bg-emerald-800 text-white",
                 accentBorder: "border-l-4 border-l-emerald-800",
-                photoOnLeft: true
-              },
-              {
-                id: 'president',
-                roleKey: "President's Message",
-                name: collegeInfo.presidentName || "Shri Madanlalji Sancheti",
-                designation: collegeInfo.presidentDesignation || "President",
-                institution: collegeInfo.presidentInstitution || "Late Shaktikumar Sancheti College of Dairy Technology, Malkapur",
-                message: collegeInfo.presidentMessage || "Our mission is to build a modern center of excellence in dairy technology that empowers students with cutting-edge knowledge, practical skills, and moral values to lead and transform the dairy sector.",
-                image: collegeInfo.presidentImage || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
-                badgeColor: "bg-indigo-900 text-amber-300",
-                accentBorder: "border-l-4 border-l-indigo-900",
                 photoOnLeft: false
               }
             ].map((leader) => (

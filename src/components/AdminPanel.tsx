@@ -3599,12 +3599,103 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* 1. Dean Details */}
+                  {/* 1. President Details */}
                   <div className="space-y-4 bg-[#F0F4F8] p-5 rounded-2xl border border-slate-200 flex flex-col justify-between shadow-sm">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between border-b border-slate-300 pb-2">
-                        <span className="font-extrabold text-[#0A2342] text-base">1. Dean</span>
+                        <span className="font-extrabold text-[#0A2342] text-base">1. President</span>
                         <span className="text-xs bg-[#0A2342] text-amber-400 font-bold px-2.5 py-0.5 rounded-full">Leader 1</span>
+                      </div>
+
+                      {/* Photo Preview & Upload */}
+                      <div>
+                        <label className="font-bold text-slate-700 text-xs block mb-1">Photo Preview & Upload</label>
+                        <div className="flex items-center gap-4 bg-white p-3 rounded-xl border border-slate-200">
+                          <img
+                            src={infoForm.presidentImage || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80"}
+                            alt={infoForm.presidentName || "President"}
+                            referrerPolicy="no-referrer"
+                            className="w-20 h-24 rounded-lg object-cover bg-slate-100 border border-slate-200 shrink-0"
+                          />
+                          <div className="flex-1 space-y-2">
+                            <input
+                              type="text"
+                              value={infoForm.presidentImage || ''}
+                              onChange={(e) => setInfoForm({ ...infoForm, presidentImage: e.target.value })}
+                              className="w-full p-2 text-xs rounded border border-slate-300 bg-white"
+                              placeholder="Image URL or upload"
+                            />
+                            <label className="cursor-pointer inline-flex items-center gap-1 bg-[#0A2342] text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-slate-900 shadow-sm">
+                              <Upload className="w-3.5 h-3.5" />
+                              <span>Upload Photo</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    handleImageFileUpload(file, (url) => setInfoForm(prev => ({ ...prev, presidentImage: url })));
+                                  }
+                                }}
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="font-bold text-slate-700 text-xs block mb-1">Name</label>
+                        <input
+                          type="text"
+                          value={infoForm.presidentName || ''}
+                          onChange={(e) => setInfoForm({ ...infoForm, presidentName: e.target.value })}
+                          className="w-full p-2 text-sm rounded border border-slate-300 font-bold bg-white"
+                          placeholder="Shri Madanlalji Sancheti"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="font-bold text-slate-700 text-xs block mb-1">Designation</label>
+                        <input
+                          type="text"
+                          value={infoForm.presidentDesignation || ''}
+                          onChange={(e) => setInfoForm({ ...infoForm, presidentDesignation: e.target.value })}
+                          className="w-full p-2 text-sm rounded border border-slate-300 bg-white"
+                          placeholder="President"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="font-bold text-slate-700 text-xs block mb-1">College / Institution</label>
+                        <input
+                          type="text"
+                          value={infoForm.presidentInstitution || ''}
+                          onChange={(e) => setInfoForm({ ...infoForm, presidentInstitution: e.target.value })}
+                          className="w-full p-2 text-sm rounded border border-slate-300 bg-white"
+                          placeholder="Late Shaktikumar Sancheti College of Dairy Technology, Malkapur"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="font-bold text-slate-700 text-xs block mb-1">Message / Details</label>
+                        <textarea
+                          rows={3}
+                          value={infoForm.presidentMessage || ''}
+                          onChange={(e) => setInfoForm({ ...infoForm, presidentMessage: e.target.value })}
+                          className="w-full p-2 text-sm rounded border border-slate-300 bg-white"
+                          placeholder="President's message quote..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2. Dean Details */}
+                  <div className="space-y-4 bg-[#F0F4F8] p-5 rounded-2xl border border-slate-200 flex flex-col justify-between shadow-sm">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between border-b border-slate-300 pb-2">
+                        <span className="font-extrabold text-[#0A2342] text-base">2. Dean</span>
+                        <span className="text-xs bg-[#0A2342] text-amber-400 font-bold px-2.5 py-0.5 rounded-full">Leader 2</span>
                       </div>
 
                       {/* Photo Preview & Upload */}
@@ -3690,12 +3781,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </div>
                   </div>
 
-                  {/* 2. Secretary Details */}
+                  {/* 3. Secretary Details */}
                   <div className="space-y-4 bg-[#F0F4F8] p-5 rounded-2xl border border-slate-200 flex flex-col justify-between shadow-sm">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between border-b border-slate-300 pb-2">
-                        <span className="font-extrabold text-[#0A2342] text-base">2. Secretary</span>
-                        <span className="text-xs bg-[#0A2342] text-amber-400 font-bold px-2.5 py-0.5 rounded-full">Leader 2</span>
+                        <span className="font-extrabold text-[#0A2342] text-base">3. Secretary</span>
+                        <span className="text-xs bg-[#0A2342] text-amber-400 font-bold px-2.5 py-0.5 rounded-full">Leader 3</span>
                       </div>
 
                       {/* Photo Preview & Upload */}
@@ -3781,12 +3872,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </div>
                   </div>
 
-                  {/* 3. Administrative Officer Details */}
+                  {/* 4. Administrative Officer Details */}
                   <div className="space-y-4 bg-[#F0F4F8] p-5 rounded-2xl border border-slate-200 flex flex-col justify-between shadow-sm">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between border-b border-slate-300 pb-2">
-                        <span className="font-extrabold text-[#0A2342] text-base">3. Administrative Officer</span>
-                        <span className="text-xs bg-[#0A2342] text-amber-400 font-bold px-2.5 py-0.5 rounded-full">Leader 3</span>
+                        <span className="font-extrabold text-[#0A2342] text-base">4. Administrative Officer</span>
+                        <span className="text-xs bg-[#0A2342] text-amber-400 font-bold px-2.5 py-0.5 rounded-full">Leader 4</span>
                       </div>
 
                       {/* Photo Preview & Upload */}
@@ -3867,97 +3958,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           onChange={(e) => setInfoForm({ ...infoForm, adminOfficerMessage: e.target.value })}
                           className="w-full p-2 text-sm rounded border border-slate-300 bg-white"
                           placeholder="Administrative officer's message quote..."
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 4. President Details */}
-                  <div className="space-y-4 bg-[#F0F4F8] p-5 rounded-2xl border border-slate-200 flex flex-col justify-between shadow-sm">
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between border-b border-slate-300 pb-2">
-                        <span className="font-extrabold text-[#0A2342] text-base">4. President</span>
-                        <span className="text-xs bg-[#0A2342] text-amber-400 font-bold px-2.5 py-0.5 rounded-full">Leader 4</span>
-                      </div>
-
-                      {/* Photo Preview & Upload */}
-                      <div>
-                        <label className="font-bold text-slate-700 text-xs block mb-1">Photo Preview & Upload</label>
-                        <div className="flex items-center gap-4 bg-white p-3 rounded-xl border border-slate-200">
-                          <img
-                            src={infoForm.presidentImage || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80"}
-                            alt={infoForm.presidentName || "President"}
-                            referrerPolicy="no-referrer"
-                            className="w-20 h-24 rounded-lg object-cover bg-slate-100 border border-slate-200 shrink-0"
-                          />
-                          <div className="flex-1 space-y-2">
-                            <input
-                              type="text"
-                              value={infoForm.presidentImage || ''}
-                              onChange={(e) => setInfoForm({ ...infoForm, presidentImage: e.target.value })}
-                              className="w-full p-2 text-xs rounded border border-slate-300 bg-white"
-                              placeholder="Image URL or upload"
-                            />
-                            <label className="cursor-pointer inline-flex items-center gap-1 bg-[#0A2342] text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-slate-900 shadow-sm">
-                              <Upload className="w-3.5 h-3.5" />
-                              <span>Upload Photo</span>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) {
-                                    handleImageFileUpload(file, (url) => setInfoForm(prev => ({ ...prev, presidentImage: url })));
-                                  }
-                                }}
-                              />
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="font-bold text-slate-700 text-xs block mb-1">Name</label>
-                        <input
-                          type="text"
-                          value={infoForm.presidentName || ''}
-                          onChange={(e) => setInfoForm({ ...infoForm, presidentName: e.target.value })}
-                          className="w-full p-2 text-sm rounded border border-slate-300 font-bold bg-white"
-                          placeholder="Shri Madanlalji Sancheti"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="font-bold text-slate-700 text-xs block mb-1">Designation</label>
-                        <input
-                          type="text"
-                          value={infoForm.presidentDesignation || ''}
-                          onChange={(e) => setInfoForm({ ...infoForm, presidentDesignation: e.target.value })}
-                          className="w-full p-2 text-sm rounded border border-slate-300 bg-white"
-                          placeholder="President"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="font-bold text-slate-700 text-xs block mb-1">College / Institution</label>
-                        <input
-                          type="text"
-                          value={infoForm.presidentInstitution || ''}
-                          onChange={(e) => setInfoForm({ ...infoForm, presidentInstitution: e.target.value })}
-                          className="w-full p-2 text-sm rounded border border-slate-300 bg-white"
-                          placeholder="Late Shaktikumar Sancheti College of Dairy Technology, Malkapur"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="font-bold text-slate-700 text-xs block mb-1">Message / Details</label>
-                        <textarea
-                          rows={3}
-                          value={infoForm.presidentMessage || ''}
-                          onChange={(e) => setInfoForm({ ...infoForm, presidentMessage: e.target.value })}
-                          className="w-full p-2 text-sm rounded border border-slate-300 bg-white"
-                          placeholder="President's message quote..."
                         />
                       </div>
                     </div>

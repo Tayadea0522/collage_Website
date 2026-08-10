@@ -53,9 +53,9 @@ const INSTITUTIONAL_LINKS: InstitutionalLink[] = [
     id: 'mhcet',
     name: 'MH-CET',
     url: 'https://cetcell.mahacet.org/',
-    logo: 'https://cetcell.mahacet.org/wp-content/uploads/2023/12/cet_cell_logo.png',
-    fallbackLogo: 'https://cetcell.mahacet.org/wp-content/uploads/2021/08/logo.png',
-    accentColor: '#ea580c',
+    logo: '/mhcet-logo.svg',
+    fallbackLogo: 'https://cetcell.mahacet.org/wp-content/uploads/2023/12/cet_cell_logo.png',
+    accentColor: '#1d4ed8',
   },
   {
     id: 'mafsu',

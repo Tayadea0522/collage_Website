@@ -126,7 +126,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* LEFT LOGO */}
             <div 
               onClick={() => handleNavClick('home')}
-              className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 flex items-center justify-start shrink-0 cursor-pointer group"
+              className="w-28 h-28 sm:w-36 sm:h-36 lg:w-44 lg:h-44 flex items-center justify-start shrink-0 cursor-pointer group"
               title="Return to Home"
             >
               {leftLogoUrl ? (
@@ -137,8 +137,8 @@ export const Header: React.FC<HeaderProps> = ({
                   className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-200"
                 />
               ) : (
-                <div className="w-16 h-16 rounded-full bg-[#0A2342] text-amber-400 flex items-center justify-center font-bold shadow group-hover:scale-105 transition-transform">
-                  <GraduationCap className="w-8 h-8" />
+                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-[#0A2342] text-amber-400 flex items-center justify-center font-bold shadow group-hover:scale-105 transition-transform">
+                  <GraduationCap className="w-12 h-12 sm:w-16 sm:h-16" />
                 </div>
               )}
             </div>
@@ -186,7 +186,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* RIGHT LOGO */}
             <div 
               onClick={() => handleNavClick('home')}
-              className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 flex items-center justify-end shrink-0 cursor-pointer group"
+              className="w-28 h-28 sm:w-36 sm:h-36 lg:w-44 lg:h-44 flex items-center justify-end shrink-0 cursor-pointer group"
               title="Return to Home"
             >
               {rightLogoUrl ? (
@@ -197,8 +197,8 @@ export const Header: React.FC<HeaderProps> = ({
                   className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-200"
                 />
               ) : (
-                <div className="w-16 h-16 rounded-full bg-[#0A2342] text-amber-400 flex items-center justify-center font-bold shadow group-hover:scale-105 transition-transform">
-                  <GraduationCap className="w-8 h-8" />
+                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-[#0A2342] text-amber-400 flex items-center justify-center font-bold shadow group-hover:scale-105 transition-transform">
+                  <GraduationCap className="w-12 h-12 sm:w-16 sm:h-16" />
                 </div>
               )}
             </div>
@@ -207,13 +207,13 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Mobile Responsive Layout */}
           <div className="md:hidden flex flex-col items-center gap-3.5 py-1">
-            <div className="flex items-center justify-between w-full px-1">
+            <div className="flex items-center justify-between w-full px-2">
               <div onClick={() => handleNavClick('home')} className="cursor-pointer">
                 <img
                   src={leftLogoUrl}
                   alt="Left Logo"
                   referrerPolicy="no-referrer"
-                  className="h-14 w-auto max-w-[110px] object-contain"
+                  className="h-20 w-auto max-w-[150px] object-contain"
                 />
               </div>
               <div onClick={() => handleNavClick('home')} className="cursor-pointer">
@@ -221,7 +221,7 @@ export const Header: React.FC<HeaderProps> = ({
                   src={rightLogoUrl}
                   alt="Right Logo"
                   referrerPolicy="no-referrer"
-                  className="h-14 w-auto max-w-[110px] object-contain"
+                  className="h-20 w-auto max-w-[150px] object-contain"
                 />
               </div>
             </div>

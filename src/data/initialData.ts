@@ -17,19 +17,28 @@ export const initialCollegeInfo: CollegeInfo = {
   admissionHelpline: "+91 8625869560",
   
   deanName: "Dr. P. L. Chaudhari",
-  deanDesignation: "Dean, Late Shaktikumar Sancheti College of Dairy Technology",
+  deanDesignation: "Dean",
+  deanInstitution: "Late Shaktikumar Sancheti College of Dairy Technology, Malkapur",
   deanMessage: "Welcome to Late Shaktikumar Sancheti College of Dairy Technology. Our institution is committed to providing world-class education in dairy science and technology. We nurture students to become skilled professionals who contribute to India's dairy industry.",
   deanImage: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=300&q=80",
   
   secretaryName: "Suresh Kisanlal Sancheti",
-  secretaryDesignation: "Secretary, Late Shaktikumar Sancheti College of Dairy Technology",
+  secretaryDesignation: "Secretary",
+  secretaryInstitution: "Late Shaktikumar Sancheti College of Dairy Technology, Malkapur",
   secretaryMessage: "It is our commitment to build an institution that not only imparts technical knowledge but also shapes the character and values of our students. LSSCDT stands as a symbol of our dedication to rural development and the dairy industry of India.",
   secretaryImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80",
   
   adminOfficerName: "Shri S. D. Lokhande",
-  adminOfficerDesignation: "Administrative Officer, Late Shaktikumar Sancheti College of Dairy Technology",
+  adminOfficerDesignation: "Administrative Officer",
+  adminOfficerInstitution: "Late Shaktikumar Sancheti College of Dairy Technology, Malkapur",
   adminOfficerMessage: "Our administrative department is dedicated to ensuring smooth operational management, transparent governance, student guidance, and providing a supportive ecosystem for academic and professional excellence.",
   adminOfficerImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80",
+
+  presidentName: "Shri Madanlalji Sancheti",
+  presidentDesignation: "President",
+  presidentInstitution: "Late Shaktikumar Sancheti College of Dairy Technology, Malkapur",
+  presidentMessage: "Our mission is to build a modern center of excellence in dairy technology that empowers students with cutting-edge knowledge, practical skills, and moral values to lead and transform the dairy sector.",
+  presidentImage: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
   
   shaktikumarImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
   shaktikumarMessage: "A visionary philanthropist and dedicated patron of education, Late Shri Shaktikumar Sancheti believed that knowledge is the greatest gift one can give to society. This institution stands as a lasting tribute to his unwavering commitment to rural development and the empowerment of India's dairy sector.",

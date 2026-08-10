@@ -11,7 +11,8 @@ import {
   Building2,
   Microscope,
   Briefcase,
-  Users
+  Users,
+  Quote
 } from 'lucide-react';
 
 interface HomeProps {
@@ -197,99 +198,131 @@ export const Home: React.FC<HomeProps> = ({
       </section>
 
       {/* 3. Leadership Statements */}
-      <section className="bg-[#F0F4F8] py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 space-y-8">
-          <div className="text-center space-y-1">
-            <h2 className="text-2xl sm:text-3xl font-extrabold font-serif text-[#0A2342]">
+      <section className="bg-[#F0F4F8] py-14 sm:py-16 border-y border-slate-200/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 space-y-10 sm:space-y-12">
+          
+          {/* Section Header */}
+          <div className="text-center space-y-2">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#D97706] bg-amber-100/80 px-3 py-1 rounded-full inline-block">
+              Institutional Leadership
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-extrabold font-serif text-[#0A2342] tracking-tight">
               College Leadership
             </h2>
-            <p className="text-xs text-slate-500">Guiding excellence in dairy science & technology</p>
+            <p className="text-sm text-slate-600 max-w-2xl mx-auto font-medium">
+              Guiding excellence in dairy science & technology education
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {/* Dean Card */}
-            <div className="bg-white p-6 sm:p-7 rounded-2xl border border-slate-100 border-t-4 border-t-[#0A2342] shadow-md hover:shadow-lg transition-shadow flex flex-col justify-between">
-              <div>
-                <div className="flex items-start gap-4">
-                  <img
-                    src={collegeInfo.deanImage}
-                    alt={collegeInfo.deanName}
-                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover shrink-0 bg-slate-100 shadow-sm border border-slate-200"
-                  />
-                  <div className="space-y-0.5">
-                    <h3 className="text-lg sm:text-xl font-bold font-serif text-[#0A2342]">
-                      Dean's Message
-                    </h3>
-                    <div className="text-slate-600 font-semibold text-xs sm:text-sm">
-                      {collegeInfo.deanName}
-                    </div>
-                    <div className="text-slate-500 text-xs leading-tight">
-                      {collegeInfo.deanDesignation}
-                    </div>
-                  </div>
-                </div>
-                <p className="mt-5 sm:mt-6 text-slate-600 italic text-xs sm:text-sm leading-relaxed">
-                  "{collegeInfo.deanMessage}"
-                </p>
-              </div>
-            </div>
-
-            {/* Secretary Card */}
-            <div className="bg-white p-6 sm:p-7 rounded-2xl border border-slate-100 border-t-4 border-t-[#D97706] shadow-md hover:shadow-lg transition-shadow flex flex-col justify-between">
-              <div>
-                <div className="flex items-start gap-4">
-                  <img
-                    src={collegeInfo.secretaryImage}
-                    alt={collegeInfo.secretaryName}
-                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover shrink-0 bg-slate-100 shadow-sm border border-slate-200"
-                  />
-                  <div className="space-y-0.5">
-                    <h3 className="text-lg sm:text-xl font-bold font-serif text-[#0A2342]">
-                      Secretary's Message
-                    </h3>
-                    <div className="text-slate-600 font-semibold text-xs sm:text-sm">
-                      {collegeInfo.secretaryName}
-                    </div>
-                    <div className="text-slate-500 text-xs leading-tight">
-                      {collegeInfo.secretaryDesignation}
-                    </div>
-                  </div>
-                </div>
-                <p className="mt-5 sm:mt-6 text-slate-600 italic text-xs sm:text-sm leading-relaxed">
-                  "{collegeInfo.secretaryMessage}"
-                </p>
-              </div>
-            </div>
-
-            {/* Administrative Officer Card */}
-            <div className="bg-white p-6 sm:p-7 rounded-2xl border border-slate-100 border-t-4 border-t-emerald-700 shadow-md hover:shadow-lg transition-shadow flex flex-col justify-between md:col-span-2 lg:col-span-1">
-              <div>
-                <div className="flex items-start gap-4">
-                  <img
-                    src={collegeInfo.adminOfficerImage || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80"}
-                    alt={collegeInfo.adminOfficerName || "Shri S. D. Lokhande"}
-                    referrerPolicy="no-referrer"
-                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover shrink-0 bg-slate-100 shadow-sm border border-slate-200"
-                  />
-                  <div className="space-y-0.5">
-                    <h3 className="text-lg sm:text-xl font-bold font-serif text-[#0A2342]">
-                      Administrative Officer's Message
-                    </h3>
-                    <div className="text-slate-600 font-semibold text-xs sm:text-sm">
-                      {collegeInfo.adminOfficerName || "Shri S. D. Lokhande"}
-                    </div>
-                    <div className="text-slate-500 text-xs leading-tight">
-                      {collegeInfo.adminOfficerDesignation || "Administrative Officer, Late Shaktikumar Sancheti College of Dairy Technology"}
+          {/* Leaders List - Vertical Display with Alternating Layout */}
+          <div className="space-y-8 sm:space-y-10">
+            {[
+              {
+                id: 'dean',
+                roleKey: "Dean's Message",
+                name: collegeInfo.deanName || "Dr. P. L. Chaudhari",
+                designation: collegeInfo.deanDesignation || "Dean",
+                institution: collegeInfo.deanInstitution || "Late Shaktikumar Sancheti College of Dairy Technology, Malkapur",
+                message: collegeInfo.deanMessage || "Welcome to Late Shaktikumar Sancheti College of Dairy Technology. Our institution is committed to providing world-class education in dairy science and technology. We nurture students to become skilled professionals who contribute to India's dairy industry.",
+                image: collegeInfo.deanImage || "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=300&q=80",
+                badgeColor: "bg-[#0A2342] text-amber-400",
+                accentBorder: "border-l-4 border-l-[#0A2342]",
+                photoOnLeft: true
+              },
+              {
+                id: 'secretary',
+                roleKey: "Secretary's Message",
+                name: collegeInfo.secretaryName || "Suresh Kisanlal Sancheti",
+                designation: collegeInfo.secretaryDesignation || "Secretary",
+                institution: collegeInfo.secretaryInstitution || "Late Shaktikumar Sancheti College of Dairy Technology, Malkapur",
+                message: collegeInfo.secretaryMessage || "It is our commitment to build an institution that not only imparts technical knowledge but also shapes the character and values of our students. LSSCDT stands as a symbol of our dedication to rural development and the dairy industry of India.",
+                image: collegeInfo.secretaryImage || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80",
+                badgeColor: "bg-[#D97706] text-white",
+                accentBorder: "border-l-4 border-l-[#D97706]",
+                photoOnLeft: false
+              },
+              {
+                id: 'adminOfficer',
+                roleKey: "Administrative Officer's Message",
+                name: collegeInfo.adminOfficerName || "Shri S. D. Lokhande",
+                designation: collegeInfo.adminOfficerDesignation || "Administrative Officer",
+                institution: collegeInfo.adminOfficerInstitution || "Late Shaktikumar Sancheti College of Dairy Technology, Malkapur",
+                message: collegeInfo.adminOfficerMessage || "Our administrative office is dedicated to providing seamless governance, student support, and operational excellence to foster a transparent and efficient academic environment.",
+                image: collegeInfo.adminOfficerImage || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80",
+                badgeColor: "bg-emerald-800 text-white",
+                accentBorder: "border-l-4 border-l-emerald-800",
+                photoOnLeft: true
+              },
+              {
+                id: 'president',
+                roleKey: "President's Message",
+                name: collegeInfo.presidentName || "Shri Madanlalji Sancheti",
+                designation: collegeInfo.presidentDesignation || "President",
+                institution: collegeInfo.presidentInstitution || "Late Shaktikumar Sancheti College of Dairy Technology, Malkapur",
+                message: collegeInfo.presidentMessage || "Our mission is to build a modern center of excellence in dairy technology that empowers students with cutting-edge knowledge, practical skills, and moral values to lead and transform the dairy sector.",
+                image: collegeInfo.presidentImage || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+                badgeColor: "bg-indigo-900 text-amber-300",
+                accentBorder: "border-l-4 border-l-indigo-900",
+                photoOnLeft: false
+              }
+            ].map((leader) => (
+              <div 
+                key={leader.id} 
+                className="bg-white rounded-3xl p-6 sm:p-8 md:p-10 border border-slate-200/80 shadow-md hover:shadow-xl transition-all duration-300"
+              >
+                <div className={`flex flex-col md:flex-row items-center gap-8 lg:gap-12 ${leader.photoOnLeft ? '' : 'md:flex-row-reverse'}`}>
+                  
+                  {/* Photo Column */}
+                  <div className="w-full md:w-5/12 lg:w-4/12 flex flex-col items-center shrink-0">
+                    <div className="relative group w-full max-w-[260px] sm:max-w-[280px]">
+                      <div className="absolute -inset-1.5 bg-gradient-to-r from-[#0A2342] to-[#D97706] rounded-3xl blur opacity-20 group-hover:opacity-35 transition duration-300"></div>
+                      <div className="relative rounded-2xl overflow-hidden bg-slate-100 border-2 border-white shadow-xl aspect-[3/4] w-full">
+                        <img
+                          src={leader.image}
+                          alt={leader.name}
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-                <p className="mt-5 sm:mt-6 text-slate-600 italic text-xs sm:text-sm leading-relaxed">
-                  "{collegeInfo.adminOfficerMessage || "Our administrative office is dedicated to providing seamless governance, student support, and operational excellence to foster a transparent and efficient academic environment."}"
-                </p>
-              </div>
-            </div>
 
+                  {/* Information Column */}
+                  <div className="w-full md:w-7/12 lg:w-8/12 space-y-4 text-left">
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-block px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm ${leader.badgeColor}`}>
+                        {leader.roleKey}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h3 className="text-2xl sm:text-3xl font-extrabold font-serif text-[#0A2342] tracking-tight">
+                        {leader.name}
+                      </h3>
+                      <p className="text-[#D97706] font-bold text-base sm:text-lg mt-0.5">
+                        {leader.designation}
+                      </p>
+                      {leader.institution && (
+                        <p className="text-slate-600 text-xs sm:text-sm font-semibold flex items-center gap-1.5 mt-1.5">
+                          <Building2 className="w-4 h-4 text-slate-400 shrink-0" />
+                          <span>{leader.institution}</span>
+                        </p>
+                      )}
+                    </div>
+
+                    <div className={`mt-4 bg-slate-50 p-5 sm:p-6 rounded-2xl border border-slate-200/80 relative shadow-inner ${leader.accentBorder}`}>
+                      <Quote className="w-8 h-8 text-slate-300 absolute top-3 left-3 opacity-40 pointer-events-none" />
+                      <p className="text-slate-700 italic text-sm sm:text-base leading-relaxed relative z-10 pl-4 sm:pl-6">
+                        "{leader.message}"
+                      </p>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            ))}
           </div>
+
         </div>
       </section>
 

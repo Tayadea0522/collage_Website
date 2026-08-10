@@ -105,6 +105,22 @@ export const storageService = {
       if (!loadedInfo.rightLogoImage) {
         loadedInfo.rightLogoImage = initialCollegeInfo.rightLogoImage || '/logo.svg';
       }
+      if (!loadedInfo.presidentName) {
+        loadedInfo.presidentName = initialCollegeInfo.presidentName;
+        loadedInfo.presidentDesignation = initialCollegeInfo.presidentDesignation;
+        loadedInfo.presidentInstitution = initialCollegeInfo.presidentInstitution;
+        loadedInfo.presidentMessage = initialCollegeInfo.presidentMessage;
+        loadedInfo.presidentImage = initialCollegeInfo.presidentImage;
+      }
+      if (!loadedInfo.deanInstitution) {
+        loadedInfo.deanInstitution = initialCollegeInfo.deanInstitution;
+      }
+      if (!loadedInfo.secretaryInstitution) {
+        loadedInfo.secretaryInstitution = initialCollegeInfo.secretaryInstitution;
+      }
+      if (!loadedInfo.adminOfficerInstitution) {
+        loadedInfo.adminOfficerInstitution = initialCollegeInfo.adminOfficerInstitution;
+      }
       return loadedInfo;
     } catch {
       return initialCollegeInfo;
@@ -148,6 +164,10 @@ export const storageService = {
         if (isInvalidOrPrivateUrl(updatedInfo.adminOfficerImage)) {
           const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.adminOfficerImage!, 'college');
           if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.adminOfficerImage = cloudUrl;
+        }
+        if (isInvalidOrPrivateUrl(updatedInfo.presidentImage)) {
+          const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.presidentImage!, 'college');
+          if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.presidentImage = cloudUrl;
         }
         if (updatedInfo.heroBanners && updatedInfo.heroBanners.length > 0) {
           updatedInfo.heroBanners = await Promise.all(

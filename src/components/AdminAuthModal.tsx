@@ -54,12 +54,11 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
 
   if (!isOpen) return null;
 
-  const adminUsers = storageService.getAdminUsers();
-
-  // 1. Handle Sign In
   const handleSignInSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSignInError('');
+
+    const adminUsers = await storageService.fetchAdminUsers();
 
     const trimmedIdent = usernameInput.trim();
     if (!trimmedIdent || !passwordInput) {
@@ -171,7 +170,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
   };
 
   // Handle Forgot Password - Step 2: Verify & Reset
-  const handleResetPasswordSubmit = (e: React.FormEvent) => {
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setForgotError('');
 
@@ -199,7 +198,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
       return;
     }
 
-    const success = storageService.updateAdminPassword(foundUser.username, newPassword);
+    const success = await storageService.updateAdminPassword(foundUser.username, newPassword);
 
     if (success) {
       setForgotSuccess(`Password for ${foundUser.name} updated successfully! Redirecting to Sign In...`);

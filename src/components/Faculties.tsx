@@ -12,7 +12,7 @@ export const Faculties: React.FC<FacultiesProps> = ({ faculty: propsFaculty }) =
   const [searchQuery, setSearchQuery] = useState('');
   const [hodOnlyFilter, setHodOnlyFilter] = useState(false);
 
-  const allFaculty = propsFaculty && propsFaculty.length > 0 ? propsFaculty : storageService.getFaculty();
+  const allFaculty = propsFaculty || [];
 
   const filteredFaculty = allFaculty.filter((f) => {
     // Dept match

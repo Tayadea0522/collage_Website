@@ -127,9 +127,18 @@ export default function App() {
       }
     });
 
-    storageService.syncFromSupabase().then(() => {
-      refreshAllData();
-      checkAndShowPopup();
+    storageService.fetchAllFromSupabase().then(data => {
+      setCollegeInfo(data.collegeInfo);
+      setNotices(data.notices);
+      setEvents(data.events);
+      setFaculty(data.faculty);
+      setDepartments(data.departments);
+      setFacilities(data.facilities);
+      setGallery(data.gallery);
+      setDownloads(data.downloads);
+      setApplications(data.applications);
+      setPopupBanner(data.popupBanner);
+      checkAndShowPopup(data.popupBanner);
     });
 
     return () => {
@@ -137,8 +146,8 @@ export default function App() {
     };
   }, []);
 
-  const checkAndShowPopup = () => {
-    const popup = storageService.getPopupBanner();
+  const checkAndShowPopup = (bannerOverride?: PopupBanner | null) => {
+    const popup = bannerOverride !== undefined ? bannerOverride : popupBanner;
     setPopupBanner(popup);
 
     if (!popup || !popup.isActive) {
@@ -190,17 +199,23 @@ export default function App() {
     }
   };
 
-  const refreshAllData = () => {
-    setCollegeInfo(storageService.getCollegeInfo());
-    setNotices(storageService.getNotices());
-    setEvents(storageService.getEvents());
-    setDepartments(storageService.getDepartments());
-    setFaculty(storageService.getFaculty());
-    setFacilities(storageService.getFacilities());
-    setApplications(storageService.getApplications());
-    setGallery(storageService.getGallery());
-    setDownloads(storageService.getDownloads());
-    setPopupBanner(storageService.getPopupBanner());
+  const refreshAllData = async () => {
+    try {
+      const data = await storageService.fetchAllFromSupabase();
+      setCollegeInfo(data.collegeInfo);
+      setNotices(data.notices);
+      setEvents(data.events);
+      setFaculty(data.faculty);
+      setDepartments(data.departments);
+      setFacilities(data.facilities);
+      setGallery(data.gallery);
+      setDownloads(data.downloads);
+      setApplications(data.applications);
+      setPopupBanner(data.popupBanner);
+      checkAndShowPopup(data.popupBanner);
+    } catch (err) {
+      console.warn('refreshAllData error:', err);
+    }
   };
 
   const handleAdminLogout = async () => {

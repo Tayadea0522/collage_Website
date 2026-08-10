@@ -330,8 +330,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }
 
     setNoticeList(updated);
-    storageService.saveNotices(updated);
-    onRefreshAll();
+    await storageService.saveNotices(updated);
+    await onRefreshAll();
     handleCancelNoticeEdit();
     showToast(editingNotice ? 'Notice updated successfully!' : 'New notice published successfully!');
   };
@@ -345,19 +345,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     showToast('Attachment removed.');
   };
 
-  const handleDeleteNotice = (id: string) => {
-    storageService.deleteNotice(id);
+  const handleDeleteNotice = async (id: string) => {
+    await storageService.deleteNotice(id);
     const updated = noticeList.filter(n => n.id !== id);
     setNoticeList(updated);
-    onRefreshAll();
+    await onRefreshAll();
     showToast('Notice deleted.');
   };
 
-  const handleToggleNoticeNew = (id: string) => {
+  const handleToggleNoticeNew = async (id: string) => {
     const updated = noticeList.map(n => n.id === id ? { ...n, isNew: !n.isNew } : n);
     setNoticeList(updated);
-    storageService.saveNotices(updated);
-    onRefreshAll();
+    await storageService.saveNotices(updated);
+    await onRefreshAll();
   };
 
   // Downloads CMS State
@@ -501,10 +501,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }
 
     setDownloadsList(updated);
-    storageService.saveDownloads(updated);
+    await storageService.saveDownloads(updated);
     setIsUploadingDownload(false);
     setIsDownloadModalOpen(false);
-    onRefreshAll();
+    await onRefreshAll();
     showToast(editingDownload ? 'Document updated successfully!' : 'New PDF document uploaded successfully!');
   };
 
@@ -516,18 +516,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       await supabaseStorageService.deleteWebsiteDocument(doc.storagePath);
     }
 
-    storageService.deleteDownload(doc.id);
+    await storageService.deleteDownload(doc.id);
     const updated = downloadsList.filter(d => d.id !== doc.id);
     setDownloadsList(updated);
-    onRefreshAll();
+    await onRefreshAll();
     showToast('Document deleted successfully.');
   };
 
-  const handleToggleDownloadActive = (doc: DownloadableDocument) => {
+  const handleToggleDownloadActive = async (doc: DownloadableDocument) => {
     const updated = downloadsList.map(d => d.id === doc.id ? { ...d, isActive: !d.isActive } : d);
     setDownloadsList(updated);
-    storageService.saveDownloads(updated);
-    onRefreshAll();
+    await storageService.saveDownloads(updated);
+    await onRefreshAll();
     showToast(`Document ${!doc.isActive ? 'activated' : 'deactivated'}.`);
   };
 
@@ -589,7 +589,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setIsDeptModalOpen(true);
   };
 
-  const handleSaveDepartmentSubmit = (e: React.FormEvent) => {
+  const handleSaveDepartmentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!deptForm.name.trim() || !deptForm.code.trim()) return;
 
@@ -618,30 +618,30 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }
 
     setDeptList(updated);
-    storageService.saveDepartments(updated);
-    onRefreshAll();
+    await storageService.saveDepartments(updated);
+    await onRefreshAll();
     setIsDeptModalOpen(false);
     showToast(editingDept ? 'Department updated successfully!' : 'New department added successfully!');
   };
 
-  const handleToggleDeptActive = (dept: DepartmentInfo) => {
+  const handleToggleDeptActive = async (dept: DepartmentInfo) => {
     const updated = deptList.map(d => d.id === dept.id ? { ...d, isActive: !(d.isActive ?? true) } : d);
     setDeptList(updated);
-    storageService.saveDepartments(updated);
-    onRefreshAll();
+    await storageService.saveDepartments(updated);
+    await onRefreshAll();
     showToast(`Department '${dept.name}' ${dept.isActive ? 'deactivated' : 'activated'}.`);
   };
 
-  const handleDeleteDepartmentConfirm = (dept: DepartmentInfo) => {
+  const handleDeleteDepartmentConfirm = async (dept: DepartmentInfo) => {
     const confirmed = window.confirm(
       `Are you sure you want to permanently delete the department '${dept.name}'?\n\nTip: Deactivating the department is recommended to safely hide it from the public website while preserving academic records.\n\nClick OK to permanently delete.`
     );
     if (!confirmed) return;
 
-    storageService.deleteDepartment(dept.id);
+    await storageService.deleteDepartment(dept.id);
     const updated = deptList.filter(d => d.id !== dept.id);
     setDeptList(updated);
-    onRefreshAll();
+    await onRefreshAll();
     showToast(`Department '${dept.name}' deleted.`);
   };
 
@@ -654,7 +654,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     description: ''
   });
 
-  const handleAddEvent = (e: React.FormEvent) => {
+  const handleAddEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEvent.title || !newEvent.date) return;
     const item: CollegeEvent = {
@@ -666,17 +666,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     };
     const updated = [item, ...eventList];
     setEventList(updated);
-    storageService.saveEvents(updated);
-    onRefreshAll();
+    await storageService.saveEvents(updated);
+    await onRefreshAll();
     setNewEvent({ title: '', date: '', time: '10:00 AM', description: '' });
     showToast('Event added successfully!');
   };
 
-  const handleDeleteEvent = (id: string) => {
+  const handleDeleteEvent = async (id: string) => {
+    await storageService.deleteEvent(id);
     const updated = eventList.filter(e => e.id !== id);
     setEventList(updated);
-    storageService.saveEvents(updated);
-    onRefreshAll();
+    await onRefreshAll();
     showToast('Event removed.');
   };
 
@@ -966,7 +966,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     isHOD: false
   });
 
-  const handleToggleHOD = (id: string) => {
+  const handleToggleHOD = async (id: string) => {
     const updated = facultyList.map(f => {
       if (f.id === id) {
         const nextStatus = !f.isHOD;
@@ -976,11 +976,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       return f;
     });
     setFacultyList(updated);
-    storageService.saveFaculty(updated);
-    onRefreshAll();
+    await storageService.saveFaculty(updated);
+    await onRefreshAll();
   };
 
-  const handleAddFaculty = (e: React.FormEvent) => {
+  const handleAddFaculty = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newFaculty.name) return;
     const item: FacultyMember = {
@@ -998,8 +998,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     };
     const updated = [item, ...facultyList];
     setFacultyList(updated);
-    storageService.saveFaculty(updated);
-    onRefreshAll();
+    await storageService.saveFaculty(updated);
+    await onRefreshAll();
     setNewFaculty({
       name: '',
       designation: 'Assistant Professor',
@@ -1013,22 +1013,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     showToast('Faculty member added!');
   };
 
-  const handleSaveEditFaculty = (e: React.FormEvent) => {
+  const handleSaveEditFaculty = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingFaculty) return;
     const updated = facultyList.map(f => f.id === editingFaculty.id ? editingFaculty : f);
     setFacultyList(updated);
-    storageService.saveFaculty(updated);
-    onRefreshAll();
+    await storageService.saveFaculty(updated);
+    await onRefreshAll();
     setEditingFaculty(null);
     showToast('Faculty profile updated successfully!');
   };
 
-  const handleDeleteFaculty = (id: string) => {
+  const handleDeleteFaculty = async (id: string) => {
+    await storageService.deleteFaculty(id);
     const updated = facultyList.filter(f => f.id !== id);
     setFacultyList(updated);
-    storageService.saveFaculty(updated);
-    onRefreshAll();
+    await onRefreshAll();
     showToast('Faculty deleted.');
   };
 
@@ -1041,7 +1041,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     date: new Date().getFullYear().toString()
   });
 
-  const handleAddGalleryItem = (e: React.FormEvent) => {
+  const handleAddGalleryItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newGallery.title) return;
     const item: GalleryItem = {
@@ -1053,8 +1053,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     };
     const updated = [item, ...galleryList];
     setGalleryList(updated);
-    storageService.saveGallery(updated);
-    onRefreshAll();
+    await storageService.saveGallery(updated);
+    await onRefreshAll();
     setNewGallery({
       title: '',
       category: 'Campus',
@@ -1064,11 +1064,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     showToast('Gallery image added!');
   };
 
-  const handleDeleteGalleryItem = (id: string) => {
+  const handleDeleteGalleryItem = async (id: string) => {
+    await storageService.deleteGalleryItem(id);
     const updated = galleryList.filter(g => g.id !== id);
     setGalleryList(updated);
-    storageService.saveGallery(updated);
-    onRefreshAll();
+    await onRefreshAll();
     showToast('Gallery item removed.');
   };
 

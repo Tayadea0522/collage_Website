@@ -11,7 +11,7 @@ export const Academics: React.FC<AcademicsProps> = ({ faculty: propsFaculty }) =
   const [activeSem, setActiveSem] = useState(1);
   const [facultyDeptFilter, setFacultyDeptFilter] = useState('All');
 
-  const facultyList = propsFaculty && propsFaculty.length > 0 ? propsFaculty : storageService.getFaculty();
+  const facultyList = propsFaculty || [];
 
   const filteredFaculty = facultyList.filter(f => {
     if (facultyDeptFilter === 'All') return true;

@@ -3,18 +3,33 @@ import { initialCollegeInfo, initialDepartments, initialFacilities, initialFacul
 import { supabase } from '../supabaseClient';
 import { supabaseStorageService } from './supabaseStorageService';
 
-const KEYS = {
-  COLLEGE_INFO: 'lsscdt_college_info_v2',
-  NOTICES: 'lsscdt_notices_v2',
-  EVENTS: 'lsscdt_events_v2',
-  FACULTY: 'lsscdt_faculty_v2',
-  DEPARTMENTS: 'lsscdt_departments_v2',
-  FACILITIES: 'lsscdt_facilities_v2',
-  APPLICATIONS: 'lsscdt_applications_v2',
-  GALLERY: 'lsscdt_gallery_v2',
-  ADMIN_USERS: 'lsscdt_admin_users_v2',
-  DOWNLOADS: 'lsscdt_downloads_v2',
-  POPUP_BANNER: 'lsscdt_popup_banner_v2'
+const MIGRATION_KEY = 'lsscdt_storage_migration_v3';
+
+export const cleanObsoleteLocalStorage = (): void => {
+  try {
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      if (localStorage.getItem(MIGRATION_KEY) !== 'v3_done') {
+        const keysToRemove = [
+          'lsscdt_college_info_v2',
+          'lsscdt_notices_v2',
+          'lsscdt_events_v2',
+          'lsscdt_faculty_v2',
+          'lsscdt_departments_v2',
+          'lsscdt_facilities_v2',
+          'lsscdt_applications_v2',
+          'lsscdt_gallery_v2',
+          'lsscdt_downloads_v2',
+          'lsscdt_popup_banner_v2',
+          'siteData',
+          'websiteData'
+        ];
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+        localStorage.setItem(MIGRATION_KEY, 'v3_done');
+      }
+    }
+  } catch (e) {
+    console.warn('Storage cleanup notice:', e);
+  }
 };
 
 const isInvalidOrPrivateUrl = (url: string | undefined | null): boolean => {
@@ -23,41 +38,42 @@ const isInvalidOrPrivateUrl = (url: string | undefined | null): boolean => {
 };
 
 export const storageService = {
-  getAdminUsers: (): AdminUser[] => {
-    const data = localStorage.getItem(KEYS.ADMIN_USERS);
-    if (!data) {
-      localStorage.setItem(KEYS.ADMIN_USERS, JSON.stringify(initialAdminUsers));
+  // --- Admin Users ---
+  fetchAdminUsers: async (): Promise<AdminUser[]> => {
+    try {
+      const { data, error } = await supabase.from('admin_users').select('*');
+      if (error || !data || data.length === 0) return initialAdminUsers;
+      return data.map(row => ({ ...(row.data || row), id: row.id || row.data?.id }));
+    } catch {
       return initialAdminUsers;
     }
-    return JSON.parse(data);
   },
 
-  saveAdminUsers: (users: AdminUser[]): void => {
-    localStorage.setItem(KEYS.ADMIN_USERS, JSON.stringify(users));
-    (async () => {
-      try {
-        const { error } = await supabase.from('admin_users').upsert(users.map(u => ({
-          id: u.id,
-          username: u.username,
-          email: u.email,
-          role: u.role,
-          data: u
-        })));
-        if (error) console.log('Supabase admin_users sync:', error.message);
-      } catch (err) {
-        // silent fallback
-      }
-    })();
+  getAdminUsers: (): AdminUser[] => initialAdminUsers,
+
+  saveAdminUsers: async (users: AdminUser[]): Promise<AdminUser[]> => {
+    try {
+      await supabase.from('admin_users').upsert(users.map(u => ({
+        id: u.id,
+        username: u.username,
+        email: u.email,
+        role: u.role,
+        data: u
+      })));
+    } catch (err) {
+      console.warn('saveAdminUsers error:', err);
+    }
+    return await storageService.fetchAdminUsers();
   },
 
-  addAdminUser: (user: AdminUser): void => {
-    const users = storageService.getAdminUsers();
-    const updated = [...users, user];
-    storageService.saveAdminUsers(updated);
+  addAdminUser: async (user: AdminUser): Promise<AdminUser[]> => {
+    const current = await storageService.fetchAdminUsers();
+    const updated = [...current, user];
+    return await storageService.saveAdminUsers(updated);
   },
 
-  updateAdminPassword: (identifier: string, newPassword: string): boolean => {
-    const users = storageService.getAdminUsers();
+  updateAdminPassword: async (identifier: string, newPassword: string): Promise<boolean> => {
+    const users = await storageService.fetchAdminUsers();
     const query = identifier.trim().toLowerCase();
     let updated = false;
     const newUsers = users.map(u => {
@@ -68,153 +84,171 @@ export const storageService = {
       return u;
     });
     if (updated) {
-      storageService.saveAdminUsers(newUsers);
+      await storageService.saveAdminUsers(newUsers);
     }
     return updated;
   },
 
-  getCollegeInfo: (): CollegeInfo => {
-    const data = localStorage.getItem(KEYS.COLLEGE_INFO);
-    if (!data) return initialCollegeInfo;
+  // --- College Information ---
+  fetchCollegeInfo: async (): Promise<CollegeInfo> => {
     try {
-      const parsed: CollegeInfo = JSON.parse(data);
-      if (!parsed.trustName) {
-        const updated = {
-          ...parsed,
-          trustName: initialCollegeInfo.trustName
-        };
-        localStorage.setItem(KEYS.COLLEGE_INFO, JSON.stringify(updated));
-        return updated;
+      const { data, error } = await supabase.from('college_info').select('*').limit(1);
+      if (error || !data || data.length === 0) return initialCollegeInfo;
+      const row = data[0];
+      const loadedInfo = { ...(row.data || row) };
+      if (!loadedInfo.trustName) {
+        loadedInfo.trustName = initialCollegeInfo.trustName;
       }
-      return parsed;
+      return loadedInfo;
     } catch {
       return initialCollegeInfo;
     }
   },
-  saveCollegeInfo: async (info: CollegeInfo): Promise<CollegeInfo> => {
-    localStorage.setItem(KEYS.COLLEGE_INFO, JSON.stringify(info));
-    try {
-      let updatedInfo = { ...info };
+  getCollegeInfo: (): CollegeInfo => initialCollegeInfo,
 
-      if (isInvalidOrPrivateUrl(updatedInfo.logoImage)) {
-        const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.logoImage!, 'college');
-        if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.logoImage = cloudUrl;
-      }
-      if (isInvalidOrPrivateUrl(updatedInfo.shaktikumarImage)) {
-        const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.shaktikumarImage!, 'college');
-        if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.shaktikumarImage = cloudUrl;
-      }
-      if (isInvalidOrPrivateUrl(updatedInfo.deanImage)) {
-        const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.deanImage!, 'college');
-        if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.deanImage = cloudUrl;
-      }
-      if (isInvalidOrPrivateUrl(updatedInfo.secretaryImage)) {
-        const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.secretaryImage!, 'college');
-        if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.secretaryImage = cloudUrl;
-      }
-      if (isInvalidOrPrivateUrl(updatedInfo.adminOfficerImage)) {
-        const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.adminOfficerImage!, 'college');
-        if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.adminOfficerImage = cloudUrl;
-      }
-      if (updatedInfo.heroBanners && updatedInfo.heroBanners.length > 0) {
-        updatedInfo.heroBanners = await Promise.all(
-          updatedInfo.heroBanners.map(async b => {
-            if (isInvalidOrPrivateUrl(b.image)) {
-              const cloudUrl = await supabaseStorageService.uploadImage(b.image, 'hero');
-              if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) {
-                return { ...b, image: cloudUrl };
-              }
-            }
-            return b;
-          })
-        );
-      }
-
-      localStorage.setItem(KEYS.COLLEGE_INFO, JSON.stringify(updatedInfo));
-
-      const { error } = await supabase.from('college_info').upsert([{ id: 'default', data: updatedInfo }]);
-      if (error) console.warn('Supabase college_info sync:', error.message);
-      return updatedInfo;
-    } catch (err) {
-      console.warn('saveCollegeInfo error:', err);
-      return info;
-    }
-  },
-
-  getNotices: (): Notice[] => {
-    const data = localStorage.getItem(KEYS.NOTICES);
-    return data ? JSON.parse(data) : initialNotices;
-  },
-  saveNotices: (notices: Notice[]): void => {
-    localStorage.setItem(KEYS.NOTICES, JSON.stringify(notices));
-    (async () => {
+    saveCollegeInfo: async (info: CollegeInfo): Promise<CollegeInfo> => {
       try {
-        const { error } = await supabase.from('notices').upsert(notices.map(n => ({
-          id: n.id,
-          title: n.title,
-          category: n.category,
-          date: n.date,
-          data: n
-        })));
-        if (error) console.log('Supabase notices sync:', error.message);
-      } catch (err) {}
-    })();
-  },
-  deleteNotice: (id: string): void => {
-    const notices = storageService.getNotices();
-    const target = notices.find(n => n.id === id);
-    const filtered = notices.filter(n => n.id !== id);
-    localStorage.setItem(KEYS.NOTICES, JSON.stringify(filtered));
+        let updatedInfo = { ...info };
 
-    if (target?.attachment?.storagePath) {
-      supabaseStorageService.deleteWebsiteDocument(target.attachment.storagePath);
-    }
-
-    (async () => {
-      try {
-        await supabase.from('notices').delete().eq('id', id);
-      } catch (err) {}
-    })();
-  },
-
-  getEvents: (): CollegeEvent[] => {
-    const data = localStorage.getItem(KEYS.EVENTS);
-    return data ? JSON.parse(data) : initialEvents;
-  },
-  saveEvents: (events: CollegeEvent[]): void => {
-    localStorage.setItem(KEYS.EVENTS, JSON.stringify(events));
-    (async () => {
-      try {
-        const { error } = await supabase.from('events').upsert(events.map(e => ({
-          id: e.id,
-          title: e.title,
-          date: e.date,
-          data: e
-        })));
-        if (error) console.log('Supabase events sync:', error.message);
-      } catch (err) {}
-    })();
-  },
-
-  getFaculty: (): FacultyMember[] => {
-    const data = localStorage.getItem(KEYS.FACULTY);
-    if (!data) return initialFaculty;
-    try {
-      const parsed: FacultyMember[] = JSON.parse(data);
-      // Ensure initial HOD flags exist if missing
-      return parsed.map(f => {
-        const match = initialFaculty.find(i => i.id === f.id);
-        if (match && f.isHOD === undefined) {
-          return { ...f, isHOD: match.isHOD };
+        if (isInvalidOrPrivateUrl(updatedInfo.logoImage)) {
+          const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.logoImage!, 'college');
+          if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.logoImage = cloudUrl;
         }
-        return f;
-      });
+        if (isInvalidOrPrivateUrl(updatedInfo.shaktikumarImage)) {
+          const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.shaktikumarImage!, 'college');
+          if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.shaktikumarImage = cloudUrl;
+        }
+        if (isInvalidOrPrivateUrl(updatedInfo.deanImage)) {
+          const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.deanImage!, 'college');
+          if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.deanImage = cloudUrl;
+        }
+        if (isInvalidOrPrivateUrl(updatedInfo.secretaryImage)) {
+          const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.secretaryImage!, 'college');
+          if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.secretaryImage = cloudUrl;
+        }
+        if (isInvalidOrPrivateUrl(updatedInfo.adminOfficerImage)) {
+          const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.adminOfficerImage!, 'college');
+          if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.adminOfficerImage = cloudUrl;
+        }
+        if (updatedInfo.heroBanners && updatedInfo.heroBanners.length > 0) {
+          updatedInfo.heroBanners = await Promise.all(
+            updatedInfo.heroBanners.map(async b => {
+              if (isInvalidOrPrivateUrl(b.image)) {
+                const cloudUrl = await supabaseStorageService.uploadImage(b.image, 'hero');
+                if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) {
+                  return { ...b, image: cloudUrl };
+                }
+              }
+              return b;
+            })
+          );
+        }
+
+        const { error } = await supabase.from('college_info').upsert([{ id: 'default', data: updatedInfo, updated_at: new Date().toISOString() }]);
+        if (error) console.warn('Supabase college_info save warning:', error.message);
+      } catch (err) {
+        console.warn('saveCollegeInfo exception:', err);
+      }
+      return await storageService.fetchCollegeInfo();
+    },
+
+  // --- Notices ---
+  fetchNotices: async (): Promise<Notice[]> => {
+    try {
+      const { data, error } = await supabase.from('notices').select('*').order('date', { ascending: false });
+      if (error || !data) return [];
+      return data.map(row => ({ ...(row.data || row), id: row.id || row.data?.id }));
     } catch {
-      return initialFaculty;
+      return [];
     }
   },
+  getNotices: (): Notice[] => initialNotices,
+
+  saveNotices: async (notices: Notice[]): Promise<Notice[]> => {
+    try {
+      const dbRows = notices.map(n => ({
+        id: n.id,
+        title: n.title,
+        category: n.category,
+        date: n.date,
+        data: n,
+        updated_at: new Date().toISOString()
+      }));
+      const { error } = await supabase.from('notices').upsert(dbRows);
+      if (error) console.warn('Supabase notices save warning:', error.message);
+    } catch (err) {
+      console.warn('saveNotices exception:', err);
+    }
+    return await storageService.fetchNotices();
+  },
+
+  deleteNotice: async (id: string): Promise<Notice[]> => {
+    try {
+      const current = await storageService.fetchNotices();
+      const target = current.find(n => n.id === id);
+      if (target?.attachment?.storagePath) {
+        await supabaseStorageService.deleteWebsiteDocument(target.attachment.storagePath);
+      }
+      const { error } = await supabase.from('notices').delete().eq('id', id);
+      if (error) console.warn('Supabase deleteNotice error:', error.message);
+    } catch (err) {
+      console.warn('deleteNotice exception:', err);
+    }
+    return await storageService.fetchNotices();
+  },
+
+  // --- Events ---
+  fetchEvents: async (): Promise<CollegeEvent[]> => {
+    try {
+      const { data, error } = await supabase.from('events').select('*').order('date', { ascending: false });
+      if (error || !data) return [];
+      return data.map(row => ({ ...(row.data || row), id: row.id || row.data?.id }));
+    } catch {
+      return [];
+    }
+  },
+  getEvents: (): CollegeEvent[] => initialEvents,
+
+  saveEvents: async (events: CollegeEvent[]): Promise<CollegeEvent[]> => {
+    try {
+      const dbRows = events.map(e => ({
+        id: e.id,
+        title: e.title,
+        date: e.date,
+        data: e,
+        updated_at: new Date().toISOString()
+      }));
+      const { error } = await supabase.from('events').upsert(dbRows);
+      if (error) console.warn('Supabase events save warning:', error.message);
+    } catch (err) {
+      console.warn('saveEvents exception:', err);
+    }
+    return await storageService.fetchEvents();
+  },
+
+  deleteEvent: async (id: string): Promise<CollegeEvent[]> => {
+    try {
+      const { error } = await supabase.from('events').delete().eq('id', id);
+      if (error) console.warn('Supabase deleteEvent error:', error.message);
+    } catch (err) {
+      console.warn('deleteEvent exception:', err);
+    }
+    return await storageService.fetchEvents();
+  },
+
+  // --- Faculty ---
+  fetchFaculty: async (): Promise<FacultyMember[]> => {
+    try {
+      const { data, error } = await supabase.from('faculty').select('*');
+      if (error || !data) return [];
+      return data.map(row => ({ ...(row.data || row), id: row.id || row.data?.id }));
+    } catch {
+      return [];
+    }
+  },
+  getFaculty: (): FacultyMember[] => initialFaculty,
+
   saveFaculty: async (faculty: FacultyMember[]): Promise<FacultyMember[]> => {
-    localStorage.setItem(KEYS.FACULTY, JSON.stringify(faculty));
     try {
       const processed = await Promise.all(
         faculty.map(async f => {
@@ -227,135 +261,131 @@ export const storageService = {
           return f;
         })
       );
-      localStorage.setItem(KEYS.FACULTY, JSON.stringify(processed));
 
       const { error } = await supabase.from('faculty').upsert(processed.map(f => ({
         id: f.id,
         name: f.name,
         department: f.department,
-        data: f
+        data: f,
+        updated_at: new Date().toISOString()
       })));
-      if (error) console.warn('Supabase faculty sync:', error.message);
-      return processed;
+      if (error) console.warn('Supabase faculty save warning:', error.message);
     } catch (err) {
-      return faculty;
+      console.warn('saveFaculty exception:', err);
     }
+    return await storageService.fetchFaculty();
   },
 
-  getDepartments: (): DepartmentInfo[] => {
-    const data = localStorage.getItem(KEYS.DEPARTMENTS);
-    if (!data) {
-      localStorage.setItem(KEYS.DEPARTMENTS, JSON.stringify(initialDepartments));
-      return initialDepartments;
-    }
+  deleteFaculty: async (id: string): Promise<FacultyMember[]> => {
     try {
-      return JSON.parse(data);
+      const { error } = await supabase.from('faculty').delete().eq('id', id);
+      if (error) console.warn('Supabase deleteFaculty error:', error.message);
+    } catch (err) {
+      console.warn('deleteFaculty exception:', err);
+    }
+    return await storageService.fetchFaculty();
+  },
+
+  // --- Departments ---
+  fetchDepartments: async (): Promise<DepartmentInfo[]> => {
+    try {
+      const { data, error } = await supabase.from('departments').select('*');
+      if (error || !data) return [];
+      return data.map(row => ({ ...(row.data || row), id: row.id || row.data?.id }));
     } catch {
-      return initialDepartments;
+      return [];
     }
   },
-  saveDepartments: (depts: DepartmentInfo[]): void => {
-    localStorage.setItem(KEYS.DEPARTMENTS, JSON.stringify(depts));
-    (async () => {
-      try {
-        const { error } = await supabase.from('departments').upsert(depts.map(d => ({
-          id: d.id,
-          name: d.name,
-          data: d
-        })));
-        if (error) console.log('Supabase departments sync:', error.message);
-      } catch (err) {}
-    })();
-  },
-  deleteDepartment: (id: string): void => {
-    const depts = storageService.getDepartments();
-    const filtered = depts.filter(d => d.id !== id);
-    localStorage.setItem(KEYS.DEPARTMENTS, JSON.stringify(filtered));
-    (async () => {
-      try {
-        await supabase.from('departments').delete().eq('id', id);
-      } catch (err) {}
-    })();
+  getDepartments: (): DepartmentInfo[] => initialDepartments,
+
+  saveDepartments: async (depts: DepartmentInfo[]): Promise<DepartmentInfo[]> => {
+    try {
+      const { error } = await supabase.from('departments').upsert(depts.map(d => ({
+        id: d.id,
+        name: d.name,
+        data: d,
+        updated_at: new Date().toISOString()
+      })));
+      if (error) console.warn('Supabase departments save warning:', error.message);
+    } catch (err) {
+      console.warn('saveDepartments exception:', err);
+    }
+    return await storageService.fetchDepartments();
   },
 
-  getDownloads: (): DownloadableDocument[] => {
-    const data = localStorage.getItem(KEYS.DOWNLOADS);
-    if (!data) {
-      localStorage.setItem(KEYS.DOWNLOADS, JSON.stringify(initialDownloads));
-      return initialDownloads;
-    }
+  deleteDepartment: async (id: string): Promise<DepartmentInfo[]> => {
     try {
-      return JSON.parse(data);
+      const { error } = await supabase.from('departments').delete().eq('id', id);
+      if (error) console.warn('Supabase deleteDepartment error:', error.message);
+    } catch (err) {
+      console.warn('deleteDepartment exception:', err);
+    }
+    return await storageService.fetchDepartments();
+  },
+
+  // --- Downloads ---
+  fetchDownloads: async (): Promise<DownloadableDocument[]> => {
+    try {
+      const { data, error } = await supabase.from('downloads').select('*');
+      if (error || !data) return [];
+      return data.map(row => ({ ...(row.data || row), id: row.id || row.data?.id }));
     } catch {
-      return initialDownloads;
+      return [];
     }
   },
-  saveDownloads: (downloads: DownloadableDocument[]): void => {
-    localStorage.setItem(KEYS.DOWNLOADS, JSON.stringify(downloads));
-    (async () => {
-      try {
-        const { error } = await supabase.from('downloads').upsert(downloads.map(d => ({
-          id: d.id,
-          title: d.title,
-          category: d.category,
-          description: d.description || '',
-          file_name: d.fileName,
-          storage_path: d.storagePath || '',
-          file_size: d.fileSize,
-          display_order: d.displayOrder,
-          is_active: d.isActive,
-          created_at: d.createdAt,
-          updated_at: d.updatedAt || new Date().toISOString(),
-          data: d
-        })));
-        if (error) console.log('Supabase downloads sync:', error.message);
-      } catch (err) {}
-    })();
-  },
-  deleteDownload: (id: string): void => {
-    const downloads = storageService.getDownloads();
-    const target = downloads.find(d => d.id === id);
-    const filtered = downloads.filter(d => d.id !== id);
-    localStorage.setItem(KEYS.DOWNLOADS, JSON.stringify(filtered));
+  getDownloads: (): DownloadableDocument[] => initialDownloads,
 
-    if (target?.storagePath) {
-      supabaseStorageService.deleteWebsiteDocument(target.storagePath);
-    }
-
-    (async () => {
-      try {
-        await supabase.from('downloads').delete().eq('id', id);
-      } catch (err) {}
-    })();
-  },
-
-  getFacilities: (): Facility[] => {
-    const data = localStorage.getItem(KEYS.FACILITIES);
-    if (!data) return initialFacilities;
+  saveDownloads: async (downloads: DownloadableDocument[]): Promise<DownloadableDocument[]> => {
     try {
-      const parsed: Facility[] = JSON.parse(data);
-      const existingIds = new Set(parsed.map(f => f.id));
-      const missing = initialFacilities.filter(f => !existingIds.has(f.id));
-      if (missing.length > 0) {
-        const merged = [...parsed, ...missing];
-        localStorage.setItem(KEYS.FACILITIES, JSON.stringify(merged));
-        return merged;
+      const { error } = await supabase.from('downloads').upsert(downloads.map(d => ({
+        id: d.id,
+        title: d.title,
+        category: d.category,
+        description: d.description || '',
+        file_name: d.fileName,
+        storage_path: d.storagePath || '',
+        file_size: d.fileSize,
+        display_order: d.displayOrder,
+        is_active: d.isActive,
+        created_at: d.createdAt,
+        updated_at: new Date().toISOString(),
+        data: d
+      })));
+      if (error) console.warn('Supabase downloads save warning:', error.message);
+    } catch (err) {
+      console.warn('saveDownloads exception:', err);
+    }
+    return await storageService.fetchDownloads();
+  },
+
+  deleteDownload: async (id: string): Promise<DownloadableDocument[]> => {
+    try {
+      const current = await storageService.fetchDownloads();
+      const target = current.find(d => d.id === id);
+      if (target?.storagePath) {
+        await supabaseStorageService.deleteWebsiteDocument(target.storagePath);
       }
-      // Also update any title changes like 500 LPD plant
-      const updated = parsed.map(f => {
-        const match = initialFacilities.find(i => i.id === f.id);
-        if (match && (f.title.includes('50,000') || f.title.includes('15+ Advanced'))) {
-          return { ...f, title: match.title, description: match.description, features: match.features };
-        }
-        return f;
-      });
-      return updated;
+      const { error } = await supabase.from('downloads').delete().eq('id', id);
+      if (error) console.warn('Supabase deleteDownload error:', error.message);
+    } catch (err) {
+      console.warn('deleteDownload exception:', err);
+    }
+    return await storageService.fetchDownloads();
+  },
+
+  // --- Facilities ---
+  fetchFacilities: async (): Promise<Facility[]> => {
+    try {
+      const { data, error } = await supabase.from('facilities').select('*');
+      if (error || !data) return [];
+      return data.map(row => ({ ...(row.data || row), id: row.id || row.data?.id }));
     } catch {
-      return initialFacilities;
+      return [];
     }
   },
+  getFacilities: (): Facility[] => initialFacilities,
+
   saveFacilities: async (facs: Facility[]): Promise<Facility[]> => {
-    localStorage.setItem(KEYS.FACILITIES, JSON.stringify(facs));
     try {
       const processed = await Promise.all(
         facs.map(async f => {
@@ -368,27 +398,44 @@ export const storageService = {
           return f;
         })
       );
-      localStorage.setItem(KEYS.FACILITIES, JSON.stringify(processed));
 
       const { error } = await supabase.from('facilities').upsert(processed.map(f => ({
         id: f.id,
         title: f.title,
         category: f.category,
-        data: f
+        data: f,
+        updated_at: new Date().toISOString()
       })));
-      if (error) console.warn('Supabase facilities sync:', error.message);
-      return processed;
+      if (error) console.warn('Supabase facilities save warning:', error.message);
     } catch (err) {
-      return facs;
+      console.warn('saveFacilities exception:', err);
     }
+    return await storageService.fetchFacilities();
   },
 
-  getApplications: (): AdmissionApplication[] => {
-    const data = localStorage.getItem(KEYS.APPLICATIONS);
-    return data ? JSON.parse(data) : initialApplications;
+  deleteFacility: async (id: string): Promise<Facility[]> => {
+    try {
+      const { error } = await supabase.from('facilities').delete().eq('id', id);
+      if (error) console.warn('Supabase deleteFacility error:', error.message);
+    } catch (err) {
+      console.warn('deleteFacility exception:', err);
+    }
+    return await storageService.fetchFacilities();
   },
+
+  // --- Admission Applications ---
+  fetchApplications: async (): Promise<AdmissionApplication[]> => {
+    try {
+      const { data, error } = await supabase.from('admission_applications').select('*').order('created_at', { ascending: false });
+      if (error || !data) return [];
+      return data.map(row => ({ ...(row.data || row), id: row.id || row.data?.id }));
+    } catch {
+      return [];
+    }
+  },
+  getApplications: (): AdmissionApplication[] => initialApplications,
+
   saveApplications: async (apps: AdmissionApplication[]): Promise<{ error?: string }> => {
-    // Sanitize attachedFiles to remove Base64 dataUrl before local or DB storage
     const sanitizedApps = apps.map(a => {
       const sanitizedAttachedFiles = (a.attachedFiles || []).map(f => ({
         id: f.id,
@@ -405,8 +452,6 @@ export const storageService = {
       };
     });
 
-    localStorage.setItem(KEYS.APPLICATIONS, JSON.stringify(sanitizedApps));
-
     try {
       const dbApps = sanitizedApps.map(a => ({
         id: a.id,
@@ -414,28 +459,21 @@ export const storageService = {
         email: a.email,
         mobile: a.mobile,
         status: a.status,
-        data: a
+        data: a,
+        updated_at: new Date().toISOString()
       }));
 
       const { error } = await supabase.from('admission_applications').upsert(dbApps);
       if (error) {
-        console.error('Supabase applications DB upsert error:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-        const errStr = `[DB ${error.code || 'Error'}]: ${error.message}${error.details ? ` (${error.details})` : ''}${error.hint ? ` - Hint: ${error.hint}` : ''}`;
-        return { error: errStr };
+        return { error: `[DB ${error.code || 'Error'}]: ${error.message}` };
       }
       return {};
     } catch (err: any) {
-      console.error('Database applications save exception:', err);
       return { error: err.message || 'Failed to save application to database' };
     }
   },
+
   addApplication: async (app: AdmissionApplication): Promise<{ error?: string }> => {
-    // Sanitize attachedFiles for database storage
     const sanitizedAttachedFiles = (app.attachedFiles || []).map(f => ({
       id: f.id,
       docType: f.docType,
@@ -457,99 +495,81 @@ export const storageService = {
       email: sanitizedApp.email,
       mobile: sanitizedApp.mobile,
       status: sanitizedApp.status,
-      data: sanitizedApp
+      data: sanitizedApp,
+      created_at: new Date().toISOString()
     };
 
     try {
-      // Use INSERT for new candidate application submission
-      const { error } = await supabase
-        .from('admission_applications')
-        .insert([dbRecord]);
-
+      const { error } = await supabase.from('admission_applications').insert([dbRecord]);
       if (error) {
-        console.error('Supabase application INSERT error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-        const fullErr = `[DB ${error.code || 'Error'}]: ${error.message}${error.details ? ` - ${error.details}` : ''}${error.hint ? ` (Hint: ${error.hint})` : ''}`;
-        return { error: fullErr };
+        return { error: `[DB ${error.code || 'Error'}]: ${error.message}` };
       }
-
-      // Sync to localStorage only after DB insert succeeds
-      const apps = storageService.getApplications();
-      const updated = [sanitizedApp, ...apps];
-      localStorage.setItem(KEYS.APPLICATIONS, JSON.stringify(updated));
-
       return {};
     } catch (err: any) {
-      console.error('Database application insert exception:', err);
       return { error: err.message || 'Failed to save application record into database' };
     }
   },
-  updateApplicationStatus: (id: string, status: AdmissionApplication['status'], remarks?: string, updatedBy = 'Admin'): void => {
-    const apps = storageService.getApplications();
-    const updated = apps.map(a => {
-      if (a.id === id) {
-        const history = a.statusHistory || [];
+
+  updateApplicationStatus: async (id: string, status: AdmissionApplication['status'], remarks?: string, updatedBy = 'Admin'): Promise<void> => {
+    try {
+      const apps = await storageService.fetchApplications();
+      const target = apps.find(a => a.id === id);
+      if (target) {
+        const history = target.statusHistory || [];
         const newHistoryItem = {
           status,
-          remarks: remarks !== undefined ? remarks : a.remarks,
+          remarks: remarks !== undefined ? remarks : target.remarks,
           updatedAt: new Date().toISOString(),
           updatedBy
         };
-        return {
-          ...a,
+        const updatedApp = {
+          ...target,
           status,
-          remarks: remarks !== undefined ? remarks : a.remarks,
+          remarks: remarks !== undefined ? remarks : target.remarks,
           statusHistory: [newHistoryItem, ...history]
         };
+        await storageService.saveApplications([updatedApp]);
       }
-      return a;
-    });
-    storageService.saveApplications(updated);
-  },
-  deleteApplication: async (id: string): Promise<void> => {
-    const apps = storageService.getApplications();
-    const target = apps.find(a => a.id === id);
-    if (target) {
-      // 1. Remove documents from Supabase Storage bucket
-      await supabaseStorageService.deleteCandidateDocuments(target);
+    } catch (err) {
+      console.warn('updateApplicationStatus exception:', err);
     }
-    
-    // 2. Remove row from Supabase Database
+  },
+
+  deleteApplication: async (id: string): Promise<void> => {
     try {
+      const apps = await storageService.fetchApplications();
+      const target = apps.find(a => a.id === id);
+      if (target) {
+        await supabaseStorageService.deleteCandidateDocuments(target);
+      }
       await supabase.from('admission_applications').delete().eq('id', id);
     } catch (e) {
-      console.warn('Supabase DB delete warning:', e);
+      console.warn('deleteApplication warning:', e);
     }
-
-    // 3. Remove from local state
-    const updated = apps.filter(a => a.id !== id);
-    localStorage.setItem(KEYS.APPLICATIONS, JSON.stringify(updated));
   },
-  resetAdmissionsData: async (): Promise<void> => {
-    // 1. Delete all storage files in Supabase bucket
-    await supabaseStorageService.deleteAllStorageFiles();
 
-    // 2. Delete all records from Supabase admission_applications table
+  resetAdmissionsData: async (): Promise<void> => {
+    await supabaseStorageService.deleteAllStorageFiles();
     try {
       await supabase.from('admission_applications').delete().neq('id', 'EMPTY_DUMMY_KEY');
     } catch (e) {
       console.warn('Supabase DB clear warning:', e);
     }
-
-    // 3. Clear local applications
-    localStorage.setItem(KEYS.APPLICATIONS, JSON.stringify([]));
   },
 
-  getGallery: (): GalleryItem[] => {
-    const data = localStorage.getItem(KEYS.GALLERY);
-    return data ? JSON.parse(data) : initialGallery;
+  // --- Gallery ---
+  fetchGallery: async (): Promise<GalleryItem[]> => {
+    try {
+      const { data, error } = await supabase.from('gallery').select('*');
+      if (error || !data) return [];
+      return data.map(row => ({ ...(row.data || row), id: row.id || row.data?.id }));
+    } catch {
+      return [];
+    }
   },
+  getGallery: (): GalleryItem[] => initialGallery,
+
   saveGallery: async (items: GalleryItem[]): Promise<GalleryItem[]> => {
-    localStorage.setItem(KEYS.GALLERY, JSON.stringify(items));
     try {
       const processed = await Promise.all(
         items.map(async item => {
@@ -562,39 +582,63 @@ export const storageService = {
           return item;
         })
       );
-      localStorage.setItem(KEYS.GALLERY, JSON.stringify(processed));
 
       const { error } = await supabase.from('gallery').upsert(processed.map(g => ({
         id: g.id,
         title: g.title,
         category: g.category,
-        data: g
+        data: g,
+        updated_at: new Date().toISOString()
       })));
-      if (error) console.warn('Supabase gallery sync:', error.message);
-      return processed;
+      if (error) console.warn('Supabase gallery save warning:', error.message);
     } catch (err) {
-      return items;
+      console.warn('saveGallery exception:', err);
     }
+    return await storageService.fetchGallery();
   },
 
-  getPopupBanner: (): PopupBanner => {
-    const data = localStorage.getItem(KEYS.POPUP_BANNER);
-    if (!data) {
-      localStorage.setItem(KEYS.POPUP_BANNER, JSON.stringify(initialPopupBanner));
-      return initialPopupBanner;
-    }
+  deleteGalleryItem: async (id: string): Promise<GalleryItem[]> => {
     try {
-      return JSON.parse(data);
+      const { error } = await supabase.from('gallery').delete().eq('id', id);
+      if (error) console.warn('Supabase deleteGalleryItem error:', error.message);
+    } catch (err) {
+      console.warn('deleteGalleryItem exception:', err);
+    }
+    return await storageService.fetchGallery();
+  },
+
+  // --- Popup Banner ---
+  fetchPopupBanner: async (): Promise<PopupBanner> => {
+    try {
+      const { data, error } = await supabase.from('popup_banners').select('*').limit(1);
+      if (error || !data || data.length === 0) return initialPopupBanner;
+      const row = data[0];
+      const d = (row.data && typeof row.data === 'object') ? row.data : {};
+      return {
+        id: row.id || d.id || 'banner-default',
+        isActive: row.is_active !== undefined && row.is_active !== null ? Boolean(row.is_active) : (d.isActive ?? false),
+        title: row.title || d.title || '',
+        description: row.description || d.description || '',
+        imageUrl: row.image_url || d.imageUrl || '',
+        buttonText: row.button_text || d.buttonText || '',
+        buttonUrl: row.button_url || d.buttonUrl || '',
+        displayFrequency: row.display_frequency || d.displayFrequency || 'once_per_session',
+        startDate: row.start_date || d.startDate || '',
+        endDate: row.end_date || d.endDate || '',
+        createdAt: row.created_at || d.createdAt || new Date().toISOString(),
+        updatedAt: row.updated_at || d.updatedAt || new Date().toISOString()
+      };
     } catch {
       return initialPopupBanner;
     }
   },
+  getPopupBanner: (): PopupBanner => initialPopupBanner,
+
   savePopupBanner: async (banner: PopupBanner): Promise<PopupBanner> => {
     const updatedBanner = {
       ...banner,
       updatedAt: new Date().toISOString()
     };
-    localStorage.setItem(KEYS.POPUP_BANNER, JSON.stringify(updatedBanner));
 
     let processedBanner = { ...updatedBanner };
     try {
@@ -604,9 +648,7 @@ export const storageService = {
           processedBanner.imageUrl = cloudUrl;
         }
       }
-      localStorage.setItem(KEYS.POPUP_BANNER, JSON.stringify(processedBanner));
 
-      // Check if ID is a valid UUID or find an existing row in Supabase
       let targetId = processedBanner.id;
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId);
       if (!isUuid) {
@@ -614,7 +656,6 @@ export const storageService = {
         if (existingRows && existingRows.length > 0 && existingRows[0].id) {
           targetId = existingRows[0].id;
           processedBanner.id = targetId;
-          localStorage.setItem(KEYS.POPUP_BANNER, JSON.stringify(processedBanner));
         }
       }
 
@@ -637,51 +678,16 @@ export const storageService = {
         recordToUpsert.id = targetId;
       }
 
-      const { data: savedRows, error } = await supabase
-        .from('popup_banners')
-        .upsert([recordToUpsert])
-        .select();
-
-      if (error) {
-        console.warn('Supabase popup_banners sync warning:', error.message);
-      } else if (savedRows && savedRows.length > 0) {
-        const row = savedRows[0];
-        const d = (row.data && typeof row.data === 'object') ? row.data : {};
-        const savedPopup: PopupBanner = {
-          id: row.id || d.id || processedBanner.id,
-          isActive: Boolean(row.is_active),
-          title: row.title || d.title || '',
-          description: row.description || d.description || '',
-          imageUrl: row.image_url || d.imageUrl || '',
-          buttonText: row.button_text || d.buttonText || '',
-          buttonUrl: row.button_url || d.buttonUrl || '',
-          displayFrequency: row.display_frequency || d.displayFrequency || 'once_per_session',
-          startDate: row.start_date || d.startDate || '',
-          endDate: row.end_date || d.endDate || '',
-          createdAt: row.created_at || d.createdAt || new Date().toISOString(),
-          updatedAt: row.updated_at || d.updatedAt || new Date().toISOString()
-        };
-        localStorage.setItem(KEYS.POPUP_BANNER, JSON.stringify(savedPopup));
-        return savedPopup;
-      }
+      const { error } = await supabase.from('popup_banners').upsert([recordToUpsert]);
+      if (error) console.warn('Supabase popup_banners save warning:', error.message);
     } catch (err) {
-      console.warn('savePopupBanner error:', err);
+      console.warn('savePopupBanner exception:', err);
     }
 
-    return processedBanner;
+    return await storageService.fetchPopupBanner();
   },
-  deletePopupBanner: async (): Promise<void> => {
-    const defaultOff: PopupBanner = {
-      ...initialPopupBanner,
-      isActive: false,
-      title: '',
-      description: '',
-      imageUrl: '',
-      buttonText: '',
-      buttonUrl: '',
-      updatedAt: new Date().toISOString()
-    };
-    localStorage.setItem(KEYS.POPUP_BANNER, JSON.stringify(defaultOff));
+
+  deletePopupBanner: async (): Promise<PopupBanner> => {
     try {
       const { data: existingRows } = await supabase.from('popup_banners').select('id').limit(1);
       if (existingRows && existingRows.length > 0 && existingRows[0].id) {
@@ -695,126 +701,64 @@ export const storageService = {
           start_date: null,
           end_date: null,
           updated_at: new Date().toISOString(),
-          data: defaultOff
+          data: { ...initialPopupBanner, isActive: false }
         }).eq('id', existingRows[0].id);
       }
-    } catch (err) {}
+    } catch (err) {
+      console.warn('deletePopupBanner exception:', err);
+    }
+    return await storageService.fetchPopupBanner();
   },
 
-  // Fetch and hydrate state from Supabase
+  // --- Fetch All Data directly from Supabase ---
+  fetchAllFromSupabase: async () => {
+    cleanObsoleteLocalStorage();
+
+    const [
+      collegeInfo,
+      notices,
+      events,
+      faculty,
+      departments,
+      facilities,
+      gallery,
+      downloads,
+      popupBanner,
+      applications
+    ] = await Promise.all([
+      storageService.fetchCollegeInfo(),
+      storageService.fetchNotices(),
+      storageService.fetchEvents(),
+      storageService.fetchFaculty(),
+      storageService.fetchDepartments(),
+      storageService.fetchFacilities(),
+      storageService.fetchGallery(),
+      storageService.fetchDownloads(),
+      storageService.fetchPopupBanner(),
+      storageService.fetchApplications()
+    ]);
+
+    return {
+      collegeInfo,
+      notices,
+      events,
+      faculty,
+      departments,
+      facilities,
+      gallery,
+      downloads,
+      popupBanner,
+      applications
+    };
+  },
+
   syncFromSupabase: async (): Promise<boolean> => {
-    try {
-      const [
-        appsRes,
-        noticesRes,
-        eventsRes,
-        facultyRes,
-        deptsRes,
-        facsRes,
-        galleryRes,
-        infoRes,
-        adminRes,
-        downloadsRes,
-        popupRes
-      ] = await Promise.allSettled([
-        supabase.from('admission_applications').select('*'),
-        supabase.from('notices').select('*'),
-        supabase.from('events').select('*'),
-        supabase.from('faculty').select('*'),
-        supabase.from('departments').select('*'),
-        supabase.from('facilities').select('*'),
-        supabase.from('gallery').select('*'),
-        supabase.from('college_info').select('*'),
-        supabase.from('admin_users').select('*'),
-        supabase.from('downloads').select('*'),
-        supabase.from('popup_banners').select('*')
-      ]);
-
-      if (appsRes.status === 'fulfilled' && appsRes.value.data && appsRes.value.data.length > 0) {
-        const loadedApps = appsRes.value.data.map(row => row.data || row);
-        localStorage.setItem(KEYS.APPLICATIONS, JSON.stringify(loadedApps));
-      }
-      if (noticesRes.status === 'fulfilled' && noticesRes.value.data && noticesRes.value.data.length > 0) {
-        const loadedNotices = noticesRes.value.data.map(row => row.data || row);
-        localStorage.setItem(KEYS.NOTICES, JSON.stringify(loadedNotices));
-      }
-      if (eventsRes.status === 'fulfilled' && eventsRes.value.data && eventsRes.value.data.length > 0) {
-        const loadedEvents = eventsRes.value.data.map(row => row.data || row);
-        localStorage.setItem(KEYS.EVENTS, JSON.stringify(loadedEvents));
-      }
-      if (facultyRes.status === 'fulfilled' && facultyRes.value.data && facultyRes.value.data.length > 0) {
-        const loadedFaculty = facultyRes.value.data.map(row => row.data || row);
-        localStorage.setItem(KEYS.FACULTY, JSON.stringify(loadedFaculty));
-      }
-      if (deptsRes.status === 'fulfilled' && deptsRes.value.data && deptsRes.value.data.length > 0) {
-        const loadedDepts = deptsRes.value.data.map(row => row.data || row);
-        localStorage.setItem(KEYS.DEPARTMENTS, JSON.stringify(loadedDepts));
-      }
-      if (facsRes.status === 'fulfilled' && facsRes.value.data && facsRes.value.data.length > 0) {
-        const loadedFacs = facsRes.value.data.map(row => row.data || row);
-        localStorage.setItem(KEYS.FACILITIES, JSON.stringify(loadedFacs));
-      }
-      if (galleryRes.status === 'fulfilled' && galleryRes.value.data && galleryRes.value.data.length > 0) {
-        const loadedGallery = galleryRes.value.data.map(row => row.data || row);
-        localStorage.setItem(KEYS.GALLERY, JSON.stringify(loadedGallery));
-      }
-      if (infoRes.status === 'fulfilled' && infoRes.value.data && infoRes.value.data.length > 0) {
-        const row = infoRes.value.data[0];
-        const loadedInfo = { ...(row.data || row) };
-        if (!loadedInfo.trustName) {
-          loadedInfo.trustName = initialCollegeInfo.trustName;
-        }
-        localStorage.setItem(KEYS.COLLEGE_INFO, JSON.stringify(loadedInfo));
-      }
-      if (adminRes.status === 'fulfilled' && adminRes.value.data && adminRes.value.data.length > 0) {
-        const loadedAdmins = adminRes.value.data.map(row => row.data || row);
-        localStorage.setItem(KEYS.ADMIN_USERS, JSON.stringify(loadedAdmins));
-      }
-      if (downloadsRes.status === 'fulfilled' && downloadsRes.value.data && downloadsRes.value.data.length > 0) {
-        const loadedDownloads = downloadsRes.value.data.map(row => row.data || row);
-        localStorage.setItem(KEYS.DOWNLOADS, JSON.stringify(loadedDownloads));
-      }
-      if (popupRes.status === 'fulfilled' && popupRes.value.data && popupRes.value.data.length > 0) {
-        const rows = popupRes.value.data;
-        const sortedRows = [...rows].sort((a, b) => new Date(b.updated_at || b.created_at || 0).getTime() - new Date(a.updated_at || a.created_at || 0).getTime());
-        const activeRow = sortedRows[0];
-        const d = (activeRow.data && typeof activeRow.data === 'object' && Object.keys(activeRow.data).length > 0) ? activeRow.data : {};
-        
-        const loadedPopup: PopupBanner = {
-          id: activeRow.id || d.id || 'banner-default',
-          isActive: activeRow.is_active !== undefined && activeRow.is_active !== null ? Boolean(activeRow.is_active) : (d.isActive ?? false),
-          title: activeRow.title || d.title || '',
-          description: activeRow.description || d.description || '',
-          imageUrl: activeRow.image_url || d.imageUrl || '',
-          buttonText: activeRow.button_text || d.buttonText || '',
-          buttonUrl: activeRow.button_url || d.buttonUrl || '',
-          displayFrequency: activeRow.display_frequency || d.displayFrequency || 'once_per_session',
-          startDate: activeRow.start_date || d.startDate || '',
-          endDate: activeRow.end_date || d.endDate || '',
-          createdAt: activeRow.created_at || d.createdAt || new Date().toISOString(),
-          updatedAt: activeRow.updated_at || d.updatedAt || new Date().toISOString()
-        };
-        localStorage.setItem(KEYS.POPUP_BANNER, JSON.stringify(loadedPopup));
-      }
-
-      return true;
-    } catch (err) {
-      console.log('Supabase sync initial load:', err);
-      return false;
-    }
+    await storageService.fetchAllFromSupabase();
+    return true;
   },
 
   resetAllToDefaults: (): void => {
-    localStorage.setItem(KEYS.COLLEGE_INFO, JSON.stringify(initialCollegeInfo));
-    localStorage.setItem(KEYS.NOTICES, JSON.stringify(initialNotices));
-    localStorage.setItem(KEYS.EVENTS, JSON.stringify(initialEvents));
-    localStorage.setItem(KEYS.FACULTY, JSON.stringify(initialFaculty));
-    localStorage.setItem(KEYS.DEPARTMENTS, JSON.stringify(initialDepartments));
-    localStorage.setItem(KEYS.FACILITIES, JSON.stringify(initialFacilities));
-    localStorage.setItem(KEYS.APPLICATIONS, JSON.stringify(initialApplications));
-    localStorage.setItem(KEYS.GALLERY, JSON.stringify(initialGallery));
-    localStorage.setItem(KEYS.ADMIN_USERS, JSON.stringify(initialAdminUsers));
-    localStorage.setItem(KEYS.POPUP_BANNER, JSON.stringify(initialPopupBanner));
+    // Reset local migration marker if needed
+    localStorage.removeItem(MIGRATION_KEY);
   }
 };
-

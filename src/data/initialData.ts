@@ -48,9 +48,9 @@ export const initialCollegeInfo: CollegeInfo = {
   
   stats: {
     placement: "100%",
-    labs: "15+",
-    dairyPlant: "500 LPD",
-    faculty: "20+"
+    labs: "10",
+    dairyPlant: "500",
+    faculty: "10+"
   },
   
   establishedYear: "2008",

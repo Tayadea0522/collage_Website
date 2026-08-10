@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { CollegeInfo, Notice, DepartmentInfo, Facility, CollegeEvent } from '../types';
 import { 
   ArrowRight, 
@@ -14,6 +14,94 @@ import {
   Users,
   Quote
 } from 'lucide-react';
+
+interface ParsedStat {
+  prefix: string;
+  target: number;
+  suffix: string;
+}
+
+function parseStatValue(raw: string): ParsedStat {
+  if (!raw) return { prefix: '', target: 0, suffix: '' };
+  const match = raw.match(/^([^\d]*)([\d,.]+)(.*)$/);
+  if (!match) {
+    return { prefix: '', target: 0, suffix: raw };
+  }
+  const prefix = match[1] || '';
+  const target = parseFloat(match[2].replace(/,/g, '')) || 0;
+  const suffix = match[3] || '';
+  return { prefix, target, suffix };
+}
+
+interface StatCardProps {
+  rawValue: string;
+  label: string;
+  isVisible: boolean;
+}
+
+const StatCard: React.FC<StatCardProps> = ({ rawValue, label, isVisible }) => {
+  const { prefix, target, suffix } = useMemo(() => parseStatValue(rawValue), [rawValue]);
+  const [displayValue, setDisplayValue] = useState<number>(0);
+  const hasAnimatedRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    if (!isVisible || hasAnimatedRef.current) {
+      return;
+    }
+
+    hasAnimatedRef.current = true;
+
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (prefersReducedMotion) {
+      setDisplayValue(target);
+      return;
+    }
+
+    const duration = 1800; // 1.8 seconds
+    let animationFrameId: number;
+    let startTime: number | null = null;
+
+    const animate = (now: number) => {
+      if (!startTime) startTime = now;
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Cubic ease-out
+      const easedProgress = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(easedProgress * target);
+
+      setDisplayValue(current);
+
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(animate);
+      } else {
+        setDisplayValue(target);
+      }
+    };
+
+    animationFrameId = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [isVisible, target]);
+
+  return (
+    <div className="bg-[#F0F4F8] p-6 sm:p-8 rounded-2xl text-center flex flex-col justify-center items-center shadow-sm hover:shadow transition-shadow">
+      <div className="text-3xl sm:text-4xl font-extrabold text-[#D97706] font-serif tracking-tight">
+        {prefix}{displayValue}{suffix}
+      </div>
+      <div className="text-xs sm:text-sm font-semibold text-slate-700 mt-2">
+        {label}
+      </div>
+    </div>
+  );
+};
 
 interface HomeProps {
   collegeInfo: CollegeInfo;
@@ -33,6 +121,8 @@ export const Home: React.FC<HomeProps> = ({
   onSelectNotice
 }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [statsInView, setStatsInView] = useState(false);
+  const statsRef = useRef<HTMLDivElement | null>(null);
 
   const banners = collegeInfo?.heroBanners || [];
 
@@ -43,6 +133,31 @@ export const Home: React.FC<HomeProps> = ({
     }, 5000);
     return () => clearInterval(timer);
   }, [banners]);
+
+  useEffect(() => {
+    const element = statsRef.current;
+    if (!element) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setStatsInView(true);
+            observer.disconnect();
+          }
+        });
+      },
+      {
+        threshold: 0.15
+      }
+    );
+
+    observer.observe(element);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   return (
     <div className="space-y-12 pb-16 bg-white font-sans text-slate-800">
@@ -156,42 +271,30 @@ export const Home: React.FC<HomeProps> = ({
           </div>
 
           {/* Right: 2x2 Stat Cards Grid (#F0F4F8 bg cards with gold text) */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-[#F0F4F8] p-6 sm:p-8 rounded-2xl text-center flex flex-col justify-center items-center shadow-sm hover:shadow transition-shadow">
-              <div className="text-3xl sm:text-4xl font-extrabold text-[#D97706] font-serif">
-                {collegeInfo.stats?.placement || "100%"}
-              </div>
-              <div className="text-xs sm:text-sm font-semibold text-slate-700 mt-2">
-                Placement Assistance
-              </div>
-            </div>
+          <div ref={statsRef} className="grid grid-cols-2 gap-4">
+            <StatCard
+              rawValue={collegeInfo.stats?.placement || "100%"}
+              label="Placement Assistance"
+              isVisible={statsInView}
+            />
 
-            <div className="bg-[#F0F4F8] p-6 sm:p-8 rounded-2xl text-center flex flex-col justify-center items-center shadow-sm hover:shadow transition-shadow">
-              <div className="text-3xl sm:text-4xl font-extrabold text-[#D97706] font-serif">
-                {collegeInfo.stats?.labs || "15+"}
-              </div>
-              <div className="text-xs sm:text-sm font-semibold text-slate-700 mt-2">
-                Advanced Labs
-              </div>
-            </div>
+            <StatCard
+              rawValue="500"
+              label="Plant Capacity"
+              isVisible={statsInView}
+            />
 
-            <div className="bg-[#F0F4F8] p-6 sm:p-8 rounded-2xl text-center flex flex-col justify-center items-center shadow-sm hover:shadow transition-shadow">
-              <div className="text-3xl sm:text-4xl font-extrabold text-[#D97706] font-serif">
-                {collegeInfo.stats?.dairyPlant || "50k"}
-              </div>
-              <div className="text-xs sm:text-sm font-semibold text-slate-700 mt-2">
-                LPD Dairy Plant
-              </div>
-            </div>
+            <StatCard
+              rawValue="10"
+              label="Labs"
+              isVisible={statsInView}
+            />
 
-            <div className="bg-[#F0F4F8] p-6 sm:p-8 rounded-2xl text-center flex flex-col justify-center items-center shadow-sm hover:shadow transition-shadow">
-              <div className="text-3xl sm:text-4xl font-extrabold text-[#D97706] font-serif">
-                {collegeInfo.stats?.faculty || "20+"}
-              </div>
-              <div className="text-xs sm:text-sm font-semibold text-slate-700 mt-2">
-                Expert Faculty
-              </div>
-            </div>
+            <StatCard
+              rawValue="10+"
+              label="Expert Faculties"
+              isVisible={statsInView}
+            />
           </div>
 
         </div>

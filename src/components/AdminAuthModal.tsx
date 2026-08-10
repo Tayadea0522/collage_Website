@@ -33,6 +33,9 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
   type AuthMode = 'signin' | 'forgot_password';
   const [mode, setMode] = useState<AuthMode>('signin');
 
+  // Admin Users List State
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+
   // Sign In state
   const [usernameInput, setUsernameInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
@@ -51,6 +54,18 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [forgotError, setForgotError] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState('');
+
+  React.useEffect(() => {
+    if (isOpen) {
+      storageService.fetchAdminUsers().then(users => {
+        if (Array.isArray(users)) {
+          setAdminUsers(users);
+        }
+      }).catch(err => {
+        console.warn('Failed to load admin users:', err);
+      });
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -146,12 +161,14 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
   };
 
   // 2. Handle Forgot Password - Step 1: Find User
-  const handleFindUserForRecovery = (e: React.FormEvent) => {
+  const handleFindUserForRecovery = async (e: React.FormEvent) => {
     e.preventDefault();
     setForgotError('');
     const query = recoveryIdentifier.trim().toLowerCase();
 
-    const user = adminUsers.find(
+    const usersList = adminUsers.length > 0 ? adminUsers : await storageService.fetchAdminUsers();
+
+    const user = usersList.find(
       u => u.username.toLowerCase() === query ||
            u.email.toLowerCase() === query ||
            u.mobile === recoveryIdentifier.trim()

@@ -31,6 +31,7 @@ import { Admissions } from './components/Admissions';
 import { AdminPanel } from './components/AdminPanel';
 import { AdminAuthModal } from './components/AdminAuthModal';
 import { PopupBannerModal } from './components/PopupBannerModal';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 import { 
   X, 
@@ -564,17 +565,19 @@ export default function App() {
         )}
 
         {currentTab === 'admin' && (
-          <AdminPanel
-            collegeInfo={collegeInfo}
-            notices={notices}
-            events={events}
-            departments={departments}
-            faculty={faculty}
-            applications={applications}
-            gallery={gallery}
-            onRefreshAll={refreshAllData}
-            onLogout={handleAdminLogout}
-          />
+          <ErrorBoundary fallbackTitle="Admin Panel could not be loaded.">
+            <AdminPanel
+              collegeInfo={collegeInfo}
+              notices={notices}
+              events={events}
+              departments={departments}
+              faculty={faculty}
+              applications={applications}
+              gallery={gallery}
+              onRefreshAll={refreshAllData}
+              onLogout={handleAdminLogout}
+            />
+          </ErrorBoundary>
         )}
       </main>
 
@@ -586,15 +589,17 @@ export default function App() {
       />
 
       {/* MULTI-ADMIN AUTHENTICATION & RECOVERY MODAL */}
-      <AdminAuthModal
-        isOpen={adminModalOpen}
-        onClose={() => setAdminModalOpen(false)}
-        onLoginSuccess={(user: AdminUser) => {
-          setCurrentAdminUser(user);
-          setIsAdminLoggedIn(true);
-          setCurrentTab('admin');
-        }}
-      />
+      <ErrorBoundary fallbackTitle="Admin Login could not be loaded.">
+        <AdminAuthModal
+          isOpen={adminModalOpen}
+          onClose={() => setAdminModalOpen(false)}
+          onLoginSuccess={(user: AdminUser) => {
+            setCurrentAdminUser(user);
+            setIsAdminLoggedIn(true);
+            setCurrentTab('admin');
+          }}
+        />
+      </ErrorBoundary>
 
       {/* NOTICE DETAIL MODAL */}
       {selectedNoticeModal && (

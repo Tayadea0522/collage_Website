@@ -62,7 +62,7 @@ export const Header: React.FC<HeaderProps> = ({
   const collegeSubName = `College of Dairy Technology, ${locationCity}`;
 
   return (
-    <header className="w-full shadow-sm z-50 bg-white sticky top-0 border-b border-slate-200 font-sans">
+    <header className="w-full shadow-sm bg-white border-b border-slate-200 font-sans">
       
       {/* Top Bar - Deep Navy (#071931) */}
       <div className="bg-[#071931] text-white text-xs py-2 px-4 sm:px-8">

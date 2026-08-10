@@ -231,7 +231,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col font-sans selection:bg-amber-400 selection:text-slate-950">
       
-      {/* Fixed Sticky Header */}
+      {/* Main Website Header */}
       <Header
         collegeInfo={collegeInfo}
         currentTab={currentTab}

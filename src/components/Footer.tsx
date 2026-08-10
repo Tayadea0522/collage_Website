@@ -42,14 +42,6 @@ const INSTITUTIONAL_LINKS: InstitutionalLink[] = [
     accentColor: '#16a34a',
   },
   {
-    id: 'dbt',
-    name: 'DBT',
-    url: 'https://dbt.gov.in/',
-    logo: 'https://dbt.gov.in/sites/default/files/dbt-logo.png',
-    fallbackLogo: 'https://dbtindia.gov.in/sites/default/files/dbt-logo.png',
-    accentColor: '#2563eb',
-  },
-  {
     id: 'mhcet',
     name: 'MH-CET',
     url: 'https://cetcell.mahacet.org/',
@@ -61,8 +53,8 @@ const INSTITUTIONAL_LINKS: InstitutionalLink[] = [
     id: 'mafsu',
     name: 'MAFSU',
     url: 'https://mafsu.ac.in/',
-    logo: 'https://www.mafsu.ac.in/images/mafsu_logo.png',
-    fallbackLogo: 'https://mafsu.ac.in/images/logo.png',
+    logo: '/mafsu-logo.svg',
+    fallbackLogo: 'https://www.mafsu.ac.in/images/mafsu_logo.png',
     accentColor: '#0284c7',
   },
 ];

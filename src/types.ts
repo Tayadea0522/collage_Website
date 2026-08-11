@@ -155,6 +155,21 @@ export interface CollegeEvent {
   description: string;
 }
 
+export interface AdmissionProcessStep {
+  id: string;
+  stepNumber: number;
+  title: string;
+  description?: string;
+  linkUrl?: string;
+  linkText?: string;
+}
+
+export interface AdmissionProcessData {
+  introText: string;
+  capRegistrationUrl: string;
+  steps: AdmissionProcessStep[];
+}
+
 export interface CollegeInfo {
   name: string;
   shortName: string;
@@ -211,6 +226,7 @@ export interface CollegeInfo {
     image: string;
     ctaText: string;
   }[];
+  admissionProcess?: AdmissionProcessData;
 }
 
 export interface PlacementPartner {

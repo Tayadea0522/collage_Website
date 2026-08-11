@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { CollegeInfo, Notice, DepartmentInfo, FacultyMember, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser, DownloadableDocument, NoticeAttachment, PopupBanner } from '../types';
+import { CollegeInfo, Notice, DepartmentInfo, FacultyMember, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser, DownloadableDocument, NoticeAttachment, PopupBanner, AdmissionProcessStep, AdmissionProcessData } from '../types';
 import { storageService } from '../services/storageService';
 import { zipService } from '../services/zipService';
 import { supabaseStorageService } from '../services/supabaseStorageService';
@@ -46,7 +46,11 @@ import {
   User,
   Filter,
   Crown,
-  Star
+  Star,
+  FileCheck,
+  ArrowUp,
+  ArrowDown,
+  ExternalLink
 } from 'lucide-react';
 
 interface AdminPanelProps {
@@ -84,6 +88,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     | 'downloads' 
     | 'popup'
     | 'info' 
+    | 'admission_process'
     | 'contact' 
     | 'admin_users';
 
@@ -187,11 +192,96 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   // 1. College Info Form State
   const [infoForm, setInfoForm] = useState<CollegeInfo>({ ...collegeInfo });
 
+  // Admission Process Workflow State
+  const [procIntro, setProcIntro] = useState<string>(
+    collegeInfo?.admissionProcess?.introText || 
+    "Online centralized admission process is conducted by Maharashtra Council of Agriculture Education & Research (MCAER), Pune and CET Cell after the declaration of results of MHT-CET/NEET/JEE and the procedure of admission is as follows:"
+  );
+
+  const [procCapUrl, setProcCapUrl] = useState<string>(
+    collegeInfo?.admissionProcess?.capRegistrationUrl || "https://cetcell.mahacet.org/"
+  );
+
+  const [procSteps, setProcSteps] = useState<AdmissionProcessStep[]>(
+    collegeInfo?.admissionProcess?.steps && collegeInfo.admissionProcess.steps.length > 0
+      ? collegeInfo.admissionProcess.steps
+      : [
+          { id: "step-1", stepNumber: 1, title: "Declaration of results of MHT-CET / NEET / JEE", description: "Results and scorecards are officially declared by state and national exam bodies (CET Cell / NTA)." },
+          { id: "step-2", stepNumber: 2, title: "Online CAP registration (application) form filling", description: "Eligible candidates must complete online registration on the official Maharashtra State CET Cell portal.", linkUrl: "https://cetcell.mahacet.org/", linkText: "Visit CET Cell Portal" },
+          { id: "step-3", stepNumber: 3, title: "Complete the CAP registration form", description: "Fill personal details, academic scores, category specifications, and upload necessary certificates." },
+          { id: "step-4", stepNumber: 4, title: "Display of Merit List", description: "Provisional and Final merit lists are published online after scrutiny of submitted application forms." },
+          { id: "step-5", stepNumber: 5, title: "Submission of College Preferences", description: "Candidates submit online option forms listing preferred institutes (LSSCDT Malkapur) and courses." },
+          { id: "step-6", stepNumber: 6, title: "Display of Round-wise Allotment List", description: "Seat allotment results published for CAP Round I, Round II, and subsequent institutional rounds." },
+          { id: "step-7", stepNumber: 7, title: "Reporting by Students to Respective College", description: "Allotted candidates report physically to LSSCDT Malkapur with all original documents within specified dates." },
+          { id: "step-8", stepNumber: 8, title: "Document Verification", description: "Physical verification of original academic marksheets, scorecards, caste, and domicile certificates." },
+          { id: "step-9", stepNumber: 9, title: "Admission Confirmation", description: "Final fee payment and issuance of official admission confirmation receipt by the institute." }
+        ]
+  );
+
   useEffect(() => {
     if (collegeInfo) {
       setInfoForm(collegeInfo);
+      if (collegeInfo.admissionProcess) {
+        if (collegeInfo.admissionProcess.introText) setProcIntro(collegeInfo.admissionProcess.introText);
+        if (collegeInfo.admissionProcess.capRegistrationUrl) setProcCapUrl(collegeInfo.admissionProcess.capRegistrationUrl);
+        if (collegeInfo.admissionProcess.steps && collegeInfo.admissionProcess.steps.length > 0) {
+          setProcSteps(collegeInfo.admissionProcess.steps);
+        }
+      }
     }
   }, [collegeInfo]);
+
+  const handleUpdateStep = (index: number, field: keyof AdmissionProcessStep, val: any) => {
+    const updated = [...procSteps];
+    updated[index] = { ...updated[index], [field]: val };
+    setProcSteps(updated);
+  };
+
+  const handleAddStep = () => {
+    const newStepNum = procSteps.length + 1;
+    const newStep: AdmissionProcessStep = {
+      id: `step-${Date.now()}`,
+      stepNumber: newStepNum,
+      title: `New Admission Step ${newStepNum}`,
+      description: `Description for step ${newStepNum}`
+    };
+    setProcSteps([...procSteps, newStep]);
+  };
+
+  const handleDeleteStep = (index: number) => {
+    if (procSteps.length <= 1) {
+      alert("At least one step is required in the admission process.");
+      return;
+    }
+    const updated = procSteps.filter((_, i) => i !== index).map((s, i) => ({ ...s, stepNumber: i + 1 }));
+    setProcSteps(updated);
+  };
+
+  const handleMoveStep = (index: number, dir: 'up' | 'down') => {
+    if ((dir === 'up' && index === 0) || (dir === 'down' && index === procSteps.length - 1)) return;
+    const targetIdx = dir === 'up' ? index - 1 : index + 1;
+    const updated = [...procSteps];
+    const temp = updated[index];
+    updated[index] = updated[targetIdx];
+    updated[targetIdx] = temp;
+    const renumbered = updated.map((s, i) => ({ ...s, stepNumber: i + 1 }));
+    setProcSteps(renumbered);
+  };
+
+  const handleSaveAdmissionProcess = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const updatedProcess: AdmissionProcessData = {
+      introText: procIntro,
+      capRegistrationUrl: procCapUrl,
+      steps: procSteps.map((s, i) => ({ ...s, stepNumber: i + 1 }))
+    };
+    const updatedInfo = { ...infoForm, admissionProcess: updatedProcess };
+    setInfoForm(updatedInfo);
+    const saved = await storageService.saveCollegeInfo(updatedInfo);
+    if (saved) setInfoForm(saved);
+    onRefreshAll();
+    showToast("Admission Process workflow saved to cloud database!");
+  };
 
   const handleSaveInfo = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1100,6 +1190,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     { id: 'downloads', label: 'Downloads', icon: Download },
     { id: 'popup', label: 'Popup Banner', icon: Bell },
     { id: 'info', label: 'Content CMS', icon: Sliders },
+    { id: 'admission_process', label: 'Admission Process', icon: FileCheck },
     { id: 'contact', label: 'Contact Info', icon: Phone },
     { id: 'admin_users', label: 'Admin Users', icon: UserCheck },
   ];
@@ -3999,6 +4090,208 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             </div>
           </div>
+        )}
+
+        {/* TAB: ADMISSION PROCESS WORKFLOW MANAGER */}
+        {activeTab === 'admission_process' && (
+          <form onSubmit={handleSaveAdmissionProcess} className="space-y-6 max-w-4xl">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 pb-4">
+              <div>
+                <h2 className="text-2xl font-bold font-serif text-[#0A2342] flex items-center gap-2">
+                  <FileCheck className="w-6 h-6 text-amber-600" />
+                  Admission Process Workflow Manager
+                </h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  Configure the 9-step MCAER & CET Cell admission workflow shown on the Admissions page.
+                </p>
+              </div>
+              <button
+                type="submit"
+                className="px-5 py-2.5 bg-[#0A2342] hover:bg-slate-900 text-amber-400 font-bold text-xs rounded-xl shadow-md transition-colors flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                <span>Save Workflow Changes</span>
+              </button>
+            </div>
+
+            {/* Intro & Links Section */}
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+              <h3 className="text-sm font-bold text-[#0A2342] uppercase tracking-wider flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                Introductory Information & Registration Link
+              </h3>
+              
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Introductory Statement *
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  value={procIntro}
+                  onChange={(e) => setProcIntro(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-slate-300 text-xs sm:text-sm font-medium focus:ring-2 focus:ring-[#0A2342] focus:border-transparent"
+                  placeholder="Introductory description displayed at the top of the workflow..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Official CAP Registration URL *
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="url"
+                    required
+                    value={procCapUrl}
+                    onChange={(e) => setProcCapUrl(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm font-mono text-teal-800 font-bold"
+                    placeholder="https://cetcell.mahacet.org/"
+                  />
+                  <a
+                    href={procCapUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl border border-slate-300 shrink-0"
+                    title="Test Link in new tab"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Workflow Steps Management */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-bold text-[#0A2342] font-serif">
+                  Sequential Workflow Steps ({procSteps.length})
+                </h3>
+                <button
+                  type="button"
+                  onClick={handleAddStep}
+                  className="px-3.5 py-2 bg-teal-50 hover:bg-teal-100 text-teal-800 font-bold text-xs rounded-xl border border-teal-200 flex items-center gap-1.5 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Step</span>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {procSteps.map((step, idx) => (
+                  <div
+                    key={step.id || idx}
+                    className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3 relative group"
+                  >
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3 flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-7 h-7 rounded-full bg-[#0A2342] text-amber-400 font-extrabold text-xs flex items-center justify-center shrink-0">
+                          {idx + 1}
+                        </span>
+                        <span className="text-xs font-extrabold uppercase text-slate-600">
+                          Step {idx + 1}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleMoveStep(idx, 'up')}
+                          disabled={idx === 0}
+                          className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg disabled:opacity-30"
+                          title="Move Up"
+                        >
+                          <ArrowUp className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleMoveStep(idx, 'down')}
+                          disabled={idx === procSteps.length - 1}
+                          className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg disabled:opacity-30"
+                          title="Move Down"
+                        >
+                          <ArrowDown className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteStep(idx)}
+                          className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg border border-rose-200 ml-1"
+                          title="Delete Step"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div className="sm:col-span-2">
+                        <label className="block font-bold text-slate-700 mb-1">
+                          Step Title *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={step.title}
+                          onChange={(e) => handleUpdateStep(idx, 'title', e.target.value)}
+                          className="w-full p-2.5 rounded-lg border border-slate-300 font-bold text-slate-900 text-xs sm:text-sm"
+                          placeholder="e.g. Declaration of results of MHT-CET / NEET / JEE"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <label className="block font-bold text-slate-700 mb-1">
+                          Description
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={step.description || ''}
+                          onChange={(e) => handleUpdateStep(idx, 'description', e.target.value)}
+                          className="w-full p-2.5 rounded-lg border border-slate-300 text-xs text-slate-700"
+                          placeholder="Step explanation or guidance..."
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">
+                          Action Link URL (Optional)
+                        </label>
+                        <input
+                          type="url"
+                          value={step.linkUrl || ''}
+                          onChange={(e) => handleUpdateStep(idx, 'linkUrl', e.target.value)}
+                          className="w-full p-2.5 rounded-lg border border-slate-300 text-xs font-mono text-teal-800"
+                          placeholder="e.g. https://cetcell.mahacet.org/"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">
+                          Action Link Button Label (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={step.linkText || ''}
+                          onChange={(e) => handleUpdateStep(idx, 'linkText', e.target.value)}
+                          className="w-full p-2.5 rounded-lg border border-slate-300 text-xs font-medium"
+                          placeholder="e.g. Visit CET Cell Portal"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-200 flex justify-end">
+              <button
+                type="submit"
+                className="px-6 py-3 bg-[#0A2342] hover:bg-slate-900 text-amber-400 font-bold text-sm rounded-xl shadow-lg transition-all flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                <span>Save All Workflow Steps</span>
+              </button>
+            </div>
+          </form>
         )}
 
         {/* TAB 11: WEBSITE POPUP / ANNOUNCEMENT BANNER */}

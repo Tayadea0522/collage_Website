@@ -84,7 +84,69 @@ export const initialCollegeInfo: CollegeInfo = {
       image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1600&q=80",
       ctaText: "View Placements"
     }
-  ]
+  ],
+  admissionProcess: {
+    introText: "Online centralized admission process is conducted by Maharashtra Council of Agriculture Education & Research (MCAER), Pune and CET Cell after the declaration of results of MHT-CET/NEET/JEE and the procedure of admission is as follows:",
+    capRegistrationUrl: "https://cetcell.mahacet.org/",
+    steps: [
+      {
+        id: "step-1",
+        stepNumber: 1,
+        title: "Declaration of results of MHT-CET / NEET / JEE",
+        description: "Results and scorecards are officially declared by state and national exam bodies (CET Cell / NTA)."
+      },
+      {
+        id: "step-2",
+        stepNumber: 2,
+        title: "Online CAP registration (application) form filling",
+        description: "Eligible candidates must complete online registration on the official Maharashtra State CET Cell portal.",
+        linkUrl: "https://cetcell.mahacet.org/",
+        linkText: "Visit CET Cell Portal"
+      },
+      {
+        id: "step-3",
+        stepNumber: 3,
+        title: "Complete the CAP registration form",
+        description: "Fill personal details, academic scores, category specifications, and upload necessary certificates."
+      },
+      {
+        id: "step-4",
+        stepNumber: 4,
+        title: "Display of Merit List",
+        description: "Provisional and Final merit lists are published online after scrutiny of submitted application forms."
+      },
+      {
+        id: "step-5",
+        stepNumber: 5,
+        title: "Submission of College Preferences",
+        description: "Candidates submit online option forms listing preferred institutes (LSSCDT Malkapur) and courses."
+      },
+      {
+        id: "step-6",
+        stepNumber: 6,
+        title: "Display of Round-wise Allotment List",
+        description: "Seat allotment results published for CAP Round I, Round II, and subsequent institutional rounds."
+      },
+      {
+        id: "step-7",
+        stepNumber: 7,
+        title: "Reporting by Students to Respective College",
+        description: "Allotted candidates report physically to LSSCDT Malkapur with all original documents within specified dates."
+      },
+      {
+        id: "step-8",
+        stepNumber: 8,
+        title: "Document Verification",
+        description: "Physical verification of original academic marksheets, scorecards, caste, and domicile certificates."
+      },
+      {
+        id: "step-9",
+        stepNumber: 9,
+        title: "Admission Confirmation",
+        description: "Final fee payment and issuance of official admission confirmation receipt by the institute."
+      }
+    ]
+  }
 };
 
 export const initialNotices: Notice[] = [

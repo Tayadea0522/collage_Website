@@ -165,15 +165,15 @@ export const Academics: React.FC<AcademicsProps> = ({ faculty: propsFaculty, onN
             <ul className="space-y-2 text-xs text-slate-700">
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <span>Passed 10+2 / HSC Science stream with Physics, Chemistry, Mathematics, and English (PCM / PCMB).</span>
+                <span>XII Std. passed in 10+2 pattern from Maharashtra State Board of Higher Secondary Education or an equivalent examination with Physics, Chemistry and Biology/Mathematics and English.</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <span>Minimum 50% aggregate marks for Open Category (40% for SC/ST/OBC candidates of Maharashtra).</span>
+                <span>(Candidates, who had not offered Mathematics/biology, shall have to complete deficiency course as prescribed by respective University.)</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <span>Valid scorecard in <strong>MHT-CET (PCM/PCB)</strong> / <strong>ICAR AIEEA</strong>.</span>
+                <span>In general Student with PCB/PCMB/PCM groups in HSC are eligible with valid score of MHTCET/NEET/JEE.</span>
               </li>
             </ul>
           </div>

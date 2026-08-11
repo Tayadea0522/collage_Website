@@ -121,6 +121,9 @@ export const storageService = {
       if (!loadedInfo.adminOfficerInstitution) {
         loadedInfo.adminOfficerInstitution = initialCollegeInfo.adminOfficerInstitution;
       }
+      if (!loadedInfo.admissionProcess || !loadedInfo.admissionProcess.steps || loadedInfo.admissionProcess.steps.length === 0) {
+        loadedInfo.admissionProcess = initialCollegeInfo.admissionProcess;
+      }
       return loadedInfo;
     } catch {
       return initialCollegeInfo;

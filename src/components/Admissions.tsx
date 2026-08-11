@@ -4,6 +4,7 @@ import { storageService } from '../services/storageService';
 import { supabaseStorageService } from '../services/supabaseStorageService';
 import { printApplicationSlip, downloadApplicationSlip } from '../utils/printUtils';
 import { InnerPageLayout, SidebarItem } from './InnerPageLayout';
+import { AdmissionProcessWorkflow } from './AdmissionProcessWorkflow';
 import { 
   Sparkles, 
   CheckCircle2, 
@@ -328,7 +329,7 @@ export const Admissions: React.FC<AdmissionsProps> = ({
 
         hscPcmMarks: Number(formData.hscPcmMarks),
         hscTotalMarks: Number(formData.hscTotalMarks),
-        hscPcmPercentage: hscPct,
+        hscPercentage: hscPct,
         hscBoard: formData.hscBoard,
         hscPassingYear: formData.hscPassingYear,
 
@@ -339,7 +340,7 @@ export const Admissions: React.FC<AdmissionsProps> = ({
         isAgriculturalist: formData.isAgriculturalist,
         isMaharashtraDomicile: formData.isMaharashtraDomicile,
 
-        submittedAt: nowIso,
+        submissionDate: nowIso,
         status: 'Submitted',
         remarks: 'Online application submitted successfully with verified storage documents.',
         statusHistory: [
@@ -975,22 +976,25 @@ export const Admissions: React.FC<AdmissionsProps> = ({
           </div>
 
           <div className="space-y-4 text-xs sm:text-sm text-slate-700">
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-              <span className="font-extrabold text-[#0A2342] uppercase text-xs block">1. Qualifying Examination</span>
-              <p>Candidate must have passed 12th Standard / HSC Science with Physics, Chemistry, Mathematics (PCM) or PCMB from MSBSHSE or equivalent board.</p>
+            <div className="p-5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+              <span className="font-extrabold text-[#0A2342] uppercase text-xs block">Qualifying Examination & Board</span>
+              <p className="leading-relaxed">
+                XII Std. passed in 10+2 pattern from Maharashtra State Board of Higher Secondary Education or an equivalent examination with Physics, Chemistry and Biology/Mathematics and English.
+              </p>
             </div>
 
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-              <span className="font-extrabold text-[#0A2342] uppercase text-xs block">2. Minimum Percentage Requirement</span>
-              <ul className="list-disc list-inside space-y-1 text-xs">
-                <li><strong>OPEN / General Category:</strong> Minimum 50% aggregate marks in PCM subjects.</li>
-                <li><strong>Reserved Categories (SC/ST/OBC/VJNT/EWS):</strong> Minimum 40% aggregate marks in PCM subjects.</li>
-              </ul>
+            <div className="p-5 bg-amber-50/80 rounded-xl border border-amber-200/90 space-y-2">
+              <span className="font-extrabold text-[#0A2342] uppercase text-xs block">Deficiency Course Provision</span>
+              <p className="leading-relaxed font-medium text-slate-800">
+                (Candidates, who had not offered Mathematics/biology, shall have to complete deficiency course as prescribed by respective University.)
+              </p>
             </div>
 
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-              <span className="font-extrabold text-[#0A2342] uppercase text-xs block">3. Mandatory Entrance Examination</span>
-              <p>Candidate must have appeared and obtained a non-zero score in <strong>MHT-CET (PCM/PCB) 2026</strong> OR <strong>ICAR AIEEA 2026</strong> OR <strong>JEE Main 2026</strong>.</p>
+            <div className="p-5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+              <span className="font-extrabold text-[#0A2342] uppercase text-xs block">Eligible HSC Groups & Entrance Exams</span>
+              <p className="leading-relaxed font-semibold text-slate-900">
+                In general Student with PCB/PCMB/PCM groups in HSC are eligible with valid score of MHTCET/NEET/JEE.
+              </p>
             </div>
           </div>
         </div>
@@ -998,34 +1002,7 @@ export const Admissions: React.FC<AdmissionsProps> = ({
 
       {/* 5. ADMISSION PROCESS */}
       {activeSidebarItem === 'process' && (
-        <div className="space-y-6">
-          <div className="border-b border-slate-200 pb-4">
-            <h2 className="text-2xl font-bold font-serif text-slate-900 flex items-center gap-2">
-              <FileCheck className="w-6 h-6 text-amber-600" />
-              Centralized Admission Process (CAP) Steps
-            </h2>
-          </div>
-
-          <ol className="space-y-3 text-xs sm:text-sm text-slate-700">
-            {[
-              { title: 'Online Registration', desc: 'Register online on state CET Cell / LSSCDT portal and create candidate profile.' },
-              { title: 'Document Verification', desc: 'Upload scanned copies of required certificates or report to E-Scrutiny center.' },
-              { title: 'Display of Merit List', desc: 'Provisional and Final merit lists published based on CET percentile & PCM marks.' },
-              { title: 'Option Form Filling', desc: 'Fill college preference options online selecting LSSCDT Malkapur as top choice.' },
-              { title: 'Seat Allotment & Reporting', desc: 'Accept seat, report to campus, verify original documents and confirm admission.' }
-            ].map((step, idx) => (
-              <li key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex gap-3 items-start">
-                <span className="w-6 h-6 rounded-full bg-[#0A2342] text-amber-400 font-extrabold flex items-center justify-center text-xs shrink-0 mt-0.5">
-                  {idx + 1}
-                </span>
-                <div>
-                  <strong className="text-slate-900 block font-bold">{step.title}</strong>
-                  <span className="text-xs text-slate-600">{step.desc}</span>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </div>
+        <AdmissionProcessWorkflow admissionProcess={collegeInfo.admissionProcess} />
       )}
 
       {/* 6. DOCUMENTS REQUIRED */}

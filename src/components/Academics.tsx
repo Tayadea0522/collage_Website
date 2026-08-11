@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Award, Users, BookOpen, GraduationCap, Mail, Phone, Briefcase } from 'lucide-react';
+import { CheckCircle2, Award, Users, BookOpen, GraduationCap, Mail, Phone, Briefcase, Calendar, ShieldCheck, FileText } from 'lucide-react';
 import { FacultyMember } from '../types';
-import { storageService } from '../services/storageService';
+import { InnerPageLayout, SidebarItem } from './InnerPageLayout';
 
 interface AcademicsProps {
   faculty?: FacultyMember[];
+  onNavigateTab?: (tab: string) => void;
 }
 
-export const Academics: React.FC<AcademicsProps> = ({ faculty: propsFaculty }) => {
+export const Academics: React.FC<AcademicsProps> = ({ faculty: propsFaculty, onNavigateTab }) => {
+  const [activeSidebarItem, setActiveSidebarItem] = useState<string>('overview');
   const [activeSem, setActiveSem] = useState(1);
   const [facultyDeptFilter, setFacultyDeptFilter] = useState('All');
 
@@ -103,128 +105,248 @@ export const Academics: React.FC<AcademicsProps> = ({ faculty: propsFaculty }) =
     },
   ];
 
+  const sidebarItems: SidebarItem[] = [
+    { id: 'overview', label: 'Program Overview', icon: Award },
+    { id: 'curriculum', label: 'Semester Curricula', icon: BookOpen, badge: '8 Sems' },
+    { id: 'calendar', label: 'Academic Calendar', icon: Calendar },
+    { id: 'faculties', label: 'Academic Faculty', icon: Users },
+    { id: 'regulations', label: 'Academic Regulations', icon: ShieldCheck },
+  ];
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-8 py-10 space-y-10 font-sans text-slate-800">
-      
-      {/* Header Banner */}
-      <div className="bg-[#0A2342] text-white p-8 sm:p-12 rounded-2xl shadow border-b-4 border-[#D97706]">
-        <div className="max-w-3xl space-y-3">
-          <span className="text-xs font-bold uppercase tracking-widest text-[#D97706] bg-amber-500/10 px-3 py-1 rounded border border-[#D97706]/30">
-            Academic Degree Program
-          </span>
-          <h1 className="text-3xl sm:text-4xl font-extrabold font-serif text-white">
-            Bachelor of Technology (B.Tech - Dairy Technology)
-          </h1>
-          <p className="text-slate-200 text-sm sm:text-base leading-relaxed">
-            A comprehensive 4-Year (8-Semester) professional degree program approved by ICAR and affiliated to MAFSU Nagpur, designed to generate industry-ready Dairy Technologists and Plant Managers.
-          </p>
-        </div>
-      </div>
-
-      {/* Program Overview & Highlights */}
-      <div className="bg-[#F0F4F8] p-8 rounded-2xl border border-slate-200/80 space-y-6">
-        <h2 className="text-2xl font-bold font-serif text-[#0A2342] border-b border-slate-300/80 pb-3 flex items-center gap-2">
-          <Award className="w-6 h-6 text-[#D97706]" />
-          Degree Program Specifications
-        </h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-1">
-            <span className="text-xs font-bold text-slate-500 uppercase">Degree Title</span>
-            <div className="font-bold text-[#0A2342] text-base">B.Tech (Dairy Technology)</div>
-          </div>
-          <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-1">
-            <span className="text-xs font-bold text-slate-500 uppercase">Course Duration</span>
-            <div className="font-bold text-[#0A2342] text-base">4 Academic Years (8 Semesters)</div>
-          </div>
-          <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-1">
-            <span className="text-xs font-bold text-slate-500 uppercase">Medium of Instruction</span>
-            <div className="font-bold text-[#0A2342] text-base">English</div>
-          </div>
-          <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-1">
-            <span className="text-xs font-bold text-slate-500 uppercase">Curriculum Framework</span>
-            <div className="font-bold text-[#D97706] text-base">ICAR Vth Deans' Committee</div>
-          </div>
-        </div>
-
-        <div className="space-y-3 pt-2">
-          <h3 className="font-bold text-[#0A2342] text-base font-serif">Eligibility & Admission Criteria:</h3>
-          <ul className="space-y-2 text-sm text-slate-700">
-            <li className="flex items-start gap-2">
-              <CheckCircle2 className="w-4 h-4 text-[#D97706] shrink-0 mt-0.5" />
-              <span>Passed 10+2 / HSC Science stream with Physics, Chemistry, Mathematics, and English (PCM / PCMB).</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <CheckCircle2 className="w-4 h-4 text-[#D97706] shrink-0 mt-0.5" />
-              <span>Minimum 50% aggregate marks for Open Category (40% for SC/ST/OBC candidates of Maharashtra).</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <CheckCircle2 className="w-4 h-4 text-[#D97706] shrink-0 mt-0.5" />
-              <span>Valid scorecard in <strong>MHT-CET (PCM/PCB)</strong> / <strong>ICAR AIEEA</strong>.</span>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      {/* Syllabus & Curriculum Tabs */}
-      <div id="syllabi" className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 pb-4">
-          <div>
-            <span className="text-xs font-bold uppercase text-[#D97706]">ICAR Approved Scheme</span>
-            <h2 className="text-2xl font-bold font-serif text-[#0A2342]">
-              Semester-Wise Syllabi & Course Structure
+    <InnerPageLayout
+      title="Academics & Curricula"
+      categoryTag="Academic Programs"
+      subtitle="B.Tech (Dairy Technology) Degree Program, ICAR Curricula & Academic Faculty"
+      breadcrumbPath={[
+        { label: 'Home', tab: 'home' },
+        { label: 'Academics' },
+        { label: sidebarItems.find(s => s.id === activeSidebarItem)?.label || 'Program Overview' }
+      ]}
+      sidebarItems={sidebarItems}
+      activeItem={activeSidebarItem}
+      onSelectSidebarItem={setActiveSidebarItem}
+      onNavigateTab={onNavigateTab}
+    >
+      {/* 1. PROGRAM OVERVIEW */}
+      {activeSidebarItem === 'overview' && (
+        <div className="space-y-6">
+          <div className="border-b border-slate-200 pb-4">
+            <h2 className="text-2xl font-bold font-serif text-[#0A2342] flex items-center gap-2">
+              <Award className="w-6 h-6 text-amber-600" />
+              B.Tech (Dairy Technology) Degree Program Specifications
             </h2>
+            <p className="text-xs text-slate-600 mt-1">
+              Approved by ICAR and affiliated to MAFSU Nagpur
+            </p>
           </div>
-        </div>
 
-        {/* Semester Buttons */}
-        <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-          {semesters.map((s) => (
-            <button
-              key={s.sem}
-              onClick={() => setActiveSem(s.sem)}
-              className={`py-2 px-3 rounded-lg text-xs font-bold transition-colors text-center ${
-                activeSem === s.sem
-                  ? 'bg-[#0A2342] text-amber-400 shadow'
-                  : 'bg-[#F0F4F8] text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              Sem {s.sem}
-            </button>
-          ))}
-        </div>
-
-        {/* Selected Semester Courses Table */}
-        {semesters.find(s => s.sem === activeSem) && (
-          <div className="space-y-4 pt-2">
-            <h3 className="text-lg font-bold text-[#0A2342] font-serif border-l-4 border-[#D97706] pl-3">
-              {semesters.find(s => s.sem === activeSem)?.title}
-            </h3>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-[#0A2342] text-white">
-                    <th className="p-3 font-semibold rounded-tl-lg">Course Code</th>
-                    <th className="p-3 font-semibold">Course Title</th>
-                    <th className="p-3 font-semibold rounded-tr-lg">Credit Hours (L+P)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 text-slate-800">
-                  {semesters.find(s => s.sem === activeSem)?.courses.map((c, i) => (
-                    <tr key={i} className="hover:bg-[#F0F4F8]">
-                      <td className="p-3 font-mono font-bold text-[#D97706]">{c.code}</td>
-                      <td className="p-3 font-medium text-slate-900">{c.name}</td>
-                      <td className="p-3 text-slate-600 font-mono">{c.credits}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1">
+              <span className="text-[10px] font-bold text-slate-500 uppercase">Degree Title</span>
+              <div className="font-bold text-[#0A2342] text-sm">B.Tech (Dairy Technology)</div>
+            </div>
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1">
+              <span className="text-[10px] font-bold text-slate-500 uppercase">Course Duration</span>
+              <div className="font-bold text-[#0A2342] text-sm">4 Years (8 Semesters)</div>
+            </div>
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1">
+              <span className="text-[10px] font-bold text-slate-500 uppercase">Medium of Instruction</span>
+              <div className="font-bold text-[#0A2342] text-sm">English</div>
+            </div>
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1">
+              <span className="text-[10px] font-bold text-slate-500 uppercase">Curriculum Framework</span>
+              <div className="font-bold text-amber-700 text-sm">ICAR Vth Deans' Committee</div>
             </div>
           </div>
-        )}
-      </div>
 
-    </div>
+          <div className="p-5 bg-amber-50/80 rounded-xl border border-amber-200/90 space-y-3">
+            <h3 className="font-bold text-[#0A2342] text-sm font-serif">Eligibility & Admission Criteria:</h3>
+            <ul className="space-y-2 text-xs text-slate-700">
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <span>Passed 10+2 / HSC Science stream with Physics, Chemistry, Mathematics, and English (PCM / PCMB).</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <span>Minimum 50% aggregate marks for Open Category (40% for SC/ST/OBC candidates of Maharashtra).</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <span>Valid scorecard in <strong>MHT-CET (PCM/PCB)</strong> / <strong>ICAR AIEEA</strong>.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* 2. CURRICULUM & SYLLABUS */}
+      {activeSidebarItem === 'curriculum' && (
+        <div className="space-y-6">
+          <div className="border-b border-slate-200 pb-4">
+            <h2 className="text-2xl font-bold font-serif text-[#0A2342] flex items-center gap-2">
+              <BookOpen className="w-6 h-6 text-amber-600" />
+              Semester-Wise Syllabi & Course Scheme
+            </h2>
+            <p className="text-xs text-slate-600 mt-1">
+              Select a semester below to view course codes, titles, and credit hours.
+            </p>
+          </div>
+
+          {/* Semester Selector Buttons */}
+          <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+            {semesters.map((s) => (
+              <button
+                key={s.sem}
+                onClick={() => setActiveSem(s.sem)}
+                className={`py-2 px-2.5 rounded-lg text-xs font-bold transition-all text-center ${
+                  activeSem === s.sem
+                    ? 'bg-[#0A2342] text-amber-400 shadow'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                Sem {s.sem}
+              </button>
+            ))}
+          </div>
+
+          {/* Selected Semester Courses Table */}
+          {semesters.find(s => s.sem === activeSem) && (
+            <div className="space-y-4 pt-2">
+              <h3 className="text-base font-bold text-[#0A2342] font-serif border-l-4 border-amber-500 pl-3">
+                {semesters.find(s => s.sem === activeSem)?.title}
+              </h3>
+
+              <div className="overflow-x-auto text-xs">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-[#0A2342] text-amber-400 font-bold">
+                      <th className="p-3 rounded-tl-lg">Course Code</th>
+                      <th className="p-3">Course Title</th>
+                      <th className="p-3 rounded-tr-lg">Credit Hours (L+P)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 text-slate-800">
+                    {semesters.find(s => s.sem === activeSem)?.courses.map((c, i) => (
+                      <tr key={i} className="hover:bg-slate-50">
+                        <td className="p-3 font-mono font-bold text-amber-700">{c.code}</td>
+                        <td className="p-3 font-medium text-slate-900">{c.name}</td>
+                        <td className="p-3 text-slate-600 font-mono">{c.credits}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 3. ACADEMIC CALENDAR */}
+      {activeSidebarItem === 'calendar' && (
+        <div className="space-y-6">
+          <div className="border-b border-slate-200 pb-4">
+            <h2 className="text-2xl font-bold font-serif text-[#0A2342] flex items-center gap-2">
+              <Calendar className="w-6 h-6 text-amber-600" />
+              Academic Calendar & Examination Schedule (2026–27)
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+              <span className="font-extrabold text-[#0A2342] uppercase block">Odd Semesters (Sem I, III, V, VII)</span>
+              <ul className="space-y-1 text-slate-700">
+                <li><strong>Commencement of Classes:</strong> August 1, 2026</li>
+                <li><strong>Mid-Term Examinations:</strong> October 12–20, 2026</li>
+                <li><strong>Semester End Theory & Practicals:</strong> December 10–24, 2026</li>
+              </ul>
+            </div>
+
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+              <span className="font-extrabold text-[#0A2342] uppercase block">Even Semesters (Sem II, IV, VI, VIII)</span>
+              <ul className="space-y-1 text-slate-700">
+                <li><strong>Commencement of Classes:</strong> January 5, 2027</li>
+                <li><strong>Mid-Term Examinations:</strong> March 15–22, 2027</li>
+                <li><strong>Semester End Theory & Practicals:</strong> May 10–25, 2027</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. ACADEMIC FACULTY */}
+      {activeSidebarItem === 'faculties' && (
+        <div className="space-y-6">
+          <div className="border-b border-slate-200 pb-4 flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+            <div>
+              <h2 className="text-2xl font-bold font-serif text-[#0A2342] flex items-center gap-2">
+                <Users className="w-6 h-6 text-amber-600" />
+                Academic Faculty Directory
+              </h2>
+              <p className="text-xs text-slate-600">
+                Experienced professors, associate professors & research scientists
+              </p>
+            </div>
+
+            {/* Department Filter */}
+            <select
+              value={facultyDeptFilter}
+              onChange={(e) => setFacultyDeptFilter(e.target.value)}
+              className="p-2 rounded-lg border border-slate-300 text-xs font-bold text-slate-800 bg-white"
+            >
+              <option value="All">All Departments</option>
+              <option value="Technology">Dairy Technology</option>
+              <option value="Chemistry">Dairy Chemistry</option>
+              <option value="Microbiology">Dairy Microbiology</option>
+              <option value="Engineering">Dairy Engineering</option>
+              <option value="Business">Business Management</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {filteredFaculty.map((f) => (
+              <div key={f.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex gap-4 items-center">
+                <img
+                  src={f.image || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80"}
+                  alt={f.name}
+                  className="w-16 h-16 rounded-full object-cover border-2 border-amber-500 shrink-0"
+                />
+                <div className="space-y-1 text-xs">
+                  <h3 className="font-bold text-slate-900 text-sm">{f.name}</h3>
+                  <span className="text-amber-800 font-extrabold block">{f.designation}</span>
+                  <span className="text-slate-500 font-mono text-[11px] block">{f.department}</span>
+                  <p className="text-slate-600 text-[11px]">Qualification: {f.qualification}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 5. ACADEMIC REGULATIONS */}
+      {activeSidebarItem === 'regulations' && (
+        <div className="space-y-6">
+          <div className="border-b border-slate-200 pb-4">
+            <h2 className="text-2xl font-bold font-serif text-[#0A2342] flex items-center gap-2">
+              <ShieldCheck className="w-6 h-6 text-amber-600" />
+              Academic Regulations & Attendance Rules
+            </h2>
+          </div>
+
+          <div className="space-y-4 text-xs text-slate-700 leading-relaxed">
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+              <strong className="text-slate-900 font-bold block text-sm">Attendance Policy</strong>
+              <p>Minimum 80% attendance in lectures and practicals is compulsory to appear for MAFSU end-term examinations.</p>
+            </div>
+
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+              <strong className="text-slate-900 font-bold block text-sm">Evaluation System</strong>
+              <p>Continuous internal evaluation (20% mid-term + 10% practicals) + 70% University End-Semester Theory Examination.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </InnerPageLayout>
   );
 };

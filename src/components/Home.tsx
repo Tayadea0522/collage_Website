@@ -439,7 +439,7 @@ export const Home: React.FC<HomeProps> = ({
               Latest Notices & Updates
             </h3>
             <button
-              onClick={() => onNavigate('notices')}
+              onClick={() => onNavigate('news')}
               className="text-xs font-bold text-[#D97706] hover:underline"
             >
               View All Notices
@@ -509,7 +509,7 @@ export const Home: React.FC<HomeProps> = ({
           </div>
 
           <button
-            onClick={() => onNavigate('notices')}
+            onClick={() => onNavigate('gallery')}
             className="w-full bg-[#0A2342] hover:bg-[#071931] text-white text-xs font-bold py-2.5 rounded-lg text-center transition-colors mt-4"
           >
             Check Event Gallery

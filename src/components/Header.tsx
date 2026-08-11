@@ -35,14 +35,16 @@ export const Header: React.FC<HeaderProps> = ({
 
   const navItems = [
     { id: 'home', label: 'Home' },
+    { id: 'about', label: 'About' },
     { id: 'admissions', label: 'Admissions' },
     { id: 'academics', label: 'Academics' },
     { id: 'faculties', label: 'Faculties' },
     { id: 'departments', label: 'Departments' },
     { id: 'facilities', label: 'Facilities' },
     { id: 'downloads', label: 'Downloads' },
-    { id: 'notices', label: 'Gallery' },
-    { id: 'about', label: 'About' },
+    { id: 'gallery', label: 'Gallery' },
+    { id: 'news', label: 'News' },
+    { id: 'contact', label: 'Contact' },
   ];
 
   const handleNavClick = (id: string) => {

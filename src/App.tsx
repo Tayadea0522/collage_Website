@@ -28,6 +28,7 @@ import { Departments } from './components/Departments';
 import { Facilities } from './components/Facilities';
 import { Faculties } from './components/Faculties';
 import { Admissions } from './components/Admissions';
+import { News } from './components/News';
 import { AdminPanel } from './components/AdminPanel';
 import { AdminAuthModal } from './components/AdminAuthModal';
 import { PopupBannerModal } from './components/PopupBannerModal';
@@ -53,7 +54,41 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  const [currentTab, setCurrentTab] = useState<string>('home');
+  const getInitialTab = () => {
+    if (typeof window === 'undefined') return 'home';
+    const path = window.location.pathname.replace(/^\//, '').toLowerCase();
+    if (path === 'news') return 'news';
+    if (path === 'gallery') return 'gallery';
+    if (path === 'notices') return 'news';
+    if (['about', 'academics', 'departments', 'facilities', 'admissions', 'faculties', 'downloads', 'contact', 'admin', 'placements'].includes(path)) {
+      return path;
+    }
+    return 'home';
+  };
+
+  const [currentTab, setCurrentTabState] = useState<string>(getInitialTab);
+
+  const setCurrentTab = (tab: string) => {
+    setCurrentTabState(tab);
+    if (typeof window !== 'undefined') {
+      const newPath = tab === 'home' ? '/' : `/${tab}`;
+      if (window.location.pathname !== newPath) {
+        window.history.pushState({}, '', newPath);
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname.replace(/^\//, '').toLowerCase();
+      if (path === 'news' || path === 'notices') setCurrentTabState('news');
+      else if (path === 'gallery') setCurrentTabState('gallery');
+      else if (path) setCurrentTabState(path);
+      else setCurrentTabState('home');
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
   
   // Data State
   const [collegeInfo, setCollegeInfo] = useState<CollegeInfo>(storageService.getCollegeInfo());
@@ -252,7 +287,7 @@ export default function App() {
       <NoticeTicker
         notices={notices}
         onSelectNotice={(notice) => setSelectedNoticeModal(notice)}
-        onViewAllNotices={() => setCurrentTab('notices')}
+        onViewAllNotices={() => setCurrentTab('news')}
       />
 
       {/* Main Page View Area */}
@@ -332,55 +367,15 @@ export default function App() {
           </div>
         )}
 
-        {currentTab === 'notices' && (
+        {currentTab === 'news' && (
+          <News
+            notices={notices}
+            onSelectNotice={(notice) => setSelectedNoticeModal(notice)}
+          />
+        )}
+
+        {(currentTab === 'gallery' || currentTab === 'notices') && (
           <div className="max-w-7xl mx-auto px-4 sm:px-8 py-10 space-y-8">
-            <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-              <h1 className="text-2xl font-bold font-serif text-slate-900 border-b border-slate-200 pb-3 flex items-center gap-2">
-                <FileText className="w-6 h-6 text-amber-600" />
-                All Official Notices & Circulars
-              </h1>
-
-              <div className="divide-y divide-slate-100 space-y-3">
-                {notices.map((n) => (
-                  <div
-                    key={n.id}
-                    onClick={() => setSelectedNoticeModal(n)}
-                    className="py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 cursor-pointer hover:bg-slate-50 p-3 rounded-xl transition-colors"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded">
-                          {n.date}
-                        </span>
-                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-blue-100 text-blue-900">
-                          {n.category}
-                        </span>
-                        {n.isNew && (
-                          <span className="text-[9px] font-extrabold bg-red-600 text-white px-1.5 py-0.5 rounded uppercase">
-                            NEW
-                          </span>
-                        )}
-                        {n.attachment && (
-                          <span className="text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-200 px-1.5 py-0.5 rounded flex items-center gap-1">
-                            📄 PDF
-                          </span>
-                        )}
-                      </div>
-                      <h3 className="text-base font-bold text-slate-900 hover:text-amber-600">
-                        {n.title}
-                      </h3>
-                      {n.content && (
-                        <p className="text-xs text-slate-600 line-clamp-2">{n.content}</p>
-                      )}
-                    </div>
-                    <button className="text-xs font-bold text-blue-900 hover:underline shrink-0">
-                      Read Circular →
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             {/* Photo Gallery Section */}
             <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-3">
@@ -422,7 +417,6 @@ export default function App() {
                   ))}
               </div>
             </div>
-
           </div>
         )}
 

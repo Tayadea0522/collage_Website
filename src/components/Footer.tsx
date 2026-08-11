@@ -125,8 +125,8 @@ export const Footer: React.FC<FooterProps> = ({
               { id: 'admissions', label: 'Admissions' },
               { id: 'academics', label: 'Academics' },
               { id: 'departments', label: 'Departments' },
-              { id: 'facilities', label: 'Results' },
-              { id: 'notices', label: 'Gallery' },
+              { id: 'gallery', label: 'Gallery' },
+              { id: 'news', label: 'News' },
               { id: 'contact', label: 'Contact' },
             ].map((item) => (
               <button

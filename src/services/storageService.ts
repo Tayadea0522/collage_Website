@@ -178,9 +178,22 @@ export const storageService = {
       if (!loadedInfo.presidentName) {
         loadedInfo.presidentName = initialCollegeInfo.presidentName;
         loadedInfo.presidentDesignation = initialCollegeInfo.presidentDesignation;
+        loadedInfo.presidentEducation = initialCollegeInfo.presidentEducation;
         loadedInfo.presidentInstitution = initialCollegeInfo.presidentInstitution;
         loadedInfo.presidentMessage = initialCollegeInfo.presidentMessage;
         loadedInfo.presidentImage = initialCollegeInfo.presidentImage;
+      }
+      if (!loadedInfo.presidentEducation) {
+        loadedInfo.presidentEducation = initialCollegeInfo.presidentEducation;
+      }
+      if (!loadedInfo.deanEducation) {
+        loadedInfo.deanEducation = initialCollegeInfo.deanEducation;
+      }
+      if (!loadedInfo.secretaryEducation) {
+        loadedInfo.secretaryEducation = initialCollegeInfo.secretaryEducation;
+      }
+      if (!loadedInfo.adminOfficerEducation) {
+        loadedInfo.adminOfficerEducation = initialCollegeInfo.adminOfficerEducation;
       }
       if (!loadedInfo.deanInstitution) {
         loadedInfo.deanInstitution = initialCollegeInfo.deanInstitution;

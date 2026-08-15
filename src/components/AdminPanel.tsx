@@ -3797,9 +3797,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             </label>
                           </div>
                         </div>
-                      </div>
-
-                      <div>
+                                           <div>
                         <label className="font-bold text-slate-700 text-xs block mb-1">Name</label>
                         <input
                           type="text"
@@ -3818,6 +3816,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           onChange={(e) => setInfoForm({ ...infoForm, presidentDesignation: e.target.value })}
                           className="w-full p-2 text-sm rounded border border-slate-300 bg-white"
                           placeholder="President"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="font-bold text-slate-700 text-xs block mb-1">Education / Qualification</label>
+                        <input
+                          type="text"
+                          value={infoForm.presidentEducation || ''}
+                          onChange={(e) => setInfoForm({ ...infoForm, presidentEducation: e.target.value })}
+                          className="w-full p-2 text-sm rounded border border-slate-300 bg-white"
+                          placeholder="e.g. B.A., Philanthropist & Social Leader"
                         />
                       </div>
 
@@ -3845,103 +3854,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </div>
                   </div>
 
-                  {/* 2. Dean Details */}
+                  {/* 2. Secretary Details */}
                   <div className="space-y-4 bg-[#F0F4F8] p-5 rounded-2xl border border-slate-200 flex flex-col justify-between shadow-sm">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between border-b border-slate-300 pb-2">
-                        <span className="font-extrabold text-[#0A2342] text-base">2. Dean</span>
+                        <span className="font-extrabold text-[#0A2342] text-base">2. Secretary</span>
                         <span className="text-xs bg-[#0A2342] text-amber-400 font-bold px-2.5 py-0.5 rounded-full">Leader 2</span>
-                      </div>
-
-                      {/* Photo Preview & Upload */}
-                      <div>
-                        <label className="font-bold text-slate-700 text-xs block mb-1">Photo Preview & Upload</label>
-                        <div className="flex items-center gap-4 bg-white p-3 rounded-xl border border-slate-200">
-                          <img
-                            src={infoForm.deanImage || "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=300&q=80"}
-                            alt={infoForm.deanName}
-                            referrerPolicy="no-referrer"
-                            className="w-20 h-24 rounded-lg object-cover bg-slate-100 border border-slate-200 shrink-0"
-                          />
-                          <div className="flex-1 space-y-2">
-                            <input
-                              type="text"
-                              value={infoForm.deanImage}
-                              onChange={(e) => setInfoForm({ ...infoForm, deanImage: e.target.value })}
-                              className="w-full p-2 text-xs rounded border border-slate-300 bg-white"
-                              placeholder="Image URL or upload"
-                            />
-                            <label className="cursor-pointer inline-flex items-center gap-1 bg-[#0A2342] text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-slate-900 shadow-sm">
-                              <Upload className="w-3.5 h-3.5" />
-                              <span>Upload Photo</span>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) {
-                                    handleImageFileUpload(file, (url) => setInfoForm(prev => ({ ...prev, deanImage: url })));
-                                  }
-                                }}
-                              />
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="font-bold text-slate-700 text-xs block mb-1">Name</label>
-                        <input
-                          type="text"
-                          value={infoForm.deanName}
-                          onChange={(e) => setInfoForm({ ...infoForm, deanName: e.target.value })}
-                          className="w-full p-2 text-sm rounded border border-slate-300 font-bold bg-white"
-                          placeholder="Dr. P. L. Chaudhari"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="font-bold text-slate-700 text-xs block mb-1">Designation</label>
-                        <input
-                          type="text"
-                          value={infoForm.deanDesignation}
-                          onChange={(e) => setInfoForm({ ...infoForm, deanDesignation: e.target.value })}
-                          className="w-full p-2 text-sm rounded border border-slate-300 bg-white"
-                          placeholder="Dean"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="font-bold text-slate-700 text-xs block mb-1">College / Institution</label>
-                        <input
-                          type="text"
-                          value={infoForm.deanInstitution || ''}
-                          onChange={(e) => setInfoForm({ ...infoForm, deanInstitution: e.target.value })}
-                          className="w-full p-2 text-sm rounded border border-slate-300 bg-white"
-                          placeholder="Late Shaktikumar Sancheti College of Dairy Technology, Malkapur"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="font-bold text-slate-700 text-xs block mb-1">Message / Details</label>
-                        <textarea
-                          rows={3}
-                          value={infoForm.deanMessage}
-                          onChange={(e) => setInfoForm({ ...infoForm, deanMessage: e.target.value })}
-                          className="w-full p-2 text-sm rounded border border-slate-300 bg-white"
-                          placeholder="Dean's message quote..."
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 3. Secretary Details */}
-                  <div className="space-y-4 bg-[#F0F4F8] p-5 rounded-2xl border border-slate-200 flex flex-col justify-between shadow-sm">
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between border-b border-slate-300 pb-2">
-                        <span className="font-extrabold text-[#0A2342] text-base">3. Secretary</span>
-                        <span className="text-xs bg-[#0A2342] text-amber-400 font-bold px-2.5 py-0.5 rounded-full">Leader 3</span>
                       </div>
 
                       {/* Photo Preview & Upload */}
@@ -3970,10 +3888,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                 accept="image/*"
                                 className="hidden"
                                 onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) {
-                                    handleImageFileUpload(file, (url) => setInfoForm(prev => ({ ...prev, secretaryImage: url })));
-                                  }
+                                   const file = e.target.files?.[0];
+                                   if (file) {
+                                     handleImageFileUpload(file, (url) => setInfoForm(prev => ({ ...prev, secretaryImage: url })));
+                                   }
                                 }}
                               />
                             </label>
@@ -4004,6 +3922,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       </div>
 
                       <div>
+                        <label className="font-bold text-slate-700 text-xs block mb-1">Education / Qualification</label>
+                        <input
+                          type="text"
+                          value={infoForm.secretaryEducation || ''}
+                          onChange={(e) => setInfoForm({ ...infoForm, secretaryEducation: e.target.value })}
+                          className="w-full p-2 text-sm rounded border border-slate-300 bg-white"
+                          placeholder="e.g. B.Com., M.B.A. (Management)"
+                        />
+                      </div>
+
+                      <div>
                         <label className="font-bold text-slate-700 text-xs block mb-1">College / Institution</label>
                         <input
                           type="text"
@@ -4022,6 +3951,108 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           onChange={(e) => setInfoForm({ ...infoForm, secretaryMessage: e.target.value })}
                           className="w-full p-2 text-sm rounded border border-slate-300 bg-white"
                           placeholder="Secretary's message quote..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3. Dean Details */}
+                  <div className="space-y-4 bg-[#F0F4F8] p-5 rounded-2xl border border-slate-200 flex flex-col justify-between shadow-sm">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between border-b border-slate-300 pb-2">
+                        <span className="font-extrabold text-[#0A2342] text-base">3. Dean</span>
+                        <span className="text-xs bg-[#0A2342] text-amber-400 font-bold px-2.5 py-0.5 rounded-full">Leader 3</span>
+                      </div>
+
+                      {/* Photo Preview & Upload */}
+                      <div>
+                        <label className="font-bold text-slate-700 text-xs block mb-1">Photo Preview & Upload</label>
+                        <div className="flex items-center gap-4 bg-white p-3 rounded-xl border border-slate-200">
+                          <img
+                            src={infoForm.deanImage || "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=300&q=80"}
+                            alt={infoForm.deanName}
+                            referrerPolicy="no-referrer"
+                            className="w-20 h-24 rounded-lg object-cover bg-slate-100 border border-slate-200 shrink-0"
+                          />
+                          <div className="flex-1 space-y-2">
+                            <input
+                              type="text"
+                              value={infoForm.deanImage}
+                              onChange={(e) => setInfoForm({ ...infoForm, deanImage: e.target.value })}
+                              className="w-full p-2 text-xs rounded border border-slate-300 bg-white"
+                              placeholder="Image URL or upload"
+                            />
+                            <label className="cursor-pointer inline-flex items-center gap-1 bg-[#0A2342] text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-slate-900 shadow-sm">
+                              <Upload className="w-3.5 h-3.5" />
+                              <span>Upload Photo</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                   const file = e.target.files?.[0];
+                                   if (file) {
+                                     handleImageFileUpload(file, (url) => setInfoForm(prev => ({ ...prev, deanImage: url })));
+                                   }
+                                }}
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="font-bold text-slate-700 text-xs block mb-1">Name</label>
+                        <input
+                          type="text"
+                          value={infoForm.deanName}
+                          onChange={(e) => setInfoForm({ ...infoForm, deanName: e.target.value })}
+                          className="w-full p-2 text-sm rounded border border-slate-300 font-bold bg-white"
+                          placeholder="Dr. P. L. Chaudhari"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="font-bold text-slate-700 text-xs block mb-1">Designation</label>
+                        <input
+                          type="text"
+                          value={infoForm.deanDesignation}
+                          onChange={(e) => setInfoForm({ ...infoForm, deanDesignation: e.target.value })}
+                          className="w-full p-2 text-sm rounded border border-slate-300 bg-white"
+                          placeholder="Dean"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="font-bold text-slate-700 text-xs block mb-1">Education / Qualification</label>
+                        <input
+                          type="text"
+                          value={infoForm.deanEducation || ''}
+                          onChange={(e) => setInfoForm({ ...infoForm, deanEducation: e.target.value })}
+                          className="w-full p-2 text-sm rounded border border-slate-300 bg-white"
+                          placeholder="e.g. Ph.D., M.Tech (Dairy Technology)"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="font-bold text-slate-700 text-xs block mb-1">College / Institution</label>
+                        <input
+                          type="text"
+                          value={infoForm.deanInstitution || ''}
+                          onChange={(e) => setInfoForm({ ...infoForm, deanInstitution: e.target.value })}
+                          className="w-full p-2 text-sm rounded border border-slate-300 bg-white"
+                          placeholder="Late Shaktikumar Sancheti College of Dairy Technology, Malkapur"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="font-bold text-slate-700 text-xs block mb-1">Message / Details</label>
+                        <textarea
+                          rows={3}
+                          value={infoForm.deanMessage}
+                          onChange={(e) => setInfoForm({ ...infoForm, deanMessage: e.target.value })}
+                          className="w-full p-2 text-sm rounded border border-slate-300 bg-white"
+                          placeholder="Dean's message quote..."
                         />
                       </div>
                     </div>
@@ -4061,10 +4092,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                 accept="image/*"
                                 className="hidden"
                                 onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) {
-                                    handleImageFileUpload(file, (url) => setInfoForm(prev => ({ ...prev, adminOfficerImage: url })));
-                                  }
+                                   const file = e.target.files?.[0];
+                                   if (file) {
+                                     handleImageFileUpload(file, (url) => setInfoForm(prev => ({ ...prev, adminOfficerImage: url })));
+                                   }
                                 }}
                               />
                             </label>
@@ -4095,6 +4126,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       </div>
 
                       <div>
+                        <label className="font-bold text-slate-700 text-xs block mb-1">Education / Qualification</label>
+                        <input
+                          type="text"
+                          value={infoForm.adminOfficerEducation || ''}
+                          onChange={(e) => setInfoForm({ ...infoForm, adminOfficerEducation: e.target.value })}
+                          className="w-full p-2 text-sm rounded border border-slate-300 bg-white"
+                          placeholder="e.g. M.Sc., D.B.M."
+                        />
+                      </div>
+
+                      <div>
                         <label className="font-bold text-slate-700 text-xs block mb-1">College / Institution</label>
                         <input
                           type="text"
@@ -4117,6 +4159,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       </div>
                     </div>
                   </div>
+                </div>
                 </div>
               </div>
             </div>

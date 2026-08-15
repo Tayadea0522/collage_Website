@@ -368,6 +368,9 @@ export default function App() {
             facilities={facilities}
             onNavigate={setCurrentTab}
             onSelectNotice={(notice) => setSelectedNoticeModal(notice)}
+            isAdmin={isAdminLoggedIn}
+            onUpdateCollegeInfo={(updated) => setCollegeInfo(updated)}
+            onRequestAdminLogin={() => setAdminModalOpen(true)}
           />
         )}
 

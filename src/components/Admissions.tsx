@@ -54,65 +54,127 @@ interface UploadedDoc {
   uploadedAt: string;
 }
 
+const ADMISSION_DRAFT_KEY = 'lsscdt_admission_form_draft';
+const ADMISSION_STEP_KEY = 'lsscdt_admission_form_step';
+const ADMISSION_SIDEBAR_KEY = 'lsscdt_admission_sidebar_tab';
+
+const initialDefaultFormData = {
+  fullName: '',
+  fatherName: '',
+  motherName: '',
+  dob: '',
+  gender: 'Male' as 'Male' | 'Female' | 'Other',
+  category: 'OPEN' as AdmissionApplication['category'],
+  email: '',
+  mobile: '',
+  aadharNumber: '',
+  address: '',
+  district: 'Buldhana',
+  state: 'Maharashtra',
+  pincode: '',
+  
+  // Admission Seeking
+  admissionYear: 'First Year (1st Year)',
+  admissionBranch: 'B.Tech (Dairy Technology)',
+
+  // Previous Academic Qualification
+  previousQualification: '12th Science / HSC' as AdmissionApplication['previousQualification'],
+  previousInstitute: '',
+  previousBoardUniversity: 'Maharashtra State Board (MSBSHSE)',
+  previousPassingYear: '2026',
+  previousStreamBranch: 'Science (PCM)',
+  previousObtainedMarks: 250,
+  previousTotalMarks: 300,
+
+  // HSC PCM Scores
+  hscPcmMarks: 250,
+  hscTotalMarks: 300,
+  hscBoard: 'Maharashtra State Board (MSBSHSE)',
+  hscPassingYear: '2026',
+  
+  // Entrance Exam
+  entranceExam: 'MHT-CET' as AdmissionApplication['entranceExam'],
+  entranceRollNo: '',
+  entrancePercentile: 88.5,
+  
+  // Quota
+  isAgriculturalist: true,
+  isMaharashtraDomicile: true,
+};
+
 export const Admissions: React.FC<AdmissionsProps> = ({
   collegeInfo,
   applications,
   onRefreshApplications,
   onNavigateTab
 }) => {
-  const [activeSidebarItem, setActiveSidebarItem] = useState<string>('portal');
+  const [activeSidebarItem, setActiveSidebarItem] = useState<string>(() => {
+    try {
+      const saved = sessionStorage.getItem(ADMISSION_SIDEBAR_KEY);
+      if (saved && ['portal', 'guidelines', 'criteria', 'intake', 'track'].includes(saved)) {
+        return saved;
+      }
+    } catch (e) {}
+    return 'portal';
+  });
+
+  const handleSelectSidebar = (item: string) => {
+    setActiveSidebarItem(item);
+    try {
+      sessionStorage.setItem(ADMISSION_SIDEBAR_KEY, item);
+    } catch (e) {}
+  };
 
   // Form Step State
-  const [formStep, setFormStep] = useState(1);
+  const [formStep, setFormStepState] = useState<number>(() => {
+    try {
+      const saved = sessionStorage.getItem(ADMISSION_STEP_KEY);
+      if (saved) {
+        const stepNum = parseInt(saved, 10);
+        if (stepNum >= 1 && stepNum <= 3) return stepNum;
+      }
+    } catch (e) {}
+    return 1;
+  });
+
+  const setFormStep = (step: number) => {
+    setFormStepState(step);
+    try {
+      sessionStorage.setItem(ADMISSION_STEP_KEY, String(step));
+    } catch (e) {}
+  };
+
   const [submittedApp, setSubmittedApp] = useState<AdmissionApplication | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
   const [submitError, setSubmitError] = useState('');
 
-  // Form State
-  const [formData, setFormData] = useState({
-    fullName: '',
-    fatherName: '',
-    motherName: '',
-    dob: '',
-    gender: 'Male' as 'Male' | 'Female' | 'Other',
-    category: 'OPEN' as AdmissionApplication['category'],
-    email: '',
-    mobile: '',
-    aadharNumber: '',
-    address: '',
-    district: 'Buldhana',
-    state: 'Maharashtra',
-    pincode: '',
-    
-    // Admission Seeking
-    admissionYear: 'First Year (1st Year)',
-    admissionBranch: 'B.Tech (Dairy Technology)',
-
-    // Previous Academic Qualification
-    previousQualification: '12th Science / HSC' as AdmissionApplication['previousQualification'],
-    previousInstitute: '',
-    previousBoardUniversity: 'Maharashtra State Board (MSBSHSE)',
-    previousPassingYear: '2026',
-    previousStreamBranch: 'Science (PCM)',
-    previousObtainedMarks: 250,
-    previousTotalMarks: 300,
-
-    // HSC PCM Scores
-    hscPcmMarks: 250,
-    hscTotalMarks: 300,
-    hscBoard: 'Maharashtra State Board (MSBSHSE)',
-    hscPassingYear: '2026',
-    
-    // Entrance Exam
-    entranceExam: 'MHT-CET' as AdmissionApplication['entranceExam'],
-    entranceRollNo: '',
-    entrancePercentile: 88.5,
-    
-    // Quota
-    isAgriculturalist: true,
-    isMaharashtraDomicile: true,
+  // Form State with automatic session persistence
+  const [formData, setFormData] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(ADMISSION_DRAFT_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return { ...initialDefaultFormData, ...parsed };
+      }
+    } catch (e) {}
+    return initialDefaultFormData;
   });
+
+  const resetAdmissionDraft = () => {
+    if (window.confirm('Are you sure you want to clear the draft and reset the form?')) {
+      setFormData(initialDefaultFormData);
+      setFormStep(1);
+      attachedFiles.forEach(f => {
+        if (f.previewUrl) URL.revokeObjectURL(f.previewUrl);
+      });
+      setAttachedFiles([]);
+      try {
+        sessionStorage.removeItem(ADMISSION_DRAFT_KEY);
+        sessionStorage.removeItem(ADMISSION_STEP_KEY);
+      } catch (e) {}
+    }
+  };
 
   // Document Attachments State
   const [attachedFiles, setAttachedFiles] = useState<UploadedDoc[]>([]);
@@ -151,9 +213,21 @@ export const Admissions: React.FC<AdmissionsProps> = ({
     const { name, value, type } = e.target;
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
-      setFormData(prev => ({ ...prev, [name]: checked }));
+      setFormData(prev => {
+        const updated = { ...prev, [name]: checked };
+        try {
+          sessionStorage.setItem(ADMISSION_DRAFT_KEY, JSON.stringify(updated));
+        } catch (err) {}
+        return updated;
+      });
     } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+      setFormData(prev => {
+        const updated = { ...prev, [name]: value };
+        try {
+          sessionStorage.setItem(ADMISSION_DRAFT_KEY, JSON.stringify(updated));
+        } catch (err) {}
+        return updated;
+      });
     }
   };
 
@@ -386,6 +460,10 @@ export const Admissions: React.FC<AdmissionsProps> = ({
       onRefreshApplications();
       setSubmittedApp(newApp);
       setFormStep(4);
+      try {
+        sessionStorage.removeItem(ADMISSION_DRAFT_KEY);
+        sessionStorage.removeItem(ADMISSION_STEP_KEY);
+      } catch (e) {}
     } catch (err: any) {
       console.error('Submission process exception:', err);
       const uploadedPaths = uploadedAttachedFiles.map(f => f.storagePath).filter(Boolean);
@@ -465,7 +543,7 @@ export const Admissions: React.FC<AdmissionsProps> = ({
       ]}
       sidebarItems={sidebarItems}
       activeItem={activeSidebarItem}
-      onSelectSidebarItem={setActiveSidebarItem}
+      onSelectSidebarItem={handleSelectSidebar}
       onNavigateTab={onNavigateTab}
     >
       {/* 1. ADMISSION PORTAL (FORM) */}
@@ -482,9 +560,18 @@ export const Admissions: React.FC<AdmissionsProps> = ({
               </p>
             </div>
             {formStep < 4 && (
-              <span className="text-xs font-mono font-bold text-amber-900 bg-amber-100 px-3 py-1 rounded-full border border-amber-300 shrink-0">
-                Step {formStep} of 3
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={resetAdmissionDraft}
+                  className="text-[11px] font-semibold text-slate-500 hover:text-red-600 underline px-2 py-1 transition-colors"
+                >
+                  Reset Form
+                </button>
+                <span className="text-xs font-mono font-bold text-amber-900 bg-amber-100 px-3 py-1 rounded-full border border-amber-300 shrink-0">
+                  Step {formStep} of 3
+                </span>
+              </div>
             )}
           </div>
 

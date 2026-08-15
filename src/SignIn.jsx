@@ -45,7 +45,6 @@ export function SignIn({ onNavigate, initialEmail = "", successMessage = "" }) {
         if (onNavigate) {
           onNavigate("home");
         }
-        window.location.href = "/";
       }
     } catch (err) {
       setError(err?.message || "An unexpected error occurred.");

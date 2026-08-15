@@ -97,7 +97,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     | 'contact' 
     | 'admin_users';
 
-  const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
+  const [activeTab, setActiveTabState] = useState<AdminTab>(() => {
+    try {
+      const saved = sessionStorage.getItem('lsscdt_admin_active_tab') as AdminTab;
+      if (saved && [
+        'dashboard', 'applications', 'approved', 'departments', 'faculty', 
+        'gallery', 'notices', 'events', 'downloads', 'popup', 'info', 
+        'admission_process', 'contact', 'admin_users'
+      ].includes(saved)) {
+        return saved;
+      }
+    } catch (e) {}
+    return 'dashboard';
+  });
+
+  const setActiveTab = (tab: AdminTab) => {
+    setActiveTabState(tab);
+    try {
+      sessionStorage.setItem('lsscdt_admin_active_tab', tab);
+    } catch (e) {}
+  };
+
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Popup Banner state

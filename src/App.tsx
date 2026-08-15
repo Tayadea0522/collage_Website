@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   CollegeInfo, 
   Notice, 
@@ -115,11 +115,46 @@ export default function App() {
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [adminModalOpen, setAdminModalOpen] = useState(false);
 
+  // Refs for stable state access in event handlers
+  const authStatusRef = useRef<AuthCheckStatus>('CHECKING');
+  authStatusRef.current = authStatus;
+  const currentAdminUserRef = useRef<AdminUser | null>(null);
+  currentAdminUserRef.current = currentAdminUser;
+
   // Notice Detail Modal State
   const [selectedNoticeModal, setSelectedNoticeModal] = useState<Notice | null>(null);
 
   // Gallery Filter State
   const [galleryFilter, setGalleryFilter] = useState<string>('All');
+
+  // Contact Enquiry Form State & Draft Persistence
+  const [enquiryForm, setEnquiryForm] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('lsscdt_enquiry_draft');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return { name: '', mobile: '', email: '', details: '' };
+  });
+
+  const handleEnquiryChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setEnquiryForm(prev => {
+      const updated = { ...prev, [name]: value };
+      try {
+        sessionStorage.setItem('lsscdt_enquiry_draft', JSON.stringify(updated));
+      } catch (err) {}
+      return updated;
+    });
+  };
+
+  const handleEnquirySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    alert('Inquiry submitted successfully! The college admissions desk will contact you shortly.');
+    setEnquiryForm({ name: '', mobile: '', email: '', details: '' });
+    try {
+      sessionStorage.removeItem('lsscdt_enquiry_draft');
+    } catch (err) {}
+  };
 
   // Sync from Supabase on load & manage Supabase Auth session
   useEffect(() => {
@@ -130,8 +165,15 @@ export default function App() {
     sessionStorage.removeItem('isAdmin');
     sessionStorage.removeItem('adminUser');
 
-    const syncAuthUser = async (session: any) => {
-      setAuthStatus('CHECKING');
+    const syncAuthUser = async (session: any, isExplicitCheck: boolean = false) => {
+      // If user is already authenticated with the same user ID, do NOT flash 'CHECKING' to avoid unmounting AdminPanel
+      const isAlreadyAuthed = currentAdminUserRef.current && session?.user && 
+        (currentAdminUserRef.current.auth_user_id === session.user.id || currentAdminUserRef.current.email.toLowerCase() === (session.user.email || '').toLowerCase());
+      
+      if (!isAlreadyAuthed && isExplicitCheck) {
+        setAuthStatus('CHECKING');
+      }
+
       if (session?.user) {
         try {
           const authUserId = session.user.id;
@@ -198,9 +240,11 @@ export default function App() {
           }
         } catch (e) {
           console.warn('Admin user sync error:', e);
-          setIsAdminLoggedIn(false);
-          setCurrentAdminUser(null);
-          setAuthStatus('UNAUTHENTICATED');
+          if (!isAlreadyAuthed) {
+            setIsAdminLoggedIn(false);
+            setCurrentAdminUser(null);
+            setAuthStatus('UNAUTHENTICATED');
+          }
         }
       } else {
         setIsAdminLoggedIn(false);
@@ -209,9 +253,10 @@ export default function App() {
       }
     };
 
+    // Initial session lookup
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        syncAuthUser(session);
+        syncAuthUser(session, true);
       } else {
         setIsAdminLoggedIn(false);
         setCurrentAdminUser(null);
@@ -219,13 +264,24 @@ export default function App() {
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        syncAuthUser(session);
-      } else {
+    // Auth state listener: Handle TOKEN_REFRESHED silently without unmounting or resetting UI
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        // Tab switch / background token maintenance: keep current state completely undisturbed
+        if (session && currentAdminUserRef.current) {
+          // Silent refresh in background
+          syncAuthUser(session, false);
+        }
+        return;
+      }
+
+      if (event === 'SIGNED_OUT' || !session) {
         setIsAdminLoggedIn(false);
         setCurrentAdminUser(null);
         setAuthStatus('UNAUTHENTICATED');
+      } else if (session) {
+        // SIGNED_IN or INITIAL_SESSION
+        syncAuthUser(session, !currentAdminUserRef.current);
       }
     });
 
@@ -596,7 +652,7 @@ export default function App() {
               </div>
 
               {/* Quick Inquiry Form */}
-              <form onSubmit={(e) => { e.preventDefault(); alert('Inquiry submitted! College desk will contact you soon.'); }} className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+              <form onSubmit={handleEnquirySubmit} className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                 <h2 className="text-xl font-bold font-serif text-slate-900 border-b border-slate-200 pb-2">
                   Send Admission Enquiry
                 </h2>
@@ -604,22 +660,52 @@ export default function App() {
                 <div className="space-y-3 text-xs">
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">Your Full Name *</label>
-                    <input type="text" required placeholder="Full Name" className="w-full p-2.5 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-amber-500" />
+                    <input 
+                      type="text" 
+                      name="name"
+                      required 
+                      placeholder="Full Name" 
+                      value={enquiryForm.name}
+                      onChange={handleEnquiryChange}
+                      className="w-full p-2.5 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-amber-500" 
+                    />
                   </div>
 
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">Mobile Number *</label>
-                    <input type="tel" required placeholder="Mobile Number" className="w-full p-2.5 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-amber-500" />
+                    <input 
+                      type="tel" 
+                      name="mobile"
+                      required 
+                      placeholder="Mobile Number" 
+                      value={enquiryForm.mobile}
+                      onChange={handleEnquiryChange}
+                      className="w-full p-2.5 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-amber-500" 
+                    />
                   </div>
 
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">Email Address</label>
-                    <input type="email" placeholder="Email Address" className="w-full p-2.5 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-amber-500" />
+                    <input 
+                      type="email" 
+                      name="email"
+                      placeholder="Email Address" 
+                      value={enquiryForm.email}
+                      onChange={handleEnquiryChange}
+                      className="w-full p-2.5 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-amber-500" 
+                    />
                   </div>
 
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">Inquiry Details</label>
-                    <textarea rows={4} placeholder="Ask about admissions, fee structure, hostel facilities..." className="w-full p-2.5 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-amber-500" />
+                    <textarea 
+                      name="details"
+                      rows={4} 
+                      placeholder="Ask about admissions, fee structure, hostel facilities..." 
+                      value={enquiryForm.details}
+                      onChange={handleEnquiryChange}
+                      className="w-full p-2.5 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-amber-500" 
+                    />
                   </div>
 
                   <button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold py-3 rounded-lg text-xs shadow">

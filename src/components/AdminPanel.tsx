@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import * as XLSX from 'xlsx';
 import { CollegeInfo, Notice, DepartmentInfo, FacultyMember, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser, DownloadableDocument, NoticeAttachment, PopupBanner, AdmissionProcessStep, AdmissionProcessData } from '../types';
 import { storageService } from '../services/storageService';
 import { zipService } from '../services/zipService';
 import { supabaseStorageService } from '../services/supabaseStorageService';
+import { supabase } from '../supabaseClient.js';
 import { printApplicationSlip, downloadApplicationSlip } from '../utils/printUtils';
 import { PopupBannerManager } from './PopupBannerManager';
 import { PopupBannerModal } from './PopupBannerModal';
@@ -61,6 +62,8 @@ interface AdminPanelProps {
   faculty: FacultyMember[];
   applications: AdmissionApplication[];
   gallery: GalleryItem[];
+  downloads: DownloadableDocument[];
+  currentAdminUser?: AdminUser | null;
   onRefreshAll: () => void;
   onLogout: () => void;
 }
@@ -73,6 +76,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   faculty,
   applications,
   gallery,
+  downloads,
+  currentAdminUser,
   onRefreshAll,
   onLogout
 }) => {
@@ -101,6 +106,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   // Admin Users management state
+  const [adminUsersList, setAdminUsersList] = useState<AdminUser[]>([]);
+  const [isLoadingAdminUsers, setIsLoadingAdminUsers] = useState<boolean>(false);
   const [showAddAdminModal, setShowAddAdminModal] = useState(false);
   const [newAdminForm, setNewAdminForm] = useState({
     name: '',
@@ -112,6 +119,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     securityAnswer: 'LSSCDT',
     password: ''
   });
+
+  const loadAdminUsers = useCallback(async () => {
+    setIsLoadingAdminUsers(true);
+    try {
+      const list = await storageService.fetchAdminUsers();
+      setAdminUsersList(list);
+    } catch (err) {
+      console.warn('Error loading admin users:', err);
+    } finally {
+      setIsLoadingAdminUsers(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'admin_users') {
+      loadAdminUsers();
+    }
+  }, [activeTab, loadAdminUsers]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -457,7 +482,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   // Downloads CMS State
-  const [downloadsList, setDownloadsList] = useState<DownloadableDocument[]>(storageService.getDownloads());
+  const [downloadsList, setDownloadsList] = useState<DownloadableDocument[]>(downloads || []);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [editingDownload, setEditingDownload] = useState<DownloadableDocument | null>(null);
   const [downloadForm, setDownloadForm] = useState<{
@@ -477,6 +502,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [downloadUploadProgress, setDownloadUploadProgress] = useState<number>(0);
   const [isUploadingDownload, setIsUploadingDownload] = useState<boolean>(false);
   const [downloadFormError, setDownloadFormError] = useState<string>('');
+
+  useEffect(() => {
+    if (downloads && downloads.length >= 0) {
+      setDownloadsList(downloads);
+    }
+  }, [downloads]);
 
   const handleOpenNewDownloadModal = () => {
     setEditingDownload(null);
@@ -544,7 +575,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }
 
     setIsUploadingDownload(true);
-    setDownloadUploadProgress(10);
+    setDownloadUploadProgress(15);
 
     let storagePath = editingDownload?.storagePath || '';
     let publicUrl = editingDownload?.fileUrl || '';
@@ -555,12 +586,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       const uploadRes = await supabaseStorageService.uploadWebsiteDocument(
         'downloads',
         selectedDownloadFile,
-        (percent) => setDownloadUploadProgress(percent)
+        (percent) => setDownloadUploadProgress(15 + Math.floor(percent * 0.55))
       );
 
       if (uploadRes.error) {
         setIsUploadingDownload(false);
-        setDownloadFormError(`Upload failed: ${uploadRes.error}`);
+        setDownloadUploadProgress(0);
+        setDownloadFormError(`Storage upload failed: ${uploadRes.error}`);
         return;
       }
 
@@ -573,6 +605,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       fileName = uploadRes.fileName;
       fileSize = uploadRes.fileSize;
     }
+
+    setDownloadUploadProgress(75);
 
     const docItem: DownloadableDocument = {
       id: editingDownload ? editingDownload.id : `dl-${Date.now()}`,
@@ -589,40 +623,70 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       updatedAt: new Date().toISOString().split('T')[0]
     };
 
-    let updated: DownloadableDocument[];
+    let updatedList: DownloadableDocument[];
     if (editingDownload) {
-      updated = downloadsList.map(d => d.id === editingDownload.id ? docItem : d);
+      updatedList = downloadsList.map(d => d.id === editingDownload.id ? docItem : d);
     } else {
-      updated = [docItem, ...downloadsList];
+      updatedList = [docItem, ...downloadsList];
     }
 
-    setDownloadsList(updated);
-    await storageService.saveDownloads(updated);
+    setDownloadUploadProgress(85);
+
+    const dbResult = await storageService.saveDownloads(updatedList);
+
+    if (!dbResult.success) {
+      setIsUploadingDownload(false);
+      setDownloadUploadProgress(0);
+      setDownloadFormError(`Database save failed: ${dbResult.error || 'Unknown error saving record to Supabase database.'}`);
+      return;
+    }
+
+    setDownloadUploadProgress(100);
     setIsUploadingDownload(false);
     setIsDownloadModalOpen(false);
+
+    if (dbResult.data) {
+      setDownloadsList(dbResult.data);
+    }
     await onRefreshAll();
-    showToast(editingDownload ? 'Document updated successfully!' : 'New PDF document uploaded successfully!');
+
+    showToast(editingDownload ? 'Document updated & saved to database!' : 'New PDF document uploaded & saved to database successfully!');
   };
 
   const handleDeleteDownload = async (doc: DownloadableDocument) => {
-    const confirmed = window.confirm(`Are you sure you want to delete this document?\n\nTitle: "${doc.title}"\nFile: ${doc.fileName}\n\nThis action will delete the file from website storage and remove its metadata.`);
+    const confirmed = window.confirm(`Are you sure you want to delete this document?\n\nTitle: "${doc.title}"\nFile: ${doc.fileName}\n\nThis action will delete the file from website storage and remove its record from the database.`);
     if (!confirmed) return;
 
     if (doc.storagePath) {
       await supabaseStorageService.deleteWebsiteDocument(doc.storagePath);
     }
 
-    await storageService.deleteDownload(doc.id);
-    const updated = downloadsList.filter(d => d.id !== doc.id);
-    setDownloadsList(updated);
+    const dbResult = await storageService.deleteDownload(doc.id);
+    if (!dbResult.success) {
+      showToast(`Delete failed: ${dbResult.error || 'Could not delete document from database'}`);
+      return;
+    }
+
+    if (dbResult.data) {
+      setDownloadsList(dbResult.data);
+    } else {
+      setDownloadsList(prev => prev.filter(d => d.id !== doc.id));
+    }
     await onRefreshAll();
-    showToast('Document deleted successfully.');
+    showToast('Document deleted successfully from storage and database.');
   };
 
   const handleToggleDownloadActive = async (doc: DownloadableDocument) => {
     const updated = downloadsList.map(d => d.id === doc.id ? { ...d, isActive: !d.isActive } : d);
     setDownloadsList(updated);
-    await storageService.saveDownloads(updated);
+    const dbResult = await storageService.saveDownloads(updated);
+    if (!dbResult.success) {
+      showToast(`Update failed: ${dbResult.error || 'Failed to update document status'}`);
+      return;
+    }
+    if (dbResult.data) {
+      setDownloadsList(dbResult.data);
+    }
     await onRefreshAll();
     showToast(`Document ${!doc.isActive ? 'activated' : 'deactivated'}.`);
   };
@@ -4330,55 +4394,129 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
         {/* TAB 12: ADMIN USERS */}
         {activeTab === 'admin_users' && (() => {
-          const adminUsers = storageService.getAdminUsers();
 
-          const handleAddAdminPanelUser = (e: React.FormEvent) => {
+          const handleAddAdminPanelUser = async (e: React.FormEvent) => {
             e.preventDefault();
             if (!newAdminForm.name || !newAdminForm.username || !newAdminForm.email || !newAdminForm.password) {
-              alert('Please fill in all required fields.');
+              alert('Please fill in all required fields (Name, Username, Email, Password).');
               return;
             }
-            if (adminUsers.some(u => u.username.toLowerCase() === newAdminForm.username.trim().toLowerCase())) {
-              alert('An administrator with this username already exists.');
+
+            const cleanUsername = newAdminForm.username.trim().toLowerCase();
+            const cleanEmail = newAdminForm.email.trim().toLowerCase();
+
+            if (adminUsersList.some(u => u.username.toLowerCase() === cleanUsername || u.email.toLowerCase() === cleanEmail)) {
+              alert('An administrator with this username or email already exists.');
               return;
             }
+
+            showToast('Creating administrator account in database...');
+
+            // Optionally create Supabase Auth user if possible
+            let authUserId = '';
+            try {
+              const { data: authData } = await supabase.auth.signUp({
+                email: cleanEmail,
+                password: newAdminForm.password,
+                options: {
+                  data: {
+                    name: newAdminForm.name.trim(),
+                    username: cleanUsername,
+                    role: newAdminForm.role
+                  }
+                }
+              });
+              if (authData?.user?.id) {
+                authUserId = authData.user.id;
+              }
+            } catch (e) {
+              console.warn('Supabase Auth sign up note:', e);
+            }
+
             const newUser: AdminUser = {
-              id: `admin-${Date.now()}`,
-              name: newAdminForm.name,
-              username: newAdminForm.username.trim(),
-              email: newAdminForm.email.trim(),
+              id: authUserId || `admin-${Date.now()}`,
+              name: newAdminForm.name.trim(),
+              username: cleanUsername,
+              email: cleanEmail,
               mobile: newAdminForm.mobile.trim() || '9822100000',
               role: newAdminForm.role,
               securityQuestion: newAdminForm.securityQuestion,
               securityAnswer: newAdminForm.securityAnswer.trim() || 'LSSCDT',
               password: newAdminForm.password,
+              auth_user_id: authUserId,
               createdAt: new Date().toISOString().split('T')[0]
             };
-            storageService.addAdminUser(newUser);
-            showToast(`Administrator account for ${newUser.name} created!`);
-            setShowAddAdminModal(false);
-            setNewAdminForm({
-              name: '',
-              username: '',
-              email: '',
-              mobile: '',
-              role: 'Admission Incharge',
-              securityQuestion: 'What is the college code?',
-              securityAnswer: 'LSSCDT',
-              password: ''
-            });
+
+            const res = await storageService.addAdminUser(newUser);
+            if (res.success) {
+              showToast(`Administrator account for ${newUser.name} created!`);
+              if (res.data) {
+                setAdminUsersList(res.data);
+              } else {
+                setAdminUsersList(prev => [...prev, newUser]);
+              }
+              setShowAddAdminModal(false);
+              setNewAdminForm({
+                name: '',
+                username: '',
+                email: '',
+                mobile: '',
+                role: 'Admission Incharge',
+                securityQuestion: 'What is the college code?',
+                securityAnswer: 'LSSCDT',
+                password: ''
+              });
+              onRefreshAll();
+            } else {
+              alert(`Failed to create administrator account: ${res.error || 'Database insert error.'}`);
+            }
           };
 
-          const handleDeleteAdmin = (id: string, name: string) => {
-            if (adminUsers.length <= 1) {
-              alert('Cannot delete the last remaining administrator account.');
+          const handleDeleteAdmin = async (u: AdminUser) => {
+            const currentId = currentAdminUser?.id;
+            const currentUsername = currentAdminUser?.username?.toLowerCase()?.trim();
+            const currentEmail = currentAdminUser?.email?.toLowerCase()?.trim();
+            const currentAuthId = currentAdminUser?.auth_user_id;
+
+            const targetId = u.id;
+            const targetUsername = u.username?.toLowerCase()?.trim();
+            const targetEmail = u.email?.toLowerCase()?.trim();
+            const targetAuthId = u.auth_user_id;
+
+            const isCurrentAdmin =
+              (currentId && currentId === targetId) ||
+              (currentUsername && currentUsername === targetUsername) ||
+              (currentEmail && currentEmail === targetEmail) ||
+              (currentAuthId && targetAuthId && currentAuthId === targetAuthId);
+
+            if (isCurrentAdmin) {
+              alert("You cannot delete the administrator account currently logged in.");
               return;
             }
-            if (window.confirm(`Are you sure you want to delete administrator "${name}"?`)) {
-              const updated = adminUsers.filter(u => u.id !== id);
-              storageService.saveAdminUsers(updated);
-              showToast(`Administrator account deleted.`);
+
+            const superAdmins = adminUsersList.filter(user => user.role === 'Super Admin');
+            if (u.role === 'Super Admin' && superAdmins.length <= 1) {
+              alert("Cannot delete the last remaining Super Admin account.");
+              return;
+            }
+
+            if (!window.confirm(`Are you sure you want to permanently delete administrator "${u.name}" (${u.username})?\n\nThis will remove the account record directly from public.admin_users.`)) {
+              return;
+            }
+
+            showToast('Deleting administrator record from public.admin_users...');
+            const res = await storageService.deleteAdminUser(u.id);
+
+            if (res.success) {
+              showToast(`Administrator account for ${u.name} deleted successfully!`);
+              if (res.data) {
+                setAdminUsersList(res.data);
+              } else {
+                setAdminUsersList(prev => prev.filter(item => item.id !== u.id));
+              }
               onRefreshAll();
+            } else {
+              alert(`Database Delete Failed: ${res.error || 'Unable to delete row from public.admin_users.'}`);
             }
           };
 
@@ -4391,7 +4529,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     Administrator Accounts & Security Desk
                   </h2>
                   <p className="text-xs text-slate-500">
-                    Manage multiple college administrator accounts, roles, recovery credentials & passwords.
+                    Source of truth: <code className="font-mono text-blue-900 font-bold">public.admin_users</code> table in Supabase Database.
                   </p>
                 </div>
 
@@ -4404,44 +4542,78 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </button>
               </div>
 
-              {/* Administrators List Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {adminUsers.map((u) => (
-                  <div key={u.id} className="bg-[#F0F4F8] p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3 relative">
-                    <div className="flex justify-between items-start gap-2">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-full bg-[#0A2342] text-amber-400 font-bold flex items-center justify-center shrink-0 text-sm">
-                          {u.name.charAt(0)}
+              {isLoadingAdminUsers ? (
+                <div className="p-12 text-center bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                  <div className="w-8 h-8 rounded-full border-4 border-amber-500 border-t-transparent animate-spin mx-auto"></div>
+                  <div className="text-xs text-slate-600 font-medium">Fetching verified accounts from public.admin_users...</div>
+                </div>
+              ) : adminUsersList.length === 0 ? (
+                <div className="p-12 text-center bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                  <AlertCircle className="w-8 h-8 text-amber-600 mx-auto" />
+                  <div className="font-bold text-slate-800 text-sm">No administrator accounts found in database.</div>
+                  <p className="text-xs text-slate-500">
+                    Click "Add New Administrator" to create an administrator record in <code className="font-mono">public.admin_users</code>.
+                  </p>
+                </div>
+              ) : (
+                /* Administrators List Cards */
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {adminUsersList.map((u) => {
+                    const isSelf = currentAdminUser?.email?.toLowerCase() === u.email?.toLowerCase() ||
+                                  currentAdminUser?.username?.toLowerCase() === u.username?.toLowerCase();
+
+                    return (
+                      <div key={u.id} className="bg-[#F0F4F8] p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3 relative">
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-9 h-9 rounded-full bg-[#0A2342] text-amber-400 font-bold flex items-center justify-center shrink-0 text-sm">
+                              {u.name.charAt(0)}
+                            </div>
+                            <div>
+                              <div className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                                <span>{u.name}</span>
+                                {isSelf && (
+                                  <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded border border-emerald-300">
+                                    You (Current)
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300/60">
+                                {u.role}
+                              </span>
+                            </div>
+                          </div>
+
+                          {!isSelf && (
+                            <button
+                              onClick={() => handleDeleteAdmin(u)}
+                              className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                              title="Delete Administrator Account permanently from public.admin_users"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
-                        <div>
-                          <div className="font-bold text-slate-900 text-sm">{u.name}</div>
-                          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300/60">
-                            {u.role}
-                          </span>
+
+                        <div className="text-xs text-slate-600 space-y-1 bg-white p-3 rounded-xl border border-slate-200/80 font-mono text-[11px]">
+                          <div><strong>Username:</strong> <code className="text-blue-900 font-bold">{u.username}</code></div>
+                          <div><strong>Email:</strong> {u.email}</div>
+                          <div><strong>Mobile:</strong> {u.mobile}</div>
+                          {u.auth_user_id && (
+                            <div className="truncate text-[10px] text-slate-500">
+                              <strong>Auth UID:</strong> {u.auth_user_id}
+                            </div>
+                          )}
+                          <div><strong>Security Question:</strong> {u.securityQuestion}</div>
+                          <div className="text-[10px] text-slate-400 pt-1 font-sans">
+                            Created: {u.createdAt || 'Registered'}
+                          </div>
                         </div>
                       </div>
-
-                      {adminUsers.length > 1 && (
-                        <button
-                          onClick={() => handleDeleteAdmin(u.id, u.name)}
-                          className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                          title="Delete Administrator Account"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="text-xs text-slate-600 space-y-1 bg-white p-3 rounded-xl border border-slate-200/80">
-                      <div><strong>Username:</strong> <code className="text-blue-900 font-bold font-mono">{u.username}</code></div>
-                      <div><strong>Email:</strong> {u.email}</div>
-                      <div><strong>Mobile:</strong> {u.mobile}</div>
-                      <div><strong>Security Question:</strong> {u.securityQuestion}</div>
-                      <div className="text-[10px] text-slate-400 pt-1">Password: •••••••• (Security Recoverable)</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Quick System Actions */}
               <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3 max-w-xl">

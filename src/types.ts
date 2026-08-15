@@ -248,12 +248,14 @@ export interface AdminUser {
   name: string;
   username: string;
   email: string;
-  password: string;
+  password?: string;
   role: 'Super Admin' | 'Admission Incharge' | 'Academic Admin' | 'System Administrator';
   mobile: string;
-  securityQuestion: string;
-  securityAnswer: string;
+  securityQuestion?: string;
+  securityAnswer?: string;
+  auth_user_id?: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface PopupBanner {

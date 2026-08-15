@@ -31,6 +31,7 @@ import { Admissions } from './components/Admissions';
 import { News } from './components/News';
 import { AdminPanel } from './components/AdminPanel';
 import { AdminAuthModal } from './components/AdminAuthModal';
+import { AdminLoginView } from './components/AdminLoginView';
 import { PopupBannerModal } from './components/PopupBannerModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -57,10 +58,10 @@ export default function App() {
   const getInitialTab = () => {
     if (typeof window === 'undefined') return 'home';
     const path = window.location.pathname.replace(/^\//, '').toLowerCase();
-    if (path === 'news') return 'news';
+    if (path === 'news' || path === 'notices') return 'news';
     if (path === 'gallery') return 'gallery';
-    if (path === 'notices') return 'news';
-    if (['about', 'academics', 'departments', 'facilities', 'admissions', 'faculties', 'downloads', 'contact', 'admin', 'placements'].includes(path)) {
+    if (path === 'admin' || path.startsWith('admin/')) return 'admin';
+    if (['about', 'academics', 'departments', 'facilities', 'admissions', 'faculties', 'downloads', 'contact', 'placements'].includes(path)) {
       return path;
     }
     return 'home';
@@ -83,6 +84,7 @@ export default function App() {
       const path = window.location.pathname.replace(/^\//, '').toLowerCase();
       if (path === 'news' || path === 'notices') setCurrentTabState('news');
       else if (path === 'gallery') setCurrentTabState('gallery');
+      else if (path === 'admin' || path.startsWith('admin/')) setCurrentTabState('admin');
       else if (path) setCurrentTabState(path);
       else setCurrentTabState('home');
     };
@@ -106,7 +108,9 @@ export default function App() {
   const [popupBanner, setPopupBanner] = useState<PopupBanner | null>(() => storageService.getPopupBanner());
   const [showPublicPopup, setShowPublicPopup] = useState<boolean>(false);
 
-  // Multi-Admin Auth State
+  // Multi-Admin Auth State & Strict Session Status
+  type AuthCheckStatus = 'CHECKING' | 'AUTHENTICATED' | 'UNAUTHENTICATED' | 'UNAUTHORIZED';
+  const [authStatus, setAuthStatus] = useState<AuthCheckStatus>('CHECKING');
   const [currentAdminUser, setCurrentAdminUser] = useState<AdminUser | null>(null);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [adminModalOpen, setAdminModalOpen] = useState(false);
@@ -119,39 +123,100 @@ export default function App() {
 
   // Sync from Supabase on load & manage Supabase Auth session
   useEffect(() => {
+    // Clear legacy localStorage auth keys
+    localStorage.removeItem('isAdmin');
+    localStorage.removeItem('adminUser');
+    localStorage.removeItem('loggedInAdmin');
+    sessionStorage.removeItem('isAdmin');
+    sessionStorage.removeItem('adminUser');
+
     const syncAuthUser = async (session: any) => {
+      setAuthStatus('CHECKING');
       if (session?.user) {
         try {
-          const { data: adminRows } = await supabase
+          const authUserId = session.user.id;
+          const userEmail = session.user.email || '';
+
+          // Verify user against public.admin_users
+          const { data: adminRows, error } = await supabase
             .from('admin_users')
             .select('*')
-            .or(`auth_user_id.eq.${session.user.id},email.ilike.${session.user.email}`);
+            .or(`auth_user_id.eq.${authUserId},email.ilike.${userEmail}`);
+
+          if (error) {
+            console.warn('Error querying public.admin_users:', error.message);
+          }
 
           if (adminRows && adminRows.length > 0) {
             const dbAdmin = adminRows[0];
+            const authorizedRoles = ['Super Admin', 'Admission Incharge', 'Academic Admin', 'System Administrator'];
+            
+            if (!authorizedRoles.includes(dbAdmin.role)) {
+              console.warn('User authenticated but role is unauthorized in public.admin_users:', dbAdmin.role);
+              await supabase.auth.signOut({ scope: 'local' });
+              setIsAdminLoggedIn(false);
+              setCurrentAdminUser(null);
+              setAuthStatus('UNAUTHORIZED');
+              return;
+            }
+
+            // Auto-link auth_user_id in public.admin_users if missing
+            if (!dbAdmin.auth_user_id) {
+              try {
+                await supabase
+                  .from('admin_users')
+                  .update({ auth_user_id: authUserId })
+                  .eq('id', dbAdmin.id);
+                dbAdmin.auth_user_id = authUserId;
+              } catch (e) {
+                console.warn('Could not auto-link auth_user_id:', e);
+              }
+            }
+
             const matchedUser: AdminUser = {
-              id: dbAdmin.id || session.user.id,
-              name: dbAdmin.name || session.user.email?.split('@')[0] || 'Administrator',
+              id: String(dbAdmin.id || authUserId),
+              name: dbAdmin.name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Administrator',
               username: dbAdmin.username || session.user.email?.split('@')[0] || 'admin',
-              email: dbAdmin.email || session.user.email || '',
+              email: dbAdmin.email || userEmail,
               mobile: dbAdmin.mobile || '9822100001',
               role: dbAdmin.role || 'Super Admin',
-              securityQuestion: 'What is the college code?',
-              securityAnswer: 'LSSCDT',
+              securityQuestion: dbAdmin.security_question || 'What is the college code?',
+              securityAnswer: dbAdmin.security_answer || 'LSSCDT',
               password: '',
+              auth_user_id: dbAdmin.auth_user_id || authUserId,
               createdAt: dbAdmin.created_at || new Date().toISOString().split('T')[0]
             };
             setCurrentAdminUser(matchedUser);
             setIsAdminLoggedIn(true);
+            setAuthStatus('AUTHENTICATED');
+          } else {
+            console.warn('User has Auth session but is not registered in public.admin_users:', userEmail);
+            await supabase.auth.signOut({ scope: 'local' });
+            setIsAdminLoggedIn(false);
+            setCurrentAdminUser(null);
+            setAuthStatus('UNAUTHORIZED');
           }
         } catch (e) {
           console.warn('Admin user sync error:', e);
+          setIsAdminLoggedIn(false);
+          setCurrentAdminUser(null);
+          setAuthStatus('UNAUTHENTICATED');
         }
+      } else {
+        setIsAdminLoggedIn(false);
+        setCurrentAdminUser(null);
+        setAuthStatus('UNAUTHENTICATED');
       }
     };
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) syncAuthUser(session);
+      if (session) {
+        syncAuthUser(session);
+      } else {
+        setIsAdminLoggedIn(false);
+        setCurrentAdminUser(null);
+        setAuthStatus('UNAUTHENTICATED');
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -160,6 +225,7 @@ export default function App() {
       } else {
         setIsAdminLoggedIn(false);
         setCurrentAdminUser(null);
+        setAuthStatus('UNAUTHENTICATED');
       }
     });
 
@@ -260,6 +326,7 @@ export default function App() {
     } catch (e) {}
     setIsAdminLoggedIn(false);
     setCurrentAdminUser(null);
+    setAuthStatus('UNAUTHENTICATED');
     setCurrentTab('home');
   };
 
@@ -560,17 +627,42 @@ export default function App() {
 
         {currentTab === 'admin' && (
           <ErrorBoundary fallbackTitle="Admin Panel could not be loaded.">
-            <AdminPanel
-              collegeInfo={collegeInfo}
-              notices={notices}
-              events={events}
-              departments={departments}
-              faculty={faculty}
-              applications={applications}
-              gallery={gallery}
-              onRefreshAll={refreshAllData}
-              onLogout={handleAdminLogout}
-            />
+            {authStatus === 'CHECKING' ? (
+              <div className="min-h-[75vh] flex flex-col items-center justify-center p-8 text-center space-y-4">
+                <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                <div className="space-y-1">
+                  <h2 className="font-serif font-bold text-xl text-[#0A2342]">
+                    Verifying Administrator Security Session...
+                  </h2>
+                  <p className="text-xs text-slate-500 font-mono">
+                    Authenticating session against public.admin_users
+                  </p>
+                </div>
+              </div>
+            ) : authStatus === 'AUTHENTICATED' && isAdminLoggedIn && currentAdminUser ? (
+              <AdminPanel
+                collegeInfo={collegeInfo}
+                notices={notices}
+                events={events}
+                departments={departments}
+                faculty={faculty}
+                applications={applications}
+                gallery={gallery}
+                downloads={downloads}
+                currentAdminUser={currentAdminUser}
+                onRefreshAll={refreshAllData}
+                onLogout={handleAdminLogout}
+              />
+            ) : (
+              <AdminLoginView
+                onLoginSuccess={(user: AdminUser) => {
+                  setCurrentAdminUser(user);
+                  setIsAdminLoggedIn(true);
+                  setAuthStatus('AUTHENTICATED');
+                }}
+                onReturnHome={() => setCurrentTab('home')}
+              />
+            )}
           </ErrorBoundary>
         )}
       </main>

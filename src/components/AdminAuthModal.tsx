@@ -5,18 +5,13 @@ import { AdminUser } from '../types';
 import { 
   Lock, 
   X, 
-  UserPlus, 
   KeyRound, 
   LogIn, 
   ShieldCheck, 
   AlertCircle, 
   CheckCircle2, 
   HelpCircle, 
-  User, 
-  Mail, 
-  Phone, 
-  Sparkles,
-  ArrowLeft
+  User
 } from 'lucide-react';
 
 interface AdminAuthModalProps {
@@ -33,14 +28,11 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
   type AuthMode = 'signin' | 'forgot_password';
   const [mode, setMode] = useState<AuthMode>('signin');
 
-  // Admin Users List State
-  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
-
   // Sign In state
   const [usernameInput, setUsernameInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [signInError, setSignInError] = useState('');
-  const [signInSuccessMessage, setSignInSuccessMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Forgot Password state
   const [forgotStep, setForgotStep] = useState<1 | 2>(1);
@@ -55,29 +47,17 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
   const [forgotError, setForgotError] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState('');
 
-  React.useEffect(() => {
-    if (isOpen) {
-      storageService.fetchAdminUsers().then(users => {
-        if (Array.isArray(users)) {
-          setAdminUsers(users);
-        }
-      }).catch(err => {
-        console.warn('Failed to load admin users:', err);
-      });
-    }
-  }, [isOpen]);
-
   if (!isOpen) return null;
 
   const handleSignInSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSignInError('');
-
-    const adminUsers = await storageService.fetchAdminUsers();
+    setIsSubmitting(true);
 
     const trimmedIdent = usernameInput.trim();
     if (!trimmedIdent || !passwordInput) {
       setSignInError('Please enter both username/email and password.');
+      setIsSubmitting(false);
       return;
     }
 
@@ -86,27 +66,23 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
       if (trimmedIdent.toLowerCase() === 'admin') {
         targetEmail = 'akshayjamode21@gmail.com';
       } else {
-        const localMatch = adminUsers.find(
-          u => u.username.toLowerCase() === trimmedIdent.toLowerCase()
-        );
-        if (localMatch && localMatch.email && localMatch.email.includes('@')) {
-          targetEmail = localMatch.email;
-        } else {
-          try {
-            const { data: dbAdmin } = await supabase
-              .from('admin_users')
-              .select('email')
-              .eq('username', trimmedIdent)
-              .maybeSingle();
-            if (dbAdmin && dbAdmin.email) {
-              targetEmail = dbAdmin.email;
-            }
-          } catch (err) {}
+        try {
+          const { data: dbAdmin } = await supabase
+            .from('admin_users')
+            .select('email')
+            .eq('username', trimmedIdent)
+            .maybeSingle();
+          if (dbAdmin && dbAdmin.email) {
+            targetEmail = dbAdmin.email;
+          }
+        } catch (err) {
+          console.warn('Username lookup error:', err);
         }
       }
     }
 
     try {
+      // 1. Supabase Auth sign in
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email: targetEmail,
         password: passwordInput,
@@ -114,79 +90,94 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
 
       if (authError || !data?.user || !data?.session) {
         setSignInError(authError?.message || 'Invalid Administrator username/email or password.');
+        setIsSubmitting(false);
         return;
       }
 
-      // Verify session exists
-      const { data: sessionData } = await supabase.auth.getSession();
-      const { data: userData } = await supabase.auth.getUser();
-
-      console.log('Supabase Auth login successful');
-      console.log('User ID:', userData?.user?.id);
-      console.log('Session exists:', !!sessionData?.session);
-
-      // Verify admin user record in public.admin_users
-      const { data: adminRows } = await supabase
+      // 2. Query public.admin_users
+      const { data: adminRows, error: adminQueryErr } = await supabase
         .from('admin_users')
         .select('*')
         .or(`auth_user_id.eq.${data.user.id},email.ilike.${data.user.email}`);
 
-      const matchedAdminRecord = adminRows && adminRows.length > 0 ? adminRows[0] : null;
+      if (adminQueryErr || !adminRows || adminRows.length === 0) {
+        await supabase.auth.signOut({ scope: 'local' });
+        setSignInError('Access Denied: This account is not registered in public.admin_users.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const dbAdmin = adminRows[0];
+      const validRoles = ['Super Admin', 'Admission Incharge', 'Academic Admin', 'System Administrator'];
+      if (!validRoles.includes(dbAdmin.role)) {
+        await supabase.auth.signOut({ scope: 'local' });
+        setSignInError(`Access Denied: Role "${dbAdmin.role}" does not have administrative privileges.`);
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Link auth_user_id if not present
+      if (!dbAdmin.auth_user_id) {
+        try {
+          await supabase
+            .from('admin_users')
+            .update({ auth_user_id: data.user.id })
+            .eq('id', dbAdmin.id);
+        } catch (e) {}
+      }
 
       const matchedUser: AdminUser = {
-        id: matchedAdminRecord?.id || data.user.id,
-        name: matchedAdminRecord?.name || data.user.user_metadata?.name || 'Administrator',
-        username: matchedAdminRecord?.username || data.user.email?.split('@')[0] || 'admin',
-        email: matchedAdminRecord?.email || data.user.email || targetEmail,
-        mobile: matchedAdminRecord?.mobile || '9822100000',
-        role: matchedAdminRecord?.role || 'Super Admin',
-        securityQuestion: matchedAdminRecord?.security_question || 'What is the college code?',
-        securityAnswer: matchedAdminRecord?.security_answer || 'LSSCDT',
-        password: passwordInput,
-        createdAt: matchedAdminRecord?.created_at || new Date().toISOString().split('T')[0]
+        id: String(dbAdmin.id || data.user.id),
+        name: dbAdmin.name || data.user.user_metadata?.name || 'Administrator',
+        username: dbAdmin.username || data.user.email?.split('@')[0] || 'admin',
+        email: dbAdmin.email || data.user.email || targetEmail,
+        mobile: dbAdmin.mobile || '9822100000',
+        role: dbAdmin.role || 'Super Admin',
+        securityQuestion: dbAdmin.security_question || 'What is the college code?',
+        securityAnswer: dbAdmin.security_answer || 'LSSCDT',
+        password: '',
+        auth_user_id: dbAdmin.auth_user_id || data.user.id,
+        createdAt: dbAdmin.created_at || new Date().toISOString().split('T')[0]
       };
 
       onLoginSuccess(matchedUser);
       onClose();
     } catch (err: any) {
       setSignInError(err?.message || 'Authentication failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // Quick Autofill for testing
-  const handleAutofill = (u: AdminUser) => {
-    setUsernameInput(u.username);
-    setPasswordInput(u.password);
-    setSignInError('');
-  };
-
-  // 2. Handle Forgot Password - Step 1: Find User
+  // Forgot Password - Step 1: Find User
   const handleFindUserForRecovery = async (e: React.FormEvent) => {
     e.preventDefault();
     setForgotError('');
     const query = recoveryIdentifier.trim().toLowerCase();
 
-    const usersList = adminUsers.length > 0 ? adminUsers : await storageService.fetchAdminUsers();
+    try {
+      const usersList = await storageService.fetchAdminUsers();
+      const user = usersList.find(
+        u => u.username.toLowerCase() === query ||
+             u.email.toLowerCase() === query ||
+             u.mobile === recoveryIdentifier.trim()
+      );
 
-    const user = usersList.find(
-      u => u.username.toLowerCase() === query ||
-           u.email.toLowerCase() === query ||
-           u.mobile === recoveryIdentifier.trim()
-    );
+      if (!user) {
+        setForgotError('No Administrator account found with provided Email, Username, or Mobile.');
+        return;
+      }
 
-    if (!user) {
-      setForgotError('No Administrator account found with provided Email, Username, or Mobile.');
-      return;
+      setFoundUser(user);
+      const simulatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      setGeneratedOtp(simulatedOtp);
+      setForgotStep(2);
+    } catch (err) {
+      setForgotError('Failed to verify account. Please try again.');
     }
-
-    setFoundUser(user);
-    // Generate a simulated 6-digit OTP code for instant testing
-    const simulatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedOtp(simulatedOtp);
-    setForgotStep(2);
   };
 
-  // Handle Forgot Password - Step 2: Verify & Reset
+  // Forgot Password - Step 2: Verify & Reset
   const handleResetPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setForgotError('');
@@ -195,18 +186,18 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
 
     if (useOtpMethod) {
       if (otpInput.trim() !== generatedOtp) {
-        setForgotError(`Invalid OTP code. Please enter the verification code: ${generatedOtp}`);
+        setForgotError(`Invalid OTP code. Please enter verification code: ${generatedOtp}`);
         return;
       }
     } else {
-      if (securityAnswerInput.trim().toLowerCase() !== foundUser.securityAnswer.trim().toLowerCase()) {
-        setForgotError('Security answer is incorrect. Please check your recovery answer or try OTP verification.');
+      if (securityAnswerInput.trim().toLowerCase() !== (foundUser.securityAnswer || 'lsscdt').trim().toLowerCase()) {
+        setForgotError('Security answer is incorrect. Please verify your answer or use OTP.');
         return;
       }
     }
 
-    if (!newPassword || newPassword.length < 4) {
-      setForgotError('New password must be at least 4 characters long.');
+    if (!newPassword || newPassword.length < 6) {
+      setForgotError('New password must be at least 6 characters long.');
       return;
     }
 
@@ -218,7 +209,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
     const success = await storageService.updateAdminPassword(foundUser.username, newPassword);
 
     if (success) {
-      setForgotSuccess(`Password for ${foundUser.name} updated successfully! Redirecting to Sign In...`);
+      setForgotSuccess(`Password for ${foundUser.name} updated successfully!`);
       setUsernameInput(foundUser.username);
       setPasswordInput(newPassword);
 
@@ -267,7 +258,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
           </p>
         </div>
 
-        {/* Mode Navigation Tabs inside Admin Modal */}
+        {/* Mode Navigation Tabs */}
         <div className="flex rounded-xl bg-slate-100 p-1 text-xs font-bold">
           <button
             type="button"
@@ -291,40 +282,9 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
           </button>
         </div>
 
-        {/* ------------------ MODE 1: SIGN IN ------------------ */}
+        {/* SIGN IN */}
         {mode === 'signin' && (
           <form onSubmit={handleSignInSubmit} className="space-y-4 text-xs">
-            
-            {/* Clear Success Message Banner */}
-            {signInSuccessMessage && (
-              <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-start gap-2.5 font-medium shadow-sm">
-                <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600 mt-0.5" />
-                <span className="leading-relaxed">{signInSuccessMessage}</span>
-              </div>
-            )}
-            
-            {/* Registered Administrators Selector Pills for quick access */}
-            <div className="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <label className="block text-[11px] font-bold text-slate-700">
-                Registered Administrators ({adminUsers.length}):
-              </label>
-              <div className="flex flex-wrap gap-1.5">
-                {adminUsers.map(u => (
-                  <button
-                    key={u.id}
-                    type="button"
-                    onClick={() => handleAutofill(u)}
-                    className="text-[10px] bg-white hover:bg-amber-50 text-slate-800 border border-slate-300 hover:border-amber-400 px-2 py-1 rounded-md font-medium transition-colors flex items-center gap-1"
-                    title={`Click to quick login as ${u.name}`}
-                  >
-                    <User className="w-3 h-3 text-amber-600" />
-                    <span className="font-bold">{u.name.split('(')[0]}</span>
-                    <span className="text-slate-400">({u.role})</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <div>
               <label className="block font-bold text-slate-700 mb-1">Username or Email *</label>
               <div className="relative">
@@ -365,7 +325,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
             </div>
 
             {signInError && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg flex items-center gap-2">
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
                 <span>{signInError}</span>
               </div>
@@ -373,22 +333,27 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
 
             <button
               type="submit"
-              className="w-full bg-[#0A2342] hover:bg-slate-900 text-amber-400 font-extrabold py-3 rounded-xl text-xs shadow-md transition-colors flex items-center justify-center gap-2"
+              disabled={isSubmitting}
+              className="w-full bg-[#0A2342] hover:bg-slate-900 text-amber-400 font-extrabold py-3 rounded-xl text-xs shadow-md transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <LogIn className="w-4 h-4" />
-              <span>Login to Admin Panel</span>
+              {isSubmitting ? (
+                <div className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <LogIn className="w-4 h-4" />
+              )}
+              <span>{isSubmitting ? 'Verifying...' : 'Login to Admin Panel'}</span>
             </button>
 
             <div className="text-center pt-2 text-[11px] text-slate-500 border-t border-slate-100">
               <span className="flex items-center justify-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
-                Restricted portal. Contact system admin for new accounts.
+                Restricted portal. Session verified via Supabase Auth.
               </span>
             </div>
           </form>
         )}
 
-        {/* ------------------ MODE 3: FORGOT PASSWORD ------------------ */}
+        {/* FORGOT PASSWORD */}
         {mode === 'forgot_password' && (
           <div className="space-y-4 text-xs">
             {forgotStep === 1 ? (
@@ -408,15 +373,15 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
                   <input
                     type="text"
                     required
-                    placeholder="e.g. admin or admin@lsscdt.ac.in or 9822100001"
+                    placeholder="e.g. admin or akshayjamode21@gmail.com"
                     value={recoveryIdentifier}
                     onChange={(e) => setRecoveryIdentifier(e.target.value)}
-                    className="w-full p-2.5 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-amber-500 font-mono"
+                    className="w-full p-2.5 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-amber-500 font-mono text-slate-900"
                   />
                 </div>
 
                 {forgotError && (
-                  <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg flex items-center gap-2">
+                  <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
                     <span>{forgotError}</span>
                   </div>
@@ -439,7 +404,6 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
                   </div>
                 )}
 
-                {/* Switch verification method */}
                 <div className="flex gap-2 text-[11px]">
                   <button
                     type="button"
@@ -448,7 +412,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
                       !useOtpMethod ? 'bg-amber-100 border-amber-400 text-amber-900' : 'bg-slate-50 border-slate-200 text-slate-600'
                     }`}
                   >
-                    Use Security Question
+                    Security Question
                   </button>
                   <button
                     type="button"
@@ -457,98 +421,88 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
                       useOtpMethod ? 'bg-amber-100 border-amber-400 text-amber-900' : 'bg-slate-50 border-slate-200 text-slate-600'
                     }`}
                   >
-                    Use OTP Verification
+                    Instant OTP Code
                   </button>
                 </div>
 
                 {!useOtpMethod ? (
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">
-                      Security Question: <span className="text-amber-700">{foundUser?.securityQuestion}</span>
+                      {foundUser?.securityQuestion || 'What is the college code?'} *
                     </label>
                     <input
                       type="text"
-                      required={!useOtpMethod}
-                      placeholder="Enter your security answer (e.g. LSSCDT)"
+                      required
+                      placeholder="Enter your security answer..."
                       value={securityAnswerInput}
                       onChange={(e) => setSecurityAnswerInput(e.target.value)}
-                      className="w-full p-2.5 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-amber-500"
+                      className="w-full p-2.5 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-amber-500 text-slate-900"
                     />
-                    <div className="text-[10px] text-slate-400 mt-1">Hint: Default initial answer is college code (LSSCDT) or city (Malkapur)</div>
                   </div>
                 ) : (
-                  <div>
-                    <div className="bg-blue-50 p-2.5 rounded-lg border border-blue-200 text-blue-900 text-[11px] mb-2 flex items-center justify-between">
-                      <span>Simulated OTP sent to {foundUser?.mobile}:</span>
-                      <span className="font-mono font-bold text-blue-950 bg-white px-2 py-0.5 rounded border">{generatedOtp}</span>
+                  <div className="space-y-2">
+                    <label className="block font-bold text-slate-700">Enter Verification OTP Code *</label>
+                    <div className="p-2.5 bg-blue-50 border border-blue-200 text-blue-900 text-xs rounded-lg flex items-center justify-between">
+                      <span>OTP sent to registered mobile/email:</span>
+                      <strong className="font-mono text-sm tracking-wider text-blue-700 bg-white px-2 py-0.5 rounded border border-blue-300">
+                        {generatedOtp}
+                      </strong>
                     </div>
-                    <label className="block font-bold text-slate-700 mb-1">Enter OTP Code *</label>
                     <input
                       type="text"
-                      required={useOtpMethod}
-                      placeholder="Enter 6-digit OTP code"
+                      required
+                      placeholder="Enter 6-digit OTP"
                       value={otpInput}
                       onChange={(e) => setOtpInput(e.target.value)}
-                      className="w-full p-2.5 rounded-lg border border-slate-300 font-mono outline-none focus:ring-2 focus:ring-amber-500"
+                      className="w-full p-2.5 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-amber-500 font-mono text-center text-sm font-bold tracking-widest text-slate-900"
                     />
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t">
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">New Password *</label>
-                    <input
-                      type="password"
-                      required
-                      placeholder="••••••••"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full p-2.5 rounded-lg border border-slate-300 font-mono outline-none focus:ring-2 focus:ring-amber-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">Confirm New Password *</label>
-                    <input
-                      type="password"
-                      required
-                      placeholder="••••••••"
-                      value={confirmNewPassword}
-                      onChange={(e) => setConfirmNewPassword(e.target.value)}
-                      className="w-full p-2.5 rounded-lg border border-slate-300 font-mono outline-none focus:ring-2 focus:ring-amber-500"
-                    />
-                  </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">New Password (min 6 characters) *</label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full p-2.5 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-amber-500 font-mono text-slate-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Confirm New Password *</label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    className="w-full p-2.5 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-amber-500 font-mono text-slate-900"
+                  />
                 </div>
 
                 {forgotError && (
-                  <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg flex items-center gap-2">
+                  <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
                     <span>{forgotError}</span>
                   </div>
                 )}
 
                 {forgotSuccess && (
-                  <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-lg flex items-center gap-2 font-bold">
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center gap-2 font-medium">
                     <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
                     <span>{forgotSuccess}</span>
                   </div>
                 )}
 
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setForgotStep(1)}
-                    className="px-4 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold py-3 rounded-xl text-xs shadow-md transition-colors flex items-center justify-center gap-2"
-                  >
-                    <KeyRound className="w-4 h-4" />
-                    <span>Reset Password & Login</span>
-                  </button>
-                </div>
+                <button
+                  type="submit"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3 rounded-xl text-xs shadow-md transition-colors"
+                >
+                  Update Password & Return to Login
+                </button>
               </form>
             )}
           </div>

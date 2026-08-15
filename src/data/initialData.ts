@@ -534,44 +534,7 @@ export const initialGallery: GalleryItem[] = [
   }
 ];
 
-export const initialAdminUsers: AdminUser[] = [
-  {
-    id: "admin-1",
-    name: "Dr. S. K. Deshmukh (Principal / Head)",
-    username: "admin",
-    email: "admin@lsscdt.ac.in",
-    password: "lsscdt2026",
-    role: "Super Admin",
-    mobile: "9822100001",
-    securityQuestion: "What is the college code?",
-    securityAnswer: "LSSCDT",
-    createdAt: "2026-01-01"
-  },
-  {
-    id: "admin-2",
-    name: "Prof. P. R. Patil (Admission Incharge)",
-    username: "admission_admin",
-    email: "admissions@lsscdt.ac.in",
-    password: "admin123",
-    role: "Admission Incharge",
-    mobile: "9822100002",
-    securityQuestion: "What city is the college located in?",
-    securityAnswer: "Malkapur",
-    createdAt: "2026-01-15"
-  },
-  {
-    id: "admin-3",
-    name: "Dr. A. V. Shinde (Academic Dean)",
-    username: "academic_admin",
-    email: "academic@lsscdt.ac.in",
-    password: "exam2026",
-    role: "Academic Admin",
-    mobile: "9822100003",
-    securityQuestion: "What degree program is offered?",
-    securityAnswer: "B.Tech Dairy",
-    createdAt: "2026-02-01"
-  }
-];
+export const initialAdminUsers: AdminUser[] = [];
 
 export const initialDownloads: DownloadableDocument[] = [
   {

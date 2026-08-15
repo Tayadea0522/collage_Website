@@ -42,51 +42,121 @@ export const storageService = {
   fetchAdminUsers: async (): Promise<AdminUser[]> => {
     try {
       const { data, error } = await supabase.from('admin_users').select('*');
-      if (error || !data || data.length === 0) return initialAdminUsers;
-      return data.map(row => ({ ...(row.data || row), id: row.id || row.data?.id }));
-    } catch {
-      return initialAdminUsers;
+      if (error) {
+        console.warn('Error fetching admin_users from Supabase:', error.message);
+        return [];
+      }
+      if (!data || data.length === 0) return [];
+
+      return data.map(row => {
+        const d = (row.data && typeof row.data === 'object') ? row.data : {};
+        return {
+          id: String(row.id || d.id || `admin-${Date.now()}`),
+          name: row.name || d.name || row.username || 'Administrator',
+          username: row.username || d.username || 'admin',
+          email: row.email || d.email || '',
+          mobile: row.mobile || d.mobile || '9822100000',
+          role: row.role || d.role || 'Super Admin',
+          securityQuestion: row.security_question || row.securityQuestion || d.securityQuestion || 'What is the college code?',
+          securityAnswer: row.security_answer || row.securityAnswer || d.securityAnswer || 'LSSCDT',
+          password: row.password || d.password || '',
+          auth_user_id: row.auth_user_id || d.auth_user_id || '',
+          createdAt: row.created_at || row.createdAt || d.createdAt || new Date().toISOString().split('T')[0],
+          updatedAt: row.updated_at || row.updatedAt || d.updatedAt || new Date().toISOString().split('T')[0]
+        };
+      });
+    } catch (err) {
+      console.warn('fetchAdminUsers exception:', err);
+      return [];
     }
   },
 
-  getAdminUsers: (): AdminUser[] => initialAdminUsers,
+  getAdminUsers: (): AdminUser[] => [],
 
-  saveAdminUsers: async (users: AdminUser[]): Promise<AdminUser[]> => {
+  saveAdminUsers: async (users: AdminUser[]): Promise<{ success: boolean; data?: AdminUser[]; error?: string }> => {
     try {
-      await supabase.from('admin_users').upsert(users.map(u => ({
+      const recordsToUpsert = users.map(u => ({
         id: u.id,
+        name: u.name,
         username: u.username,
         email: u.email,
+        mobile: u.mobile,
         role: u.role,
+        security_question: u.securityQuestion,
+        security_answer: u.securityAnswer,
+        auth_user_id: u.auth_user_id || null,
+        created_at: u.createdAt || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         data: u
-      })));
-    } catch (err) {
-      console.warn('saveAdminUsers error:', err);
+      }));
+
+      const { error } = await supabase.from('admin_users').upsert(recordsToUpsert);
+      if (error) {
+        console.error('saveAdminUsers error:', error.message);
+        return { success: false, error: error.message };
+      }
+      const refreshed = await storageService.fetchAdminUsers();
+      return { success: true, data: refreshed };
+    } catch (err: any) {
+      console.error('saveAdminUsers exception:', err);
+      return { success: false, error: err?.message || 'Failed to save admin user records' };
     }
-    return await storageService.fetchAdminUsers();
   },
 
-  addAdminUser: async (user: AdminUser): Promise<AdminUser[]> => {
-    const current = await storageService.fetchAdminUsers();
-    const updated = [...current, user];
-    return await storageService.saveAdminUsers(updated);
+  deleteAdminUser: async (id: string): Promise<{ success: boolean; data?: AdminUser[]; error?: string }> => {
+    try {
+      const { error } = await supabase.from('admin_users').delete().eq('id', id);
+      if (error) {
+        console.error('deleteAdminUser database error:', error.message);
+        return { success: false, error: error.message };
+      }
+      const refreshed = await storageService.fetchAdminUsers();
+      return { success: true, data: refreshed };
+    } catch (err: any) {
+      console.error('deleteAdminUser exception:', err);
+      return { success: false, error: err?.message || 'Failed to delete administrator from database' };
+    }
+  },
+
+  addAdminUser: async (user: AdminUser): Promise<{ success: boolean; data?: AdminUser[]; error?: string }> => {
+    try {
+      const dbRecord = {
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        email: user.email,
+        mobile: user.mobile,
+        role: user.role,
+        security_question: user.securityQuestion,
+        security_answer: user.securityAnswer,
+        auth_user_id: user.auth_user_id || null,
+        created_at: user.createdAt || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        data: user
+      };
+      const { error } = await supabase.from('admin_users').insert([dbRecord]);
+      if (error) {
+        console.error('addAdminUser database error:', error.message);
+        return { success: false, error: error.message };
+      }
+      const refreshed = await storageService.fetchAdminUsers();
+      return { success: true, data: refreshed };
+    } catch (err: any) {
+      console.error('addAdminUser exception:', err);
+      return { success: false, error: err?.message || 'Failed to add administrator record' };
+    }
   },
 
   updateAdminPassword: async (identifier: string, newPassword: string): Promise<boolean> => {
     const users = await storageService.fetchAdminUsers();
     const query = identifier.trim().toLowerCase();
-    let updated = false;
-    const newUsers = users.map(u => {
-      if (u.username.toLowerCase() === query || u.email.toLowerCase() === query || u.mobile === identifier.trim()) {
-        updated = true;
-        return { ...u, password: newPassword };
-      }
-      return u;
-    });
-    if (updated) {
-      await storageService.saveAdminUsers(newUsers);
+    let target = users.find(u => u.username.toLowerCase() === query || u.email.toLowerCase() === query || u.mobile === identifier.trim());
+    if (target) {
+      const updatedUser = { ...target, password: newPassword, updatedAt: new Date().toISOString() };
+      const res = await storageService.saveAdminUsers([updatedUser]);
+      return res.success;
     }
-    return updated;
+    return false;
   },
 
   // --- College Information ---
@@ -369,17 +439,41 @@ export const storageService = {
   fetchDownloads: async (): Promise<DownloadableDocument[]> => {
     try {
       const { data, error } = await supabase.from('downloads').select('*');
-      if (error || !data) return [];
-      return data.map(row => ({ ...(row.data || row), id: row.id || row.data?.id }));
-    } catch {
-      return [];
+      if (error || !data || data.length === 0) {
+        if (error) console.warn('Supabase downloads fetch warning:', error.message);
+        return initialDownloads;
+      }
+      return data.map(row => {
+        const d = row.data || {};
+        const storagePath = row.storage_path || row.storagePath || d.storagePath || '';
+        const fallbackUrl = row.file_url || row.fileUrl || d.fileUrl || '';
+        const fileUrl = fallbackUrl || (storagePath ? supabaseStorageService.getWebsiteDocumentUrl(storagePath) : '');
+        
+        return {
+          id: String(row.id || d.id || `dl-${Date.now()}`),
+          title: row.title || d.title || 'Untitled Document',
+          category: row.category || d.category || 'General',
+          description: row.description || d.description || '',
+          fileName: row.file_name || row.fileName || d.fileName || 'document.pdf',
+          storagePath,
+          fileSize: row.file_size || row.fileSize || d.fileSize || '1.0 MB',
+          fileUrl,
+          displayOrder: Number(row.display_order ?? row.displayOrder ?? d.displayOrder ?? 1),
+          isActive: Boolean(row.is_active ?? row.isActive ?? d.isActive ?? true),
+          createdAt: row.created_at || row.createdAt || d.createdAt || new Date().toISOString().split('T')[0],
+          updatedAt: row.updated_at || row.updatedAt || d.updatedAt || new Date().toISOString().split('T')[0]
+        };
+      }).sort((a, b) => (a.displayOrder || 1) - (b.displayOrder || 1));
+    } catch (err) {
+      console.warn('fetchDownloads exception:', err);
+      return initialDownloads;
     }
   },
   getDownloads: (): DownloadableDocument[] => initialDownloads,
 
-  saveDownloads: async (downloads: DownloadableDocument[]): Promise<DownloadableDocument[]> => {
+  saveDownloads: async (downloads: DownloadableDocument[]): Promise<{ success: boolean; data?: DownloadableDocument[]; error?: string }> => {
     try {
-      const { error } = await supabase.from('downloads').upsert(downloads.map(d => ({
+      const recordsFull = downloads.map(d => ({
         id: d.id,
         title: d.title,
         category: d.category,
@@ -387,20 +481,60 @@ export const storageService = {
         file_name: d.fileName,
         storage_path: d.storagePath || '',
         file_size: d.fileSize,
+        file_url: d.fileUrl || '',
         display_order: d.displayOrder,
         is_active: d.isActive,
         created_at: d.createdAt,
         updated_at: new Date().toISOString(),
         data: d
-      })));
-      if (error) console.warn('Supabase downloads save warning:', error.message);
-    } catch (err) {
-      console.warn('saveDownloads exception:', err);
+      }));
+
+      let { error } = await supabase.from('downloads').upsert(recordsFull);
+
+      if (error) {
+        console.warn('Initial downloads upsert error, trying schema fallback without file_url:', error.message);
+        const recordsFallback = downloads.map(d => ({
+          id: d.id,
+          title: d.title,
+          category: d.category,
+          description: d.description || '',
+          file_name: d.fileName,
+          storage_path: d.storagePath || '',
+          file_size: d.fileSize,
+          display_order: d.displayOrder,
+          is_active: d.isActive,
+          created_at: d.createdAt,
+          updated_at: new Date().toISOString(),
+          data: d
+        }));
+        const res2 = await supabase.from('downloads').upsert(recordsFallback);
+        error = res2.error;
+      }
+
+      if (error) {
+        console.warn('Second downloads upsert error, trying data-only fallback:', error.message);
+        const recordsDataOnly = downloads.map(d => ({
+          id: d.id,
+          data: d
+        }));
+        const res3 = await supabase.from('downloads').upsert(recordsDataOnly);
+        error = res3.error;
+      }
+
+      if (error) {
+        console.error('saveDownloads ultimate failure:', error);
+        return { success: false, error: `Database Save Failed: ${error.message}` };
+      }
+
+      const refreshed = await storageService.fetchDownloads();
+      return { success: true, data: refreshed };
+    } catch (err: any) {
+      console.error('saveDownloads exception:', err);
+      return { success: false, error: err.message || 'Database transaction error' };
     }
-    return await storageService.fetchDownloads();
   },
 
-  deleteDownload: async (id: string): Promise<DownloadableDocument[]> => {
+  deleteDownload: async (id: string): Promise<{ success: boolean; data?: DownloadableDocument[]; error?: string }> => {
     try {
       const current = await storageService.fetchDownloads();
       const target = current.find(d => d.id === id);
@@ -408,11 +542,16 @@ export const storageService = {
         await supabaseStorageService.deleteWebsiteDocument(target.storagePath);
       }
       const { error } = await supabase.from('downloads').delete().eq('id', id);
-      if (error) console.warn('Supabase deleteDownload error:', error.message);
-    } catch (err) {
-      console.warn('deleteDownload exception:', err);
+      if (error) {
+        console.error('Supabase deleteDownload error:', error.message);
+        return { success: false, error: `Database Delete Failed: ${error.message}` };
+      }
+      const refreshed = await storageService.fetchDownloads();
+      return { success: true, data: refreshed };
+    } catch (err: any) {
+      console.error('deleteDownload exception:', err);
+      return { success: false, error: err.message || 'Failed to delete record from database' };
     }
-    return await storageService.fetchDownloads();
   },
 
   // --- Facilities ---

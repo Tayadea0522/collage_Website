@@ -53,7 +53,7 @@ export const initialCollegeInfo: CollegeInfo = {
     faculty: "10+"
   },
   
-  establishedYear: "2008",
+  establishedYear: "2026",
   campusArea: "35 Acres Green Campus",
   vision: "To be a premier institution in dairy technology education, research, and innovation, producing leaders who transform the global dairy sector.",
   mission: [

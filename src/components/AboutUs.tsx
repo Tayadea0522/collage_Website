@@ -90,7 +90,7 @@ export const AboutUs: React.FC<AboutUsProps> = ({ collegeInfo, onNavigateTab }) 
                 Situated in the agrarian heartland of Malkapur (District Buldhana, Maharashtra), our college provides an integrated learning environment that combines rigorous academic coursework with hands-on industrial plant operations. The college is affiliated with the prestigious <strong>Maharashtra Animal & Fishery Sciences University (MAFSU), Nagpur</strong> and approved by the <strong>Government of Maharashtra</strong>, strictly implementing the nationwide uniform curriculum designed by the Fifth Deans' Committee of the <strong>Indian Council of Agricultural Research (ICAR), New Delhi</strong>.
               </p>
               <p>
-                Spanning a serene and verdant <strong>{collegeInfo.campusArea || '35-Acre'}</strong> campus, LSSCDT features fully automated pilot dairy processing plants (10,000 LPD capacity), state-of-the-art analytical chemistry and microbiology laboratories, smart digital classrooms, a comprehensive technical library, and secure on-campus residences for students.
+                Spanning a serene and verdant <strong>{collegeInfo.campusArea || '35-Acre'}</strong> campus, LSSCDT features a fully operational 500 LPD experimental pilot dairy processing plant, state-of-the-art analytical chemistry and microbiology laboratories, smart digital classrooms, a comprehensive technical library, and secure on-campus residences for students.
               </p>
             </div>
 
@@ -123,7 +123,7 @@ export const AboutUs: React.FC<AboutUsProps> = ({ collegeInfo, onNavigateTab }) 
                 </div>
                 <div className="pt-2 flex justify-between items-center">
                   <span className="text-slate-300">Pilot Dairy Plant</span>
-                  <strong className="text-white font-mono">10,000 LPD</strong>
+                  <strong className="text-white font-mono">500 LPD</strong>
                 </div>
               </div>
             </div>
@@ -310,9 +310,9 @@ export const AboutUs: React.FC<AboutUsProps> = ({ collegeInfo, onNavigateTab }) 
               <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-800 mx-auto flex items-center justify-center">
                 <Factory className="w-6 h-6 text-amber-700" />
               </div>
-              <h3 className="font-bold font-serif text-[#0A2342] text-sm">10,000 LPD Pilot Plant</h3>
+              <h3 className="font-bold font-serif text-[#0A2342] text-sm">500 LPD Experimental Pilot Plant</h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Full-scale commercial processing line for milk, ghee, paneer, ice-cream, and fermented products.
+                Dedicated experimental pilot processing facility for milk processing, product formulation, testing, and practical student training.
               </p>
             </div>
 

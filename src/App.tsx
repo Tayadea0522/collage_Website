@@ -372,7 +372,10 @@ export default function App() {
         )}
 
         {currentTab === 'about' && (
-          <AboutUs collegeInfo={collegeInfo} />
+          <AboutUs 
+            collegeInfo={collegeInfo} 
+            onNavigateTab={setCurrentTab}
+          />
         )}
 
         {currentTab === 'academics' && (

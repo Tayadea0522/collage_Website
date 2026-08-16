@@ -452,10 +452,13 @@ export const storageService = {
   fetchDownloads: async (): Promise<DownloadableDocument[]> => {
     try {
       const { data, error } = await supabase.from('downloads').select('*');
-      if (error || !data || data.length === 0) {
-        if (error) console.warn('Supabase downloads fetch warning:', error.message);
+      if (error) {
+        console.warn('Supabase downloads fetch warning (table may not exist in database yet):', error.message);
         return initialDownloads;
       }
+      if (!data) return [];
+      if (data.length === 0) return [];
+
       return data.map(row => {
         const d = row.data || {};
         const storagePath = row.storage_path || row.storagePath || d.storagePath || '';
@@ -489,15 +492,15 @@ export const storageService = {
       const recordsFull = downloads.map(d => ({
         id: d.id,
         title: d.title,
-        category: d.category,
+        category: d.category || 'General',
         description: d.description || '',
-        file_name: d.fileName,
+        file_name: d.fileName || 'document.pdf',
         storage_path: d.storagePath || '',
-        file_size: d.fileSize,
+        file_size: d.fileSize || '1.0 MB',
         file_url: d.fileUrl || '',
-        display_order: d.displayOrder,
-        is_active: d.isActive,
-        created_at: d.createdAt,
+        display_order: Number(d.displayOrder) || 1,
+        is_active: d.isActive !== false,
+        created_at: d.createdAt || new Date().toISOString(),
         updated_at: new Date().toISOString(),
         data: d
       }));
@@ -505,18 +508,18 @@ export const storageService = {
       let { error } = await supabase.from('downloads').upsert(recordsFull);
 
       if (error) {
-        console.warn('Initial downloads upsert error, trying schema fallback without file_url:', error.message);
+        console.warn('Primary downloads upsert error, trying compatibility fallback without file_url:', error.message);
         const recordsFallback = downloads.map(d => ({
           id: d.id,
           title: d.title,
-          category: d.category,
+          category: d.category || 'General',
           description: d.description || '',
-          file_name: d.fileName,
+          file_name: d.fileName || 'document.pdf',
           storage_path: d.storagePath || '',
-          file_size: d.fileSize,
-          display_order: d.displayOrder,
-          is_active: d.isActive,
-          created_at: d.createdAt,
+          file_size: d.fileSize || '1.0 MB',
+          display_order: Number(d.displayOrder) || 1,
+          is_active: d.isActive !== false,
+          created_at: d.createdAt || new Date().toISOString(),
           updated_at: new Date().toISOString(),
           data: d
         }));
@@ -525,7 +528,7 @@ export const storageService = {
       }
 
       if (error) {
-        console.warn('Second downloads upsert error, trying data-only fallback:', error.message);
+        console.warn('Secondary downloads upsert error, trying data-only fallback:', error.message);
         const recordsDataOnly = downloads.map(d => ({
           id: d.id,
           data: d
@@ -536,7 +539,7 @@ export const storageService = {
 
       if (error) {
         console.error('saveDownloads ultimate failure:', error);
-        return { success: false, error: `Database Save Failed: ${error.message}` };
+        return { success: false, error: `${error.message}` };
       }
 
       const refreshed = await storageService.fetchDownloads();

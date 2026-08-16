@@ -1,24 +1,14 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Award, Users, BookOpen, GraduationCap, Mail, Phone, Briefcase, Calendar, ShieldCheck, FileText } from 'lucide-react';
-import { FacultyMember } from '../types';
+import { CheckCircle2, Award, BookOpen, Calendar, ShieldCheck } from 'lucide-react';
 import { InnerPageLayout, SidebarItem } from './InnerPageLayout';
 
 interface AcademicsProps {
-  faculty?: FacultyMember[];
   onNavigateTab?: (tab: string) => void;
 }
 
-export const Academics: React.FC<AcademicsProps> = ({ faculty: propsFaculty, onNavigateTab }) => {
+export const Academics: React.FC<AcademicsProps> = ({ onNavigateTab }) => {
   const [activeSidebarItem, setActiveSidebarItem] = useState<string>('overview');
   const [activeSem, setActiveSem] = useState(1);
-  const [facultyDeptFilter, setFacultyDeptFilter] = useState('All');
-
-  const facultyList = propsFaculty || [];
-
-  const filteredFaculty = facultyList.filter(f => {
-    if (facultyDeptFilter === 'All') return true;
-    return f.department?.toLowerCase().includes(facultyDeptFilter.toLowerCase());
-  });
 
   const semesters = [
     {
@@ -109,7 +99,6 @@ export const Academics: React.FC<AcademicsProps> = ({ faculty: propsFaculty, onN
     { id: 'overview', label: 'Program Overview', icon: Award },
     { id: 'curriculum', label: 'Semester Curricula', icon: BookOpen, badge: '8 Sems' },
     { id: 'calendar', label: 'Academic Calendar', icon: Calendar },
-    { id: 'faculties', label: 'Academic Faculty', icon: Users },
     { id: 'regulations', label: 'Academic Regulations', icon: ShieldCheck },
   ];
 
@@ -117,7 +106,7 @@ export const Academics: React.FC<AcademicsProps> = ({ faculty: propsFaculty, onN
     <InnerPageLayout
       title="Academics & Curricula"
       categoryTag="Academic Programs"
-      subtitle="B.Tech (Dairy Technology) Degree Program, ICAR Curricula & Academic Faculty"
+      subtitle="B.Tech (Dairy Technology) Degree Program, ICAR Curricula & Academic Regulations"
       breadcrumbPath={[
         { label: 'Home', tab: 'home' },
         { label: 'Academics' },
@@ -274,56 +263,7 @@ export const Academics: React.FC<AcademicsProps> = ({ faculty: propsFaculty, onN
         </div>
       )}
 
-      {/* 4. ACADEMIC FACULTY */}
-      {activeSidebarItem === 'faculties' && (
-        <div className="space-y-6">
-          <div className="border-b border-slate-200 pb-4 flex flex-col sm:flex-row justify-between sm:items-center gap-2">
-            <div>
-              <h2 className="text-2xl font-bold font-serif text-[#0A2342] flex items-center gap-2">
-                <Users className="w-6 h-6 text-amber-600" />
-                Academic Faculty Directory
-              </h2>
-              <p className="text-xs text-slate-600">
-                Experienced professors, associate professors & research scientists
-              </p>
-            </div>
-
-            {/* Department Filter */}
-            <select
-              value={facultyDeptFilter}
-              onChange={(e) => setFacultyDeptFilter(e.target.value)}
-              className="p-2 rounded-lg border border-slate-300 text-xs font-bold text-slate-800 bg-white"
-            >
-              <option value="All">All Departments</option>
-              <option value="Technology">Dairy Technology</option>
-              <option value="Chemistry">Dairy Chemistry</option>
-              <option value="Microbiology">Dairy Microbiology</option>
-              <option value="Engineering">Dairy Engineering</option>
-              <option value="Business">Business Management</option>
-            </select>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {filteredFaculty.map((f) => (
-              <div key={f.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex gap-4 items-center">
-                <img
-                  src={f.image || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80"}
-                  alt={f.name}
-                  className="w-16 h-16 rounded-full object-cover border-2 border-amber-500 shrink-0"
-                />
-                <div className="space-y-1 text-xs">
-                  <h3 className="font-bold text-slate-900 text-sm">{f.name}</h3>
-                  <span className="text-amber-800 font-extrabold block">{f.designation}</span>
-                  <span className="text-slate-500 font-mono text-[11px] block">{f.department}</span>
-                  <p className="text-slate-600 text-[11px]">Qualification: {f.qualification}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 5. ACADEMIC REGULATIONS */}
+      {/* 4. ACADEMIC REGULATIONS */}
       {activeSidebarItem === 'regulations' && (
         <div className="space-y-6">
           <div className="border-b border-slate-200 pb-4">

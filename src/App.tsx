@@ -438,7 +438,7 @@ export default function App() {
         )}
 
         {currentTab === 'academics' && (
-          <Academics faculty={faculty} />
+          <Academics onNavigateTab={setCurrentTab} />
         )}
 
         {currentTab === 'departments' && (

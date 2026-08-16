@@ -156,7 +156,7 @@ export const Academics: React.FC<AcademicsProps> = ({ faculty: propsFaculty, onN
             </div>
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1">
               <span className="text-[10px] font-bold text-slate-500 uppercase">Curriculum Framework</span>
-              <div className="font-bold text-amber-700 text-sm">ICAR Vth Deans' Committee</div>
+              <div className="font-bold text-amber-700 text-sm">ICAR VIth Deans' Committee</div>
             </div>
           </div>
 

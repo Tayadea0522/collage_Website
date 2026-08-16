@@ -87,7 +87,7 @@ export const AboutUs: React.FC<AboutUsProps> = ({ collegeInfo, onNavigateTab }) 
                 Established in the year <strong>{collegeInfo.establishedYear}</strong>, <strong>Late Shaktikumar Sancheti College of Dairy Technology (LSSCDT)</strong> was founded with a forward-looking mission: to address the growing national requirement for highly skilled, technologically proficient professionals in the dairy and food processing sectors.
               </p>
               <p>
-                Situated in the agrarian heartland of Malkapur (District Buldhana, Maharashtra), our college provides an integrated learning environment that combines rigorous academic coursework with hands-on industrial plant operations. The college is affiliated with the prestigious <strong>Maharashtra Animal & Fishery Sciences University (MAFSU), Nagpur</strong> and approved by the <strong>Government of Maharashtra</strong>, strictly implementing the nationwide uniform curriculum designed by the Fifth Deans' Committee of the <strong>Indian Council of Agricultural Research (ICAR), New Delhi</strong>.
+                Situated in the agrarian heartland of Malkapur (District Buldhana, Maharashtra), our college provides an integrated learning environment that combines rigorous academic coursework with hands-on industrial plant operations. The college is affiliated with the prestigious <strong>Maharashtra Animal & Fishery Sciences University (MAFSU), Nagpur</strong> and approved by the <strong>Government of Maharashtra</strong>, strictly implementing the nationwide uniform curriculum designed by the Sixth Deans' Committee of the <strong>Indian Council of Agricultural Research (ICAR), New Delhi</strong>.
               </p>
               <p>
                 Spanning a serene and verdant <strong>{collegeInfo.campusArea || '35-Acre'}</strong> campus, LSSCDT features a fully operational 500 LPD experimental pilot dairy processing plant, state-of-the-art analytical chemistry and microbiology laboratories, smart digital classrooms, a comprehensive technical library, and secure on-campus residences for students.
@@ -237,7 +237,7 @@ export const AboutUs: React.FC<AboutUsProps> = ({ collegeInfo, onNavigateTab }) 
               </div>
 
               <div className="pt-4 border-t border-slate-100 text-xs text-slate-500 font-medium">
-                Uniform ICAR 5th Deans' Committee Curriculum
+                Uniform ICAR 6th Deans' Committee Curriculum
               </div>
             </div>
           </div>
@@ -285,7 +285,7 @@ export const AboutUs: React.FC<AboutUsProps> = ({ collegeInfo, onNavigateTab }) 
                 </h4>
               </div>
               <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
-                {collegeInfo.approval || 'Approved by the State Government of Maharashtra (DAHD-12024/73/2026-AH(1696785) 16/07/2026) and strictly conforming to ICAR Fifth Deans\' Committee standards.'}
+                {collegeInfo.approval || 'Approved by the State Government of Maharashtra (DAHD-12024/73/2026-AH(1696785) 16/07/2026) and strictly conforming to ICAR Sixth Deans\' Committee standards.'}
               </p>
               <div className="text-[11px] font-semibold text-slate-500">
                 Recognized professional degree for national and state-level recruitment

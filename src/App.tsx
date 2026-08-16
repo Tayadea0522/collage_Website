@@ -560,7 +560,7 @@ export default function App() {
                   Downloadable Forms, Syllabus & Prospectus
                 </h1>
                 <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-                  Access official academic documents, ICAR Deans Vth syllabus, offline admission forms, and scholarship claim checklists.
+                  Access official academic documents, ICAR Deans VIth syllabus, offline admission forms, and scholarship claim checklists.
                 </p>
               </div>
             </div>

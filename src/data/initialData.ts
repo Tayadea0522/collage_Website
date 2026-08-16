@@ -554,10 +554,10 @@ export const initialDownloads: DownloadableDocument[] = [
   },
   {
     id: "dl-2",
-    title: "B.Tech Syllabus (ICAR Vth Deans)",
+    title: "B.Tech Syllabus (ICAR VIth Deans)",
     category: "Academic",
-    description: "Approved ICAR Vth Deans committee semester-wise curriculum, syllabus, credit distribution and examination scheme.",
-    fileName: "BTech_Syllabus_ICAR_Vth_Deans.pdf",
+    description: "Approved ICAR VIth Deans committee semester-wise curriculum, syllabus, credit distribution and examination scheme.",
+    fileName: "BTech_Syllabus_ICAR_VIth_Deans.pdf",
     fileSize: "1.8 MB",
     displayOrder: 2,
     isActive: true,

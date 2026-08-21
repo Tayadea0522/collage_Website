@@ -5,7 +5,6 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Calendar, 
-  Sparkles, 
   FileText, 
   UserCheck, 
   Building2, 
@@ -231,7 +230,7 @@ export const Home: React.FC<HomeProps> = ({
     <div className="space-y-12 pb-16">
       
       {/* 1. Hero Carousel Banner */}
-      <section className="relative w-full h-[400px] sm:h-[500px] md:h-[580px] bg-slate-900 overflow-hidden">
+      <section className="relative w-full h-[320px] sm:h-[450px] md:h-[540px] lg:h-[600px] bg-slate-950 overflow-hidden shadow-sm">
         {banners.map((banner, index) => (
           <div
             key={banner.id || index}
@@ -241,42 +240,10 @@ export const Home: React.FC<HomeProps> = ({
           >
             <img
               src={banner.image}
-              alt={banner.title}
+              alt={banner.title || `Banner ${index + 1}`}
               referrerPolicy="no-referrer"
-              className="w-full h-full object-cover object-center transform scale-105 transition-transform duration-[7000ms] ease-out"
+              className="w-full h-full object-cover object-center"
             />
-            {/* Gradient Overlay for high text contrast */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#0A2342]/95 via-[#0A2342]/75 to-transparent flex items-center">
-              <div className="max-w-7xl mx-auto px-4 sm:px-8 w-full">
-                <div className="max-w-2xl space-y-4 text-white">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/20 border border-amber-400/40 rounded-full text-amber-300 text-xs font-semibold tracking-wide">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>LSSCDT Malkapur</span>
-                  </div>
-                  <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold font-serif leading-tight text-white drop-shadow-md">
-                    {banner.title}
-                  </h1>
-                  <p className="text-sm sm:text-base md:text-lg text-slate-200 font-medium leading-relaxed max-w-xl">
-                    {banner.subtitle}
-                  </p>
-                  <div className="pt-2 flex flex-wrap items-center gap-4">
-                    <button
-                      onClick={() => onNavigate('academics')}
-                      className="bg-[#D97706] hover:bg-[#b46304] text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg hover:shadow-amber-600/30 transition-all flex items-center gap-2 group"
-                    >
-                      <span>{banner.ctaText || 'Apply Now'}</span>
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </button>
-                    <button
-                      onClick={() => onNavigate('about')}
-                      className="bg-white/10 hover:bg-white/20 text-white border border-white/30 backdrop-blur-sm px-6 py-3 rounded-xl font-bold text-sm transition-all"
-                    >
-                      Explore Campus
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         ))}
 
@@ -286,27 +253,27 @@ export const Home: React.FC<HomeProps> = ({
             <button
               onClick={prevSlide}
               aria-label="Previous Slide"
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/60 text-white p-2 sm:p-3 rounded-full backdrop-blur-xs transition-colors"
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/70 text-white p-2.5 sm:p-3.5 rounded-full backdrop-blur-sm transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-amber-400"
             >
               <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
             <button
               onClick={nextSlide}
               aria-label="Next Slide"
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/60 text-white p-2 sm:p-3 rounded-full backdrop-blur-xs transition-colors"
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/70 text-white p-2.5 sm:p-3.5 rounded-full backdrop-blur-sm transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-amber-400"
             >
               <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
 
             {/* Indicator Dots */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+            <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
               {banners.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setCurrentSlide(i)}
                   aria-label={`Go to slide ${i + 1}`}
                   className={`h-2.5 rounded-full transition-all duration-300 ${
-                    i === currentSlide ? 'w-8 bg-[#D97706]' : 'w-2.5 bg-white/50 hover:bg-white/80'
+                    i === currentSlide ? 'w-8 bg-[#D97706]' : 'w-2.5 bg-white/60 hover:bg-white/90 shadow'
                   }`}
                 />
               ))}

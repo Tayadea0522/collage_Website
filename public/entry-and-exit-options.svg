@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 680" width="100%" height="100%" style="background-color: #ffffff; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <defs>
+    <!-- Arrow Marker -->
+    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1e293b" />
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#0369a1" />
+    </marker>
+    <marker id="arrow-amber" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#b45309" />
+    </marker>
+    <marker id="arrow-emerald" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#047857" />
+    </marker>
+  </defs>
+
+  <!-- Title & Description Header -->
+  <text x="40" y="32" font-size="18" font-weight="bold" fill="#0f172a" font-family="Georgia, serif">Entry and Exit Options</text>
+  <text x="40" y="54" font-size="13" fill="#475569">The entry and exit options for the B. Tech. (Dairy Technology) Programme are shown in Figure 1 below:</text>
+
+  <!-- Main Dashed Boundary Container (4-Year UG Programme Boundary) -->
+  <rect x="230" y="130" width="340" height="420" rx="24" fill="#f8fafc" stroke="#334155" stroke-width="2" stroke-dasharray="8 6" />
+
+  <!-- 1. Admission (Top Node) -->
+  <g transform="translate(320, 75)">
+    <rect width="160" height="38" rx="4" fill="#f1f5f9" stroke="#1e293b" stroke-width="2" />
+    <text x="80" y="24" text-anchor="middle" font-size="14" font-weight="bold" fill="#0f172a">Admission</text>
+  </g>
+
+  <!-- Arrow from Admission to 1st Year -->
+  <line x1="400" y1="113" x2="400" y2="152" stroke="#1e293b" stroke-width="2.5" marker-end="url(#arrow)" />
+
+  <!-- 2. 1st Year UG Programme -->
+  <g transform="translate(320, 155)">
+    <rect width="160" height="54" rx="4" fill="#e2e8f0" stroke="#1e293b" stroke-width="2" />
+    <text x="80" y="24" text-anchor="middle" font-size="13" font-weight="bold" fill="#0f172a">1st year</text>
+    <text x="80" y="42" text-anchor="middle" font-size="13" font-weight="bold" fill="#0f172a">UG programme</text>
+  </g>
+
+  <!-- Exit 1: 1st Year -> 10 weeks internship -> UG-Certificate -->
+  <!-- Curved line from 1st year to internship -->
+  <path d="M 400 209 C 400 232 440 232 458 232" fill="none" stroke="#1e293b" stroke-width="2" marker-end="url(#arrow)" />
+  
+  <!-- 10 weeks internship (1st exit) -->
+  <g transform="translate(465, 212)">
+    <rect width="105" height="40" rx="4" fill="#ffffff" stroke="#1e293b" stroke-width="1.5" />
+    <text x="52.5" y="17" text-anchor="middle" font-size="11" font-weight="bold" fill="#0f172a">10 weeks</text>
+    <text x="52.5" y="31" text-anchor="middle" font-size="11" font-weight="bold" fill="#0f172a">internship</text>
+  </g>
+
+  <!-- Arrow from internship to Certificate -->
+  <line x1="570" y1="232" x2="602" y2="232" stroke="#1e293b" stroke-width="2" marker-end="url(#arrow)" />
+
+  <!-- UG-Certificate Exit Box (Right) -->
+  <g transform="translate(608, 207)">
+    <rect width="162" height="50" rx="4" fill="#ffffff" stroke="#1e293b" stroke-width="2" />
+    <text x="81" y="21" text-anchor="middle" font-size="12" font-weight="bold" fill="#0f172a">UG-Certificate</text>
+    <text x="81" y="38" text-anchor="middle" font-size="11" font-weight="600" fill="#334155">in Dairy Technology</text>
+  </g>
+
+  <!-- Direct Entry 1: UG-Certificate (Left) -> 2nd Year -->
+  <g transform="translate(30, 175)">
+    <rect width="162" height="50" rx="4" fill="#ffffff" stroke="#1e293b" stroke-width="2" />
+    <text x="81" y="21" text-anchor="middle" font-size="12" font-weight="bold" fill="#0f172a">UG-Certificate</text>
+    <text x="81" y="38" text-anchor="middle" font-size="11" font-weight="600" fill="#334155">in Dairy Technology</text>
+  </g>
+
+  <!-- DE* Label 1 -->
+  <text x="210" y="238" text-anchor="end" font-size="12" font-weight="bold" fill="#0f172a">DE*</text>
+  <!-- Curve from Left Certificate into 2nd year -->
+  <path d="M 111 225 C 111 245 155 245 312 280" fill="none" stroke="#1e293b" stroke-width="2" marker-end="url(#arrow)" />
+
+  <!-- Arrow from 1st Year to 2nd Year -->
+  <line x1="400" y1="209" x2="400" y2="252" stroke="#1e293b" stroke-width="2.5" marker-end="url(#arrow)" />
+
+  <!-- 3. 2nd Year UG Programme -->
+  <g transform="translate(320, 255)">
+    <rect width="160" height="54" rx="4" fill="#e2e8f0" stroke="#1e293b" stroke-width="2" />
+    <text x="80" y="24" text-anchor="middle" font-size="13" font-weight="bold" fill="#0f172a">2nd year</text>
+    <text x="80" y="42" text-anchor="middle" font-size="13" font-weight="bold" fill="#0f172a">UG programme</text>
+  </g>
+
+  <!-- Exit 2: 2nd Year -> 10 weeks internship -> UG-Diploma -->
+  <path d="M 400 309 C 400 332 440 332 458 332" fill="none" stroke="#1e293b" stroke-width="2" marker-end="url(#arrow)" />
+
+  <!-- 10 weeks internship (2nd exit) -->
+  <g transform="translate(465, 312)">
+    <rect width="105" height="40" rx="4" fill="#ffffff" stroke="#1e293b" stroke-width="1.5" />
+    <text x="52.5" y="17" text-anchor="middle" font-size="11" font-weight="bold" fill="#0f172a">10 weeks</text>
+    <text x="52.5" y="31" text-anchor="middle" font-size="11" font-weight="bold" fill="#0f172a">internship</text>
+  </g>
+
+  <!-- Arrow from internship to Diploma -->
+  <line x1="570" y1="332" x2="602" y2="332" stroke="#1e293b" stroke-width="2" marker-end="url(#arrow)" />
+
+  <!-- UG-Diploma Exit Box (Right) -->
+  <g transform="translate(608, 307)">
+    <rect width="162" height="50" rx="4" fill="#ffffff" stroke="#1e293b" stroke-width="2" />
+    <text x="81" y="21" text-anchor="middle" font-size="12" font-weight="bold" fill="#0f172a">UG-Diploma</text>
+    <text x="81" y="38" text-anchor="middle" font-size="11" font-weight="600" fill="#334155">in Dairy Technology</text>
+  </g>
+
+  <!-- Direct Entry 2: UG-Diploma (Left) -> 3rd Year -->
+  <g transform="translate(30, 290)">
+    <rect width="162" height="50" rx="4" fill="#ffffff" stroke="#1e293b" stroke-width="2" />
+    <text x="81" y="21" text-anchor="middle" font-size="12" font-weight="bold" fill="#0f172a">UG-Diploma</text>
+    <text x="81" y="38" text-anchor="middle" font-size="11" font-weight="600" fill="#334155">in Dairy Technology</text>
+  </g>
+
+  <!-- DE* Label 2 -->
+  <text x="210" y="353" text-anchor="end" font-size="12" font-weight="bold" fill="#0f172a">DE*</text>
+  <!-- Curve from Left Diploma into 3rd year -->
+  <path d="M 111 340 C 111 360 155 360 312 395" fill="none" stroke="#1e293b" stroke-width="2" marker-end="url(#arrow)" />
+
+  <!-- Arrow from 2nd Year to 3rd Year -->
+  <line x1="400" y1="309" x2="400" y2="352" stroke="#1e293b" stroke-width="2.5" marker-end="url(#arrow)" />
+
+  <!-- 4. 3rd Year UG Programme -->
+  <g transform="translate(320, 355)">
+    <rect width="160" height="54" rx="4" fill="#e2e8f0" stroke="#1e293b" stroke-width="2" />
+    <text x="80" y="24" text-anchor="middle" font-size="13" font-weight="bold" fill="#0f172a">3rd year</text>
+    <text x="80" y="42" text-anchor="middle" font-size="13" font-weight="bold" fill="#0f172a">UG programme</text>
+  </g>
+
+  <!-- Arrow from 3rd Year to 4th Year -->
+  <line x1="400" y1="409" x2="400" y2="452" stroke="#1e293b" stroke-width="2.5" marker-end="url(#arrow)" />
+
+  <!-- 5. 4th Year UG Programme -->
+  <g transform="translate(320, 455)">
+    <rect width="160" height="54" rx="4" fill="#e2e8f0" stroke="#1e293b" stroke-width="2" />
+    <text x="80" y="24" text-anchor="middle" font-size="13" font-weight="bold" fill="#0f172a">4th year</text>
+    <text x="80" y="42" text-anchor="middle" font-size="13" font-weight="bold" fill="#0f172a">UG programme</text>
+  </g>
+
+  <!-- Arrow from 4th Year out of dashed box to Final Degree -->
+  <line x1="400" y1="509" x2="400" y2="562" stroke="#1e293b" stroke-width="2.5" marker-end="url(#arrow)" />
+
+  <!-- 6. Final Degree Box (Bottom) -->
+  <g transform="translate(260, 565)">
+    <rect width="280" height="42" rx="4" fill="#e2e8f0" stroke="#1e293b" stroke-width="2" />
+    <text x="140" y="26" text-anchor="middle" font-size="14" font-weight="bold" fill="#0f172a">B.Tech. Dairy Technology</text>
+  </g>
+
+  <!-- Footnote & Caption -->
+  <text x="400" y="635" text-anchor="middle" font-size="13" font-weight="bold" fill="#0f172a">Fig.1 Entry and Exit options for the UG program in Dairy Technology</text>
+  <text x="400" y="655" text-anchor="middle" font-size="12" font-weight="bold" fill="#334155">DE* Direct Entry in the respective year</text>
+</svg>

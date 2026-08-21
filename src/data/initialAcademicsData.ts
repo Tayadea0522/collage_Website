@@ -417,7 +417,16 @@ export const initialAcademicsData: AcademicsData = {
       "Dairy Entrepreneur / Dairy Processing Plant Owner",
       "Procurement & Supply Chain Logistics Specialist"
     ],
-    imageUrl: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1200&q=80"
+    imageUrl: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1200&q=80",
+    entryExitImageUrl: "/entry-and-exit-options.svg",
+    entryExitOptions: {
+      title: "Entry and Exit Options",
+      description: "The entry and exit options for the B. Tech. (Dairy Technology) Programme are shown in Figure 1 below:",
+      imageUrl: "/entry-and-exit-options.svg",
+      caption: "Fig.1 Entry and Exit options for the UG program in Dairy Technology",
+      footnote: "DE* Direct Entry in the respective year",
+      isVisible: true
+    }
   },
 
   curriculumSyllabus: {

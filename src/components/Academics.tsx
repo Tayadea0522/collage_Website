@@ -1648,6 +1648,41 @@ export const Academics: React.FC<AcademicsProps> = ({
               </ul>
             </div>
           )}
+
+          {/* Entry and Exit Options (Fig. 1) */}
+          {(academicsData.programOverview?.entryExitOptions?.isVisible !== false) && (
+            <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-xs space-y-4">
+              <div className="border-b border-slate-100 pb-3">
+                <h3 className="text-lg font-bold font-serif text-[#0A2342] flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-amber-600" />
+                  {academicsData.programOverview?.entryExitOptions?.title || 'Entry and Exit Options'}
+                </h3>
+                <p className="text-xs text-slate-600 mt-1">
+                  {academicsData.programOverview?.entryExitOptions?.description || 'The entry and exit options for the B. Tech. (Dairy Technology) Programme are shown in Figure 1 below:'}
+                </p>
+              </div>
+
+              {/* High-Clarity Diagram Container */}
+              <div className="flex flex-col items-center justify-center p-4 sm:p-6 bg-slate-50/70 border border-slate-200 rounded-xl">
+                <div className="w-full max-w-2xl bg-white p-3 sm:p-5 rounded-xl border border-slate-200 shadow-xs flex justify-center">
+                  <img
+                    src={academicsData.programOverview?.entryExitImageUrl || academicsData.programOverview?.entryExitOptions?.imageUrl || '/entry-and-exit-options.svg'}
+                    alt="Entry and Exit options for the UG program in Dairy Technology"
+                    className="w-full max-w-xl h-auto object-contain rounded-lg"
+                  />
+                </div>
+
+                <div className="text-center mt-4 space-y-1">
+                  <p className="text-xs font-bold text-slate-900">
+                    {academicsData.programOverview?.entryExitOptions?.caption || 'Fig.1 Entry and Exit options for the UG program in Dairy Technology'}
+                  </p>
+                  <p className="text-[11px] font-semibold text-amber-800">
+                    {academicsData.programOverview?.entryExitOptions?.footnote || 'DE* Direct Entry in the respective year'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

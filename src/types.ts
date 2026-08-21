@@ -398,6 +398,15 @@ export interface ProgramOverviewSection {
   careerOpportunities: string[];
   keyOutcomes?: string[];
   imageUrl?: string;
+  entryExitImageUrl?: string;
+  entryExitOptions?: {
+    title?: string;
+    description?: string;
+    imageUrl?: string;
+    caption?: string;
+    footnote?: string;
+    isVisible?: boolean;
+  };
   brochurePdfUrl?: string;
   brochurePdfStoragePath?: string;
   brochurePdfFileName?: string;

@@ -13,6 +13,7 @@ export const ProgramOverviewManager: React.FC<ProgramOverviewManagerProps> = ({ 
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isUploadingEntryExitImage, setIsUploadingEntryExitImage] = useState(false);
 
   // New list items
   const [newObjective, setNewObjective] = useState('');
@@ -71,6 +72,33 @@ export const ProgramOverviewManager: React.FC<ProgramOverviewManagerProps> = ({ 
       alert(`Image upload failed: ${err.message || err}`);
     } finally {
       setIsUploadingImage(false);
+    }
+  };
+
+  // Entry and Exit Diagram Image Upload
+  const handleEntryExitImageFile = async (file: File) => {
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Image file size exceeds 10MB limit.');
+      return;
+    }
+    setIsUploadingEntryExitImage(true);
+    try {
+      const uploadUrl = await supabaseStorageService.uploadImage(file, 'general');
+      if (uploadUrl) {
+        setFormData(prev => ({
+          ...prev,
+          entryExitImageUrl: uploadUrl,
+          entryExitOptions: {
+            ...prev.entryExitOptions,
+            imageUrl: uploadUrl
+          }
+        }));
+      }
+    } catch (err: any) {
+      alert(`Entry & Exit diagram upload failed: ${err.message || err}`);
+    } finally {
+      setIsUploadingEntryExitImage(false);
     }
   };
 
@@ -240,6 +268,149 @@ export const ProgramOverviewManager: React.FC<ProgramOverviewManagerProps> = ({ 
               value={formData.imageUrl || ''}
               onChange={(e) => handleFieldChange('imageUrl', e.target.value)}
               placeholder="Or paste external image URL (https://...)"
+              className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs outline-none"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Entry and Exit Options Diagram Card */}
+      <div className="p-4 bg-amber-50/50 border border-amber-200 rounded-xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-200/80 pb-3">
+          <div>
+            <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">NEP / ICAR Framework</span>
+            <h4 className="text-sm font-bold text-[#0A2342] font-serif">Entry and Exit Options Diagram (Fig. 1)</h4>
+          </div>
+          <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.entryExitOptions?.isVisible !== false}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                entryExitOptions: {
+                  ...prev.entryExitOptions,
+                  isVisible: e.target.checked
+                }
+              }))}
+              className="w-4 h-4 rounded text-[#0A2342] focus:ring-amber-500"
+            />
+            <span>Show Diagram in Public View</span>
+          </label>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-700">Section Title</label>
+            <input
+              type="text"
+              value={formData.entryExitOptions?.title || 'Entry and Exit Options'}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                entryExitOptions: {
+                  ...prev.entryExitOptions,
+                  title: e.target.value
+                }
+              }))}
+              className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs outline-none"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-700">Figure Caption</label>
+            <input
+              type="text"
+              value={formData.entryExitOptions?.caption || 'Fig.1 Entry and Exit options for the UG program in Dairy Technology'}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                entryExitOptions: {
+                  ...prev.entryExitOptions,
+                  caption: e.target.value
+                }
+              }))}
+              className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs outline-none"
+            />
+          </div>
+
+          <div className="space-y-1 sm:col-span-2">
+            <label className="text-xs font-bold text-slate-700">Description / Intro Text</label>
+            <input
+              type="text"
+              value={formData.entryExitOptions?.description || 'The entry and exit options for the B. Tech. (Dairy Technology) Programme are shown in Figure 1 below:'}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                entryExitOptions: {
+                  ...prev.entryExitOptions,
+                  description: e.target.value
+                }
+              }))}
+              className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs outline-none"
+            />
+          </div>
+
+          <div className="space-y-1 sm:col-span-2">
+            <label className="text-xs font-bold text-slate-700">Footnote Text</label>
+            <input
+              type="text"
+              value={formData.entryExitOptions?.footnote || 'DE* Direct Entry in the respective year'}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                entryExitOptions: {
+                  ...prev.entryExitOptions,
+                  footnote: e.target.value
+                }
+              }))}
+              className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs outline-none"
+            />
+          </div>
+        </div>
+
+        {/* Diagram Image Upload & Preview */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pt-2 border-t border-amber-200/60">
+          <div className="w-40 h-28 bg-white rounded-lg border border-slate-300 flex items-center justify-center p-1 shrink-0 overflow-hidden shadow-xs">
+            <img 
+              src={formData.entryExitImageUrl || formData.entryExitOptions?.imageUrl || '/entry-and-exit-options.svg'} 
+              alt="Entry and Exit Diagram" 
+              className="w-full h-full object-contain" 
+            />
+          </div>
+          <div className="flex-1 space-y-2 w-full">
+            <label className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-xs font-bold cursor-pointer border border-slate-300 transition-colors w-fit">
+              {isUploadingEntryExitImage ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-amber-600" />
+                  <span>Uploading Diagram...</span>
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4 text-amber-600" />
+                  <span>Upload New Diagram Image (PNG, JPG, SVG)</span>
+                </>
+              )}
+              <input
+                type="file"
+                accept="image/*,.svg"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleEntryExitImageFile(file);
+                }}
+              />
+            </label>
+            <input
+              type="text"
+              value={formData.entryExitImageUrl || formData.entryExitOptions?.imageUrl || '/entry-and-exit-options.svg'}
+              onChange={(e) => {
+                const val = e.target.value;
+                setFormData(prev => ({
+                  ...prev,
+                  entryExitImageUrl: val,
+                  entryExitOptions: {
+                    ...prev.entryExitOptions,
+                    imageUrl: val
+                  }
+                }));
+              }}
+              placeholder="Diagram image URL (default: /entry-and-exit-options.svg)"
               className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs outline-none"
             />
           </div>

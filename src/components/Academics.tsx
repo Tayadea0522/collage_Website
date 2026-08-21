@@ -1689,118 +1689,202 @@ export const Academics: React.FC<AcademicsProps> = ({
       {/* 2.2 CURRICULUM & SYLLABUS */}
       {activeSidebarItem === 'curriculum' && (
         <div className="space-y-6">
-          <div className="border-b border-slate-200 pb-4">
-            <h2 className="text-2xl font-bold font-serif text-[#0A2342] flex items-center gap-2">
-              <BookOpen className="w-6 h-6 text-amber-600" />
-              {academicsData.curriculumSyllabus?.heading || 'Semester-Wise Syllabi & Course Scheme'}
-            </h2>
-            <p className="text-xs text-slate-600 mt-1">
-              {academicsData.curriculumSyllabus?.subtitle || "Select a semester below to view course codes, titles, and credit hours based on ICAR VIth Deans' Committee framework."}
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+            <div>
+              <h2 className="text-2xl font-bold font-serif text-[#0A2342] flex items-center gap-2">
+                <BookOpen className="w-6 h-6 text-amber-600" />
+                {academicsData.curriculumSyllabus?.heading || academicsData.curriculumSyllabus?.sectionTitle || 'Semester-Wise Syllabi & Course Scheme'}
+              </h2>
+              <p className="text-xs text-slate-600 mt-1">
+                {academicsData.curriculumSyllabus?.subtitle || academicsData.curriculumSyllabus?.frameworkNote || "Select a semester below to view course codes, titles, and credit hours based on ICAR VIth Deans' Committee framework."}
+              </p>
+            </div>
+
+            {/* Complete Syllabus PDF Download */}
+            {academicsData.curriculumSyllabus?.syllabusPdfUrl && (
+              <a
+                href={academicsData.curriculumSyllabus.syllabusPdfUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="bg-[#0A2342] hover:bg-slate-900 text-amber-400 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow shrink-0 transition-colors"
+              >
+                <Download className="w-4 h-4" /> Download Complete Syllabus PDF
+              </a>
+            )}
           </div>
 
           {/* Semester Selector Buttons */}
           <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-            {dynamicSemesters.map((s) => (
-              <button
-                key={s.sem}
-                onClick={() => setActiveSem(s.sem)}
-                className={`py-2 px-2.5 rounded-lg text-xs font-bold transition-all text-center ${
-                  activeSem === s.sem
-                    ? 'bg-[#0A2342] text-amber-400 shadow'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
-              >
-                Sem {s.sem}
-              </button>
-            ))}
+            {dynamicSemesters.map((s, idx) => {
+              const semNum = s.sem ?? s.semesterNumber ?? (idx + 1);
+              return (
+                <button
+                  key={s.id || semNum}
+                  onClick={() => setActiveSem(semNum)}
+                  className={`py-2 px-2.5 rounded-lg text-xs font-bold transition-all text-center ${
+                    activeSem === semNum
+                      ? 'bg-[#0A2342] text-amber-400 shadow'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  Sem {semNum}
+                </button>
+              );
+            })}
           </div>
 
           {/* Selected Semester Courses Table */}
-          {dynamicSemesters.find(s => s.sem === activeSem) && (
-            <div className="space-y-4 pt-2">
-              <h3 className="text-base font-bold text-[#0A2342] font-serif border-l-4 border-amber-500 pl-3">
-                {dynamicSemesters.find(s => s.sem === activeSem)?.title}
-              </h3>
+          {(() => {
+            const currentSemester = dynamicSemesters.find((s, idx) => (s.sem ?? s.semesterNumber ?? (idx + 1)) === activeSem) || dynamicSemesters[0];
+            if (!currentSemester) return null;
+            return (
+              <div className="space-y-4 pt-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-l-4 border-amber-500 pl-3">
+                  <h3 className="text-base font-bold text-[#0A2342] font-serif">
+                    {currentSemester.title}
+                  </h3>
+                  {currentSemester.totalCredits && (
+                    <span className="text-xs font-mono font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded border border-amber-200 w-fit">
+                      Total: {currentSemester.totalCredits}
+                    </span>
+                  )}
+                </div>
 
-              <div className="overflow-x-auto text-xs">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-[#0A2342] text-amber-400 font-bold">
-                      <th className="p-3 rounded-tl-lg">Course Code</th>
-                      <th className="p-3">Course Title</th>
-                      <th className="p-3 rounded-tr-lg">Credit Hours (L+P)</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 text-slate-800">
-                    {dynamicSemesters.find(s => s.sem === activeSem)?.courses.map((c, i) => (
-                      <tr key={i} className="hover:bg-slate-50">
-                        <td className="p-3 font-mono font-bold text-amber-700">{c.code}</td>
-                        <td className="p-3 font-medium text-slate-900">{c.name}</td>
-                        <td className="p-3 text-slate-600 font-mono">{c.credits}</td>
+                <div className="overflow-x-auto text-xs">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-[#0A2342] text-amber-400 font-bold">
+                        <th className="p-3 rounded-tl-lg">Course Code</th>
+                        <th className="p-3">Course Title</th>
+                        <th className="p-3 rounded-tr-lg">Credit Hours (L+P)</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 text-slate-800">
+                      {(currentSemester.courses || []).map((c, i) => (
+                        <tr key={c.id || i} className="hover:bg-slate-50">
+                          <td className="p-3 font-mono font-bold text-amber-700">{c.code}</td>
+                          <td className="p-3 font-medium text-slate-900">{c.title || c.name}</td>
+                          <td className="p-3 text-slate-600 font-mono">{c.credits}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
       )}
 
       {/* 2.3 ACADEMIC CALENDAR */}
       {activeSidebarItem === 'calendar' && (
         <div className="space-y-6">
-          <div className="border-b border-slate-200 pb-4">
-            <h2 className="text-2xl font-bold font-serif text-[#0A2342] flex items-center gap-2">
-              <Calendar className="w-6 h-6 text-amber-600" />
-              {academicsData.academicCalendar?.heading || 'Academic Calendar & Examination Schedule'} {academicsData.academicCalendar?.academicYear ? `(${academicsData.academicCalendar.academicYear})` : ''}
-            </h2>
-            {academicsData.academicCalendar?.subtitle && (
-              <p className="text-xs text-slate-600 mt-1">{academicsData.academicCalendar.subtitle}</p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+            <div>
+              <h2 className="text-2xl font-bold font-serif text-[#0A2342] flex items-center gap-2">
+                <Calendar className="w-6 h-6 text-amber-600" />
+                {academicsData.academicCalendar?.heading || 'Academic Calendar & Examination Schedule'} {academicsData.academicCalendar?.academicYear ? `(${academicsData.academicCalendar.academicYear})` : ''}
+              </h2>
+              {academicsData.academicCalendar?.subtitle && (
+                <p className="text-xs text-slate-600 mt-1">{academicsData.academicCalendar.subtitle}</p>
+              )}
+            </div>
+
+            {academicsData.academicCalendar?.calendarPdfUrl && (
+              <a
+                href={academicsData.academicCalendar.calendarPdfUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="bg-[#0A2342] hover:bg-slate-900 text-amber-400 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow shrink-0 transition-colors"
+              >
+                <Download className="w-4 h-4" /> Download Academic Calendar PDF
+              </a>
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-              <span className="font-extrabold text-[#0A2342] uppercase block">{academicsData.academicCalendar?.oddSemesterHeading || 'Odd Semesters (Sem I, III, V, VII)'}</span>
-              <ul className="space-y-1.5 text-slate-700">
-                {(academicsData.academicCalendar?.oddSemesterEvents || [
-                  { event: 'Commencement of Classes', date: 'August 1, 2026' },
-                  { event: 'Mid-Term Examinations', date: 'October 12–20, 2026' },
-                  { event: 'Semester End Theory & Practicals', date: 'December 10–24, 2026' }
-                ]).map((e, idx) => (
-                  <li key={idx}><strong>{e.event}:</strong> {e.date}</li>
-                ))}
-              </ul>
+          {/* Dynamic Events List if configured in CMS */}
+          {academicsData.academicCalendar?.events && academicsData.academicCalendar.events.length > 0 ? (
+            <div className="overflow-x-auto text-xs">
+              <table className="w-full text-left border-collapse bg-white rounded-xl border border-slate-200 shadow-xs">
+                <thead>
+                  <tr className="bg-[#0A2342] text-amber-400 font-bold">
+                    <th className="p-3 rounded-tl-lg">Academic Event</th>
+                    <th className="p-3">Semester</th>
+                    <th className="p-3">Scheduled Dates / Period</th>
+                    <th className="p-3 rounded-tr-lg">Type</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 text-slate-800">
+                  {academicsData.academicCalendar.events.filter(e => e.isActive !== false).map((e, idx) => (
+                    <tr key={e.id || idx} className="hover:bg-slate-50">
+                      <td className="p-3 font-bold text-[#0A2342]">{e.title}</td>
+                      <td className="p-3 text-slate-600">{e.semester || 'All Semesters'}</td>
+                      <td className="p-3 font-semibold text-amber-900">{e.dates}</td>
+                      <td className="p-3">
+                        <span className="bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded text-[10px]">
+                          {e.badge || 'Academic'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                <span className="font-extrabold text-[#0A2342] uppercase block">{academicsData.academicCalendar?.oddSemesterHeading || 'Odd Semesters (Sem I, III, V, VII)'}</span>
+                <ul className="space-y-1.5 text-slate-700">
+                  {(academicsData.academicCalendar?.oddSemesterEvents || [
+                    { event: 'Commencement of Classes', date: 'August 1, 2026' },
+                    { event: 'Mid-Term Examinations', date: 'October 12–20, 2026' },
+                    { event: 'Semester End Theory & Practicals', date: 'December 10–24, 2026' }
+                  ]).map((e, idx) => (
+                    <li key={idx}><strong>{e.event}:</strong> {e.date}</li>
+                  ))}
+                </ul>
+              </div>
 
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-              <span className="font-extrabold text-[#0A2342] uppercase block">{academicsData.academicCalendar?.evenSemesterHeading || 'Even Semesters (Sem II, IV, VI, VIII)'}</span>
-              <ul className="space-y-1.5 text-slate-700">
-                {(academicsData.academicCalendar?.evenSemesterEvents || [
-                  { event: 'Commencement of Classes', date: 'January 5, 2027' },
-                  { event: 'Mid-Term Examinations', date: 'March 15–22, 2027' },
-                  { event: 'Semester End Theory & Practicals', date: 'May 10–25, 2027' }
-                ]).map((e, idx) => (
-                  <li key={idx}><strong>{e.event}:</strong> {e.date}</li>
-                ))}
-              </ul>
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                <span className="font-extrabold text-[#0A2342] uppercase block">{academicsData.academicCalendar?.evenSemesterHeading || 'Even Semesters (Sem II, IV, VI, VIII)'}</span>
+                <ul className="space-y-1.5 text-slate-700">
+                  {(academicsData.academicCalendar?.evenSemesterEvents || [
+                    { event: 'Commencement of Classes', date: 'January 5, 2027' },
+                    { event: 'Mid-Term Examinations', date: 'March 15–22, 2027' },
+                    { event: 'Semester End Theory & Practicals', date: 'May 10–25, 2027' }
+                  ]).map((e, idx) => (
+                    <li key={idx}><strong>{e.event}:</strong> {e.date}</li>
+                  ))}
+                </ul>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
       {/* 2.4 ACADEMIC REGULATIONS */}
       {activeSidebarItem === 'regulations' && (
         <div className="space-y-6">
-          <div className="border-b border-slate-200 pb-4">
-            <h2 className="text-2xl font-bold font-serif text-[#0A2342] flex items-center gap-2">
-              <ShieldCheck className="w-6 h-6 text-amber-600" />
-              {academicsData.academicRegulations?.heading || 'Academic Regulations & Attendance Rules'}
-            </h2>
-            {academicsData.academicRegulations?.subtitle && (
-              <p className="text-xs text-slate-600 mt-1">{academicsData.academicRegulations.subtitle}</p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+            <div>
+              <h2 className="text-2xl font-bold font-serif text-[#0A2342] flex items-center gap-2">
+                <ShieldCheck className="w-6 h-6 text-amber-600" />
+                {academicsData.academicRegulations?.heading || 'Academic Regulations & Attendance Rules'}
+              </h2>
+              {academicsData.academicRegulations?.subtitle && (
+                <p className="text-xs text-slate-600 mt-1">{academicsData.academicRegulations.subtitle}</p>
+              )}
+            </div>
+
+            {academicsData.academicRegulations?.regulationsPdfUrl && (
+              <a
+                href={academicsData.academicRegulations.regulationsPdfUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="bg-[#0A2342] hover:bg-slate-900 text-amber-400 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow shrink-0 transition-colors"
+              >
+                <Download className="w-4 h-4" /> Download Official Regulations PDF
+              </a>
             )}
           </div>
 
@@ -1822,15 +1906,18 @@ export const Academics: React.FC<AcademicsProps> = ({
               </div>
             )}
 
-            {academicsData.academicRegulations?.regulations && academicsData.academicRegulations.regulations.length > 0 && (
+            {((academicsData.academicRegulations?.rules && academicsData.academicRegulations.rules.length > 0) ||
+              (academicsData.academicRegulations?.regulations && academicsData.academicRegulations.regulations.length > 0)) && (
               <div className="p-4 bg-amber-50/70 border border-amber-200 rounded-xl space-y-2">
-                <strong className="text-amber-950 font-bold block text-sm">General Academic Rules:</strong>
+                <strong className="text-amber-950 font-bold block text-sm">Key Academic Rules & Disciplinary Norms:</strong>
                 <ul className="space-y-1.5 list-disc pl-5">
-                  {academicsData.academicRegulations.regulations.filter(r => r.isActive !== false).map((r, idx) => (
-                    <li key={r.id || idx}>
-                      <strong>{r.title}:</strong> {r.description}
-                    </li>
-                  ))}
+                  {(academicsData.academicRegulations?.rules || academicsData.academicRegulations?.regulations || [])
+                    .filter((r: any) => r.isActive !== false)
+                    .map((r: any, idx: number) => (
+                      <li key={r.id || idx}>
+                        <strong>{r.title}:</strong> {r.description}
+                      </li>
+                    ))}
                 </ul>
               </div>
             )}

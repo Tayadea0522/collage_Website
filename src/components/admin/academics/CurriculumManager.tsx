@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CurriculumSyllabusSection, SemesterCurriculum, CurriculumCourse } from '../../../types';
 import { supabaseStorageService } from '../../../services/supabaseStorageService';
-import { Plus, Trash2, CheckCircle2, Save, BookOpen, Upload, FileText, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, Save, BookOpen, Upload, FileText, Loader2 } from 'lucide-react';
 
 interface CurriculumManagerProps {
   data: CurriculumSyllabusSection;
@@ -9,11 +9,18 @@ interface CurriculumManagerProps {
 }
 
 export const CurriculumManager: React.FC<CurriculumManagerProps> = ({ data, onSave }) => {
-  const [formData, setFormData] = useState<CurriculumSyllabusSection>(data);
+  const [formData, setFormData] = useState<CurriculumSyllabusSection>(() => data || {});
   const [activeSemIndex, setActiveSemIndex] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isUploadingSyllabus, setIsUploadingSyllabus] = useState(false);
+
+  // Synchronize when data prop changes
+  useEffect(() => {
+    if (data) {
+      setFormData(data);
+    }
+  }, [data]);
 
   // New Course state for active semester
   const [newCode, setNewCode] = useState('');
@@ -65,10 +72,12 @@ export const CurriculumManager: React.FC<CurriculumManagerProps> = ({ data, onSa
 
   const handleAddCourseToActiveSem = () => {
     if (!newTitle.trim()) return;
+    const courseTitle = newTitle.trim();
     const newCourse: CurriculumCourse = {
       id: `course-${Date.now()}`,
       code: newCode.trim() || 'DT-100',
-      title: newTitle.trim(),
+      title: courseTitle,
+      name: courseTitle,
       credits: newCredits.trim() || '3 (2+1)',
       theoryCredits: newTheory.trim() || '2',
       practicalCredits: newPractical.trim() || '1'
@@ -105,7 +114,38 @@ export const CurriculumManager: React.FC<CurriculumManagerProps> = ({ data, onSa
     e.preventDefault();
     setIsSaving(true);
     try {
-      await onSave(formData);
+      // Normalize and sanitize semesters to guarantee both title and name, sem and semesterNumber are present
+      const sanitizedSemesters = (formData.semesters || []).map((s, idx) => {
+        const semNum = s.sem ?? s.semesterNumber ?? (idx + 1);
+        return {
+          ...s,
+          id: s.id || `sem-${semNum}`,
+          sem: semNum,
+          semesterNumber: semNum,
+          courses: (s.courses || []).map((c, cIdx) => {
+            const cName = c.title || c.name || '';
+            return {
+              ...c,
+              id: c.id || `course-${semNum}-${cIdx + 1}`,
+              title: cName,
+              name: cName,
+              code: c.code || '',
+              credits: c.credits || '3 (2+1)'
+            };
+          })
+        };
+      });
+
+      const payload: CurriculumSyllabusSection = {
+        ...formData,
+        heading: formData.heading || formData.sectionTitle || 'Semester-Wise Syllabi & Course Scheme',
+        sectionTitle: formData.sectionTitle || formData.heading || 'Semester-Wise Syllabi & Course Scheme',
+        subtitle: formData.subtitle || formData.frameworkNote || "Comprehensive curriculum framework structured according to ICAR VIth Deans' Committee guidelines",
+        frameworkNote: formData.frameworkNote || formData.subtitle || "Comprehensive curriculum framework structured according to ICAR VIth Deans' Committee guidelines",
+        semesters: sanitizedSemesters
+      };
+
+      await onSave(payload);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } finally {
@@ -125,7 +165,7 @@ export const CurriculumManager: React.FC<CurriculumManagerProps> = ({ data, onSa
           <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
             <input
               type="checkbox"
-              checked={formData.isActive}
+              checked={formData.isActive !== false}
               onChange={(e) => handleFieldChange('isActive', e.target.checked)}
               className="w-4 h-4 rounded text-[#0A2342] focus:ring-amber-500"
             />
@@ -148,8 +188,12 @@ export const CurriculumManager: React.FC<CurriculumManagerProps> = ({ data, onSa
           <label className="text-xs font-bold text-slate-700">Section Title</label>
           <input
             type="text"
-            value={formData.sectionTitle || ''}
-            onChange={(e) => handleFieldChange('sectionTitle', e.target.value)}
+            value={formData.heading || formData.sectionTitle || ''}
+            onChange={(e) => {
+              handleFieldChange('heading', e.target.value);
+              handleFieldChange('sectionTitle', e.target.value);
+            }}
+            placeholder="Semester-Wise Syllabi & Course Scheme"
             className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs outline-none"
           />
         </div>
@@ -158,8 +202,11 @@ export const CurriculumManager: React.FC<CurriculumManagerProps> = ({ data, onSa
           <label className="text-xs font-bold text-slate-700">Framework / Deans' Committee Version</label>
           <input
             type="text"
-            value={formData.frameworkNote || ''}
-            onChange={(e) => handleFieldChange('frameworkNote', e.target.value)}
+            value={formData.subtitle || formData.frameworkNote || ''}
+            onChange={(e) => {
+              handleFieldChange('subtitle', e.target.value);
+              handleFieldChange('frameworkNote', e.target.value);
+            }}
             placeholder="e.g. As per ICAR VIth Deans' Committee Recommended Syllabus"
             className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs outline-none"
           />
@@ -227,20 +274,23 @@ export const CurriculumManager: React.FC<CurriculumManagerProps> = ({ data, onSa
 
         {/* Semester Buttons */}
         <div className="flex flex-wrap gap-1.5 p-1.5 bg-slate-100 rounded-xl border border-slate-200">
-          {(formData.semesters || []).map((sem, idx) => (
-            <button
-              key={sem.semesterNumber || idx}
-              type="button"
-              onClick={() => setActiveSemIndex(idx)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                activeSemIndex === idx
-                  ? 'bg-[#0A2342] text-amber-400 shadow-sm'
-                  : 'bg-white text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              Sem {sem.semesterNumber}
-            </button>
-          ))}
+          {(formData.semesters || []).map((sem, idx) => {
+            const semNum = sem.sem ?? sem.semesterNumber ?? (idx + 1);
+            return (
+              <button
+                key={sem.id || semNum}
+                type="button"
+                onClick={() => setActiveSemIndex(idx)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  activeSemIndex === idx
+                    ? 'bg-[#0A2342] text-amber-400 shadow-sm'
+                    : 'bg-white text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                Sem {semNum}
+              </button>
+            );
+          })}
         </div>
 
         {/* Active Semester Editor */}
@@ -251,7 +301,7 @@ export const CurriculumManager: React.FC<CurriculumManagerProps> = ({ data, onSa
                 <label className="text-[10px] font-bold text-slate-500 uppercase">Semester Title</label>
                 <input
                   type="text"
-                  value={currentSem.title}
+                  value={currentSem.title || ''}
                   onChange={(e) => {
                     const sems = [...(formData.semesters || [])];
                     sems[activeSemIndex] = { ...sems[activeSemIndex], title: e.target.value };
@@ -292,13 +342,15 @@ export const CurriculumManager: React.FC<CurriculumManagerProps> = ({ data, onSa
 
             {/* Courses Table */}
             <div className="space-y-2">
-              <div className="text-xs font-bold text-slate-700">Course List for Semester {currentSem.semesterNumber}</div>
+              <div className="text-xs font-bold text-slate-700">
+                Course List for Semester {currentSem.sem ?? currentSem.semesterNumber ?? (activeSemIndex + 1)}
+              </div>
               <div className="space-y-1.5">
                 {(currentSem.courses || []).map((c, cIdx) => (
                   <div key={c.id || cIdx} className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between gap-2 text-xs">
                     <input
                       type="text"
-                      value={c.code}
+                      value={c.code || ''}
                       onChange={(e) => {
                         const sems = [...(formData.semesters || [])];
                         const courses = [...(sems[activeSemIndex].courses || [])];
@@ -306,23 +358,26 @@ export const CurriculumManager: React.FC<CurriculumManagerProps> = ({ data, onSa
                         sems[activeSemIndex] = { ...sems[activeSemIndex], courses };
                         setFormData(prev => ({ ...prev, semesters: sems }));
                       }}
+                      placeholder="Code"
                       className="w-24 font-mono font-bold text-slate-900 bg-white border border-slate-300 rounded px-2 py-1"
                     />
                     <input
                       type="text"
-                      value={c.title}
+                      value={c.title || c.name || ''}
                       onChange={(e) => {
                         const sems = [...(formData.semesters || [])];
                         const courses = [...(sems[activeSemIndex].courses || [])];
-                        courses[cIdx] = { ...courses[cIdx], title: e.target.value };
+                        const val = e.target.value;
+                        courses[cIdx] = { ...courses[cIdx], title: val, name: val };
                         sems[activeSemIndex] = { ...sems[activeSemIndex], courses };
                         setFormData(prev => ({ ...prev, semesters: sems }));
                       }}
+                      placeholder="Course Title"
                       className="flex-1 font-medium text-slate-900 bg-white border border-slate-300 rounded px-2 py-1"
                     />
                     <input
                       type="text"
-                      value={c.credits}
+                      value={c.credits || ''}
                       onChange={(e) => {
                         const sems = [...(formData.semesters || [])];
                         const courses = [...(sems[activeSemIndex].courses || [])];

@@ -207,6 +207,28 @@ export const storageService = {
       if (!loadedInfo.admissionProcess || !loadedInfo.admissionProcess.steps || loadedInfo.admissionProcess.steps.length === 0) {
         loadedInfo.admissionProcess = initialCollegeInfo.admissionProcess;
       }
+      if (!loadedInfo.academicsData) {
+        loadedInfo.academicsData = initialCollegeInfo.academicsData;
+      } else {
+        loadedInfo.academicsData = {
+          ...initialCollegeInfo.academicsData,
+          ...loadedInfo.academicsData,
+          coursesOffered: { ...initialCollegeInfo.academicsData?.coursesOffered, ...loadedInfo.academicsData.coursesOffered },
+          intakeCapacity: { ...initialCollegeInfo.academicsData?.intakeCapacity, ...loadedInfo.academicsData.intakeCapacity },
+          eligibility: { ...initialCollegeInfo.academicsData?.eligibility, ...loadedInfo.academicsData.eligibility },
+          admissionProcess: { ...initialCollegeInfo.academicsData?.admissionProcess, ...loadedInfo.academicsData.admissionProcess },
+          documentsRequired: { ...initialCollegeInfo.academicsData?.documentsRequired, ...loadedInfo.academicsData.documentsRequired },
+          feesStructure: { ...initialCollegeInfo.academicsData?.feesStructure, ...loadedInfo.academicsData.feesStructure },
+          admissionEnquiry: { ...initialCollegeInfo.academicsData?.admissionEnquiry, ...loadedInfo.academicsData.admissionEnquiry },
+          admissionPortal: { ...initialCollegeInfo.academicsData?.admissionPortal, ...loadedInfo.academicsData.admissionPortal },
+          admissionProspectus: { ...initialCollegeInfo.academicsData?.admissionProspectus, ...loadedInfo.academicsData.admissionProspectus },
+          trackApplicationStatus: { ...initialCollegeInfo.academicsData?.trackApplicationStatus, ...loadedInfo.academicsData.trackApplicationStatus },
+          programOverview: { ...initialCollegeInfo.academicsData?.programOverview, ...loadedInfo.academicsData.programOverview },
+          curriculumSyllabus: { ...initialCollegeInfo.academicsData?.curriculumSyllabus, ...loadedInfo.academicsData.curriculumSyllabus },
+          academicCalendar: { ...initialCollegeInfo.academicsData?.academicCalendar, ...loadedInfo.academicsData.academicCalendar },
+          academicRegulations: { ...initialCollegeInfo.academicsData?.academicRegulations, ...loadedInfo.academicsData.academicRegulations },
+        } as any;
+      }
       return loadedInfo;
     } catch {
       return initialCollegeInfo;
@@ -276,6 +298,23 @@ export const storageService = {
       }
       return await storageService.fetchCollegeInfo();
     },
+
+  saveAcademicsData: async (academicsData: any): Promise<CollegeInfo> => {
+    try {
+      const current = await storageService.fetchCollegeInfo();
+      const updated = {
+        ...current,
+        academicsData: {
+          ...current.academicsData,
+          ...academicsData
+        }
+      };
+      return await storageService.saveCollegeInfo(updated);
+    } catch (err) {
+      console.warn('saveAcademicsData exception:', err);
+      return await storageService.fetchCollegeInfo();
+    }
+  },
 
   // --- Notices ---
   fetchNotices: async (): Promise<Notice[]> => {

@@ -170,6 +170,375 @@ export interface AdmissionProcessData {
   steps: AdmissionProcessStep[];
 }
 
+export interface CareerOpportunity {
+  id: string;
+  title: string;
+  description: string;
+  displayOrder: number;
+}
+
+export interface CoursesOfferedSection {
+  isActive: boolean;
+  degreeTitle: string;
+  courseName: string;
+  degreeType: string;
+  duration: string;
+  numberOfSemesters: number;
+  affiliation: string;
+  approvalInfo: string;
+  curriculumPattern: string;
+  careerScopeHeading: string;
+  careerOpportunities: CareerOpportunity[];
+  applyButtonText: string;
+  applyButtonUrl: string;
+}
+
+export interface IntakeQuotaRow {
+  id: string;
+  title: string;
+  seatsOrPercentage: string;
+  badge: string;
+  description: string;
+  isActive: boolean;
+  displayOrder: number;
+}
+
+export interface IntakeCapacitySection {
+  isActive: boolean;
+  sectionTitle: string;
+  academicYear: string;
+  totalIntake: number;
+  totalIntakeLabel: string;
+  stateQuotaPercentage: string;
+  stateQuotaNote: string;
+  institutionalQuotaPercentage: string;
+  institutionalQuotaNote: string;
+  quotas: IntakeQuotaRow[];
+}
+
+export interface EligibilityCriteriaItem {
+  id: string;
+  title: string;
+  description: string;
+  requiredSubjects?: string;
+  minimumMarks?: string;
+  entranceExams?: string;
+  categoryRules?: string;
+  notes?: string;
+  externalLink?: string;
+  badge?: string;
+  isActive: boolean;
+  displayOrder: number;
+}
+
+export interface EligibilitySection {
+  isActive: boolean;
+  heading: string;
+  subtitle?: string;
+  items: EligibilityCriteriaItem[];
+}
+
+export interface AdmissionProcessStepItem {
+  id: string;
+  stepNumber: number;
+  title: string;
+  description: string;
+  linkUrl?: string;
+  linkText?: string;
+  imageUrl?: string;
+  pdfUrl?: string;
+  pdfFileName?: string;
+  isActive: boolean;
+  displayOrder: number;
+}
+
+export interface AdmissionProcessSection {
+  isActive: boolean;
+  introText: string;
+  capRegistrationUrl: string;
+  capRegistrationButtonText?: string;
+  steps: AdmissionProcessStepItem[];
+}
+
+export interface RequiredDocumentItem {
+  id: string;
+  name: string;
+  title?: string;
+  description: string;
+  isMandatory: boolean;
+  pdfUrl?: string;
+  storagePath?: string;
+  fileName?: string;
+  fileSize?: string;
+  externalUrl?: string;
+  isActive: boolean;
+  displayOrder: number;
+}
+
+export interface DocumentsRequiredSection {
+  isActive: boolean;
+  heading: string;
+  sectionTitle?: string;
+  subtitle?: string;
+  note?: string;
+  documents: RequiredDocumentItem[];
+  items?: RequiredDocumentItem[];
+}
+
+export interface FeeStructureRow {
+  id: string;
+  category: string;
+  categoryName?: string;
+  tuitionFee: string;
+  otherFee: string;
+  totalNetFee: string;
+  totalFee?: string;
+  concessionNote?: string;
+  notes?: string;
+  isActive: boolean;
+  displayOrder: number;
+}
+
+export interface FeeStructureSection {
+  isActive: boolean;
+  heading: string;
+  subtitle?: string;
+  academicYear: string;
+  officialFeePdfUrl?: string;
+  officialFeePdfStoragePath?: string;
+  officialFeePdfFileName?: string;
+  feeRows: FeeStructureRow[];
+  categories?: FeeStructureRow[];
+  notes?: string[];
+  bankDetails?: {
+    accountName: string;
+    accountNumber: string;
+    ifscCode: string;
+    bankName: string;
+    branchName?: string;
+    branch?: string;
+  };
+}
+
+export interface AdmissionEnquirySection {
+  isActive: boolean;
+  heading: string;
+  subtitle?: string;
+  description: string;
+  phoneNumbers: string;
+  helplinePhone?: string;
+  email: string;
+  helplineEmail?: string;
+  officeAddress: string;
+  workingHours: string;
+  whatsappNumber?: string;
+  whatsappLink?: string;
+  externalEnquiryFormUrl?: string;
+  coordinators?: {
+    id: string;
+    name: string;
+    designation: string;
+    phone: string;
+    email?: string;
+    isActive?: boolean;
+  }[];
+}
+
+export interface AdmissionPortalSection {
+  isActive: boolean;
+  title: string;
+  academicYear: string;
+  description: string;
+  buttonText: string;
+  portalUrl?: string;
+  statusBadge: string;
+}
+
+export interface AdmissionProspectusSection {
+  isActive: boolean;
+  title: string;
+  heading?: string;
+  subtitle?: string;
+  description: string;
+  pdfUrl?: string;
+  brochureFileUrl?: string;
+  storagePath?: string;
+  fileName?: string;
+  fileSize?: string;
+  displayOrder?: number;
+  highlights?: string[];
+}
+
+export interface TrackApplicationStatusSection {
+  isActive: boolean;
+  heading: string;
+  subtitle?: string;
+  description: string;
+  buttonText: string;
+  statusCheckUrl?: string;
+  searchPlaceholder?: string;
+  instructions?: string;
+}
+
+export interface ProgramOverviewSection {
+  isActive: boolean;
+  title?: string;
+  subtitle?: string;
+  degreeTitle?: string;
+  programTitle: string;
+  degreeName: string;
+  duration: string;
+  mediumOfInstruction: string;
+  curriculumFramework: string;
+  affiliation: string;
+  approval: string;
+  description: string;
+  objectives: string[];
+  highlights: string[];
+  careerOpportunities: string[];
+  keyOutcomes?: string[];
+  imageUrl?: string;
+  brochurePdfUrl?: string;
+  brochurePdfStoragePath?: string;
+  brochurePdfFileName?: string;
+  externalLink?: string;
+}
+
+export interface SemesterCourseItem {
+  id: string;
+  code: string;
+  name?: string;
+  title?: string;
+  credits: string;
+  theoryCredits?: string;
+  practicalCredits?: string;
+  type?: 'Theory' | 'Practical' | 'Both' | 'Hands-on / In-Plant';
+  description?: string;
+  pdfSyllabusUrl?: string;
+  externalUrl?: string;
+  displayOrder?: number;
+}
+
+export interface SemesterCurriculum {
+  id: string;
+  sem?: number;
+  semesterNumber?: number;
+  title: string;
+  academicYearLabel?: string;
+  totalCredits?: string;
+  description?: string;
+  syllabusPdfUrl?: string;
+  syllabusPdfStoragePath?: string;
+  syllabusPdfFileName?: string;
+  courses: SemesterCourseItem[];
+}
+
+export interface CurriculumSyllabusSection {
+  isActive: boolean;
+  heading: string;
+  sectionTitle?: string;
+  subtitle?: string;
+  frameworkNote?: string;
+  syllabusPdfUrl?: string;
+  syllabusPdfStoragePath?: string;
+  syllabusPdfFileName?: string;
+  masterSyllabusPdfUrl?: string;
+  masterSyllabusPdfStoragePath?: string;
+  masterSyllabusPdfFileName?: string;
+  semesters: SemesterCurriculum[];
+}
+
+export interface AcademicCalendarEventItem {
+  id: string;
+  eventName?: string;
+  title?: string;
+  dateRange?: string;
+  dates?: string;
+  semester?: string;
+  badge?: string;
+  isActive?: boolean;
+  displayOrder?: number;
+}
+
+export interface AcademicCalendarTerm {
+  id: string;
+  termTitle: string;
+  commencementDate?: string;
+  midTermDate?: string;
+  semesterEndDate?: string;
+  events: AcademicCalendarEventItem[];
+  displayOrder?: number;
+}
+
+export interface AcademicCalendarSection {
+  isActive: boolean;
+  heading: string;
+  subtitle?: string;
+  academicYear: string;
+  oddSemesterHeading?: string;
+  oddSemesterEvents?: AcademicCalendarEventItem[];
+  evenSemesterHeading?: string;
+  evenSemesterEvents?: AcademicCalendarEventItem[];
+  calendarPdfUrl?: string;
+  calendarPdfStoragePath?: string;
+  calendarPdfFileName?: string;
+  terms?: AcademicCalendarTerm[];
+  events?: AcademicCalendarEventItem[];
+}
+
+export interface AcademicRegulationItem {
+  id: string;
+  title: string;
+  category?: string;
+  description?: string;
+  content?: string;
+  displayOrder?: number;
+  isActive: boolean;
+}
+
+export type CurriculumCourse = SemesterCourseItem;
+export type AcademicCalendarEvent = AcademicCalendarEventItem;
+export type AcademicRuleItem = AcademicRegulationItem;
+
+export interface AcademicRegulationsSection {
+  isActive: boolean;
+  heading: string;
+  subtitle?: string;
+  officialPdfUrl?: string;
+  officialPdfStoragePath?: string;
+  officialPdfFileName?: string;
+  regulationsPdfUrl?: string;
+  regulationsPdfStoragePath?: string;
+  regulationsPdfFileName?: string;
+  externalOfficialLink?: string;
+  attendancePolicy?: string;
+  evaluationSystem?: string;
+  gradingScheme?: string;
+  rules?: AcademicRegulationItem[];
+  regulations?: AcademicRegulationItem[];
+  sections: AcademicRegulationItem[];
+}
+
+export interface AcademicsData {
+  // Admissions Group
+  coursesOffered: CoursesOfferedSection;
+  intakeCapacity: IntakeCapacitySection;
+  eligibility: EligibilitySection;
+  admissionProcess: AdmissionProcessSection;
+  documentsRequired: DocumentsRequiredSection;
+  feesStructure: FeeStructureSection;
+  admissionEnquiry: AdmissionEnquirySection;
+  admissionPortal: AdmissionPortalSection;
+  admissionProspectus: AdmissionProspectusSection;
+  trackApplicationStatus: TrackApplicationStatusSection;
+
+  // Academics Group
+  programOverview: ProgramOverviewSection;
+  curriculumSyllabus: CurriculumSyllabusSection;
+  academicCalendar: AcademicCalendarSection;
+  academicRegulations: AcademicRegulationsSection;
+}
+
 export interface CollegeInfo {
   name: string;
   shortName: string;
@@ -231,6 +600,7 @@ export interface CollegeInfo {
     ctaText: string;
   }[];
   admissionProcess?: AdmissionProcessData;
+  academicsData?: AcademicsData;
 }
 
 export interface PlacementPartner {

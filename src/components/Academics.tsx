@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AdmissionApplication, CollegeInfo } from '../types';
+import { AdmissionApplication, CollegeInfo, AcademicsData } from '../types';
+import { initialAcademicsData } from '../data/initialAcademicsData';
 import { storageService } from '../services/storageService';
 import { supabaseStorageService } from '../services/supabaseStorageService';
 import { printApplicationSlip, downloadApplicationSlip } from '../utils/printUtils';
@@ -131,92 +132,29 @@ export const Academics: React.FC<AcademicsProps> = ({
     } catch (e) {}
   };
 
+  // Dynamic Academics & Admissions Content from Admin CMS
+  const academicsData: AcademicsData = {
+    coursesOffered: { ...initialAcademicsData.coursesOffered, ...collegeInfo?.academicsData?.coursesOffered },
+    intakeCapacity: { ...initialAcademicsData.intakeCapacity, ...collegeInfo?.academicsData?.intakeCapacity },
+    eligibility: { ...initialAcademicsData.eligibility, ...collegeInfo?.academicsData?.eligibility },
+    admissionProcess: collegeInfo?.academicsData?.admissionProcess || collegeInfo?.admissionProcess || initialAcademicsData.admissionProcess,
+    documentsRequired: { ...initialAcademicsData.documentsRequired, ...collegeInfo?.academicsData?.documentsRequired },
+    feesStructure: { ...initialAcademicsData.feesStructure, ...collegeInfo?.academicsData?.feesStructure },
+    admissionEnquiry: { ...initialAcademicsData.admissionEnquiry, ...collegeInfo?.academicsData?.admissionEnquiry },
+    admissionPortal: { ...initialAcademicsData.admissionPortal, ...collegeInfo?.academicsData?.admissionPortal },
+    admissionProspectus: { ...initialAcademicsData.admissionProspectus, ...collegeInfo?.academicsData?.admissionProspectus },
+    trackApplicationStatus: { ...initialAcademicsData.trackApplicationStatus, ...collegeInfo?.academicsData?.trackApplicationStatus },
+    programOverview: { ...initialAcademicsData.programOverview, ...collegeInfo?.academicsData?.programOverview },
+    curriculumSyllabus: { ...initialAcademicsData.curriculumSyllabus, ...collegeInfo?.academicsData?.curriculumSyllabus },
+    academicCalendar: { ...initialAcademicsData.academicCalendar, ...collegeInfo?.academicsData?.academicCalendar },
+    academicRegulations: { ...initialAcademicsData.academicRegulations, ...collegeInfo?.academicsData?.academicRegulations }
+  };
+
   // Curricula Semesters
   const [activeSem, setActiveSem] = useState(1);
-  const semesters = [
-    {
-      sem: 1,
-      title: "Semester I - Foundational Dairy Science",
-      courses: [
-        { code: "DT-111", name: "Market Milk Processing", credits: "3 (2+1)" },
-        { code: "DE-111", name: "Fluid Mechanics & Pumps", credits: "3 (2+1)" },
-        { code: "DC-111", name: "Physical Chemistry of Milk", credits: "3 (2+1)" },
-        { code: "DM-111", name: "Fundamentals of Microbiology", credits: "3 (2+1)" },
-        { code: "DBM-111", name: "Milk Procurement & Supply Chain", credits: "2 (1+1)" },
-        { code: "ENG-111", name: "Technical English & Communication", credits: "2 (1+1)" },
-      ]
-    },
-    {
-      sem: 2,
-      title: "Semester II - Chemistry & Engineering Basics",
-      courses: [
-        { code: "DT-121", name: "Traditional Indian Dairy Products", credits: "3 (2+1)" },
-        { code: "DE-121", name: "Thermodynamics & Steam Engineering", credits: "3 (2+1)" },
-        { code: "DC-121", name: "Chemistry of Milk Constituents", credits: "3 (2+1)" },
-        { code: "DM-121", name: "Starter Cultures & Fermented Milks", credits: "3 (2+1)" },
-        { code: "DBM-121", name: "Dairy Economics & Statistics", credits: "3 (2+1)" },
-      ]
-    },
-    {
-      sem: 3,
-      title: "Semester III - Processing Technology & Refrigeration",
-      courses: [
-        { code: "DT-211", name: "Fat-Rich Dairy Products (Ghee, Butter)", credits: "3 (2+1)" },
-        { code: "DE-211", name: "Refrigeration & Air Conditioning", credits: "3 (2+1)" },
-        { code: "DC-211", name: "Chemical Quality Assurance", credits: "3 (1+2)" },
-        { code: "DM-211", name: "Microbiological Quality Assurance", credits: "3 (1+2)" },
-        { code: "DBM-211", name: "Financial Management in Dairy Industry", credits: "2 (2+0)" },
-      ]
-    },
-    {
-      sem: 4,
-      title: "Semester IV - Advanced Equipment & Products",
-      courses: [
-        { code: "DT-221", name: "Condensed & Dried Milks Technology", credits: "4 (3+1)" },
-        { code: "DT-222", name: "Ice Cream & Frozen Desserts", credits: "3 (2+1)" },
-        { code: "DE-221", name: "Dairy Process Engineering", credits: "3 (2+1)" },
-        { code: "DC-221", name: "Food Chemistry & Human Nutrition", credits: "3 (2+1)" },
-        { code: "DM-221", name: "Dairy Biotechnology & Enzymes", credits: "2 (2+0)" },
-      ]
-    },
-    {
-      sem: 5,
-      title: "Semester V - Cheese & Plant Design",
-      courses: [
-        { code: "DT-311", name: "Cheese & Fermented Dairy Products", credits: "4 (3+1)" },
-        { code: "DT-312", name: "Packaging of Dairy Products", credits: "3 (2+1)" },
-        { code: "DE-311", name: "Instrumentation & Process Control", credits: "3 (2+1)" },
-        { code: "DE-312", name: "Dairy Plant Design & Layout", credits: "3 (1+2)" },
-        { code: "DBM-311", name: "Marketing & Export of Dairy Products", credits: "2 (2+0)" },
-      ]
-    },
-    {
-      sem: 6,
-      title: "Semester VI - By-Products & Industrial Management",
-      courses: [
-        { code: "DT-321", name: "By-Product Technology & Effluent Treatment", credits: "3 (2+1)" },
-        { code: "DT-322", name: "Sensory Evaluation of Dairy Products", credits: "2 (1+1)" },
-        { code: "DE-321", name: "Food Engineering & Unit Operations", credits: "3 (2+1)" },
-        { code: "DBM-321", name: "Entrepreneurship Development", credits: "3 (2+1)" },
-        { code: "DBM-322", name: "Industrial Safety & Hygiene", credits: "2 (2+0)" },
-      ]
-    },
-    {
-      sem: 7,
-      title: "Semester VII - In-Plant Hands-On Training (ELP)",
-      courses: [
-        { code: "ELP-411", name: "Commercial In-Plant Training in Commercial Dairy Plant (Amul / Katraj / Mother Dairy)", credits: "20 (0+20)" },
-      ]
-    },
-    {
-      sem: 8,
-      title: "Semester VIII - Experiential Learning & Project",
-      courses: [
-        { code: "ELP-421", name: "Hands-on Processing at College Pilot Dairy Plant", credits: "10 (0+10)" },
-        { code: "PRJ-422", name: "B.Tech Research Project & Seminar", credits: "10 (0+10)" },
-      ]
-    },
-  ];
+  const dynamicSemesters = academicsData.curriculumSyllabus?.semesters && academicsData.curriculumSyllabus.semesters.length > 0
+    ? academicsData.curriculumSyllabus.semesters
+    : initialAcademicsData.curriculumSyllabus.semesters;
 
   // Form Step State
   const [formStep, setFormStepState] = useState<number>(() => {
@@ -658,60 +596,53 @@ export const Academics: React.FC<AcademicsProps> = ({
           <div className="border-b border-slate-200 pb-4">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-300 text-amber-900 text-[10px] font-bold uppercase tracking-wider mb-2">
               <Sparkles className="w-3 h-3 text-amber-600" />
-              Undergraduate Professional Degree
+              {academicsData.coursesOffered?.degreeType || 'Undergraduate Professional Degree'}
             </div>
             <h2 className="text-2xl font-bold font-serif text-slate-900 flex items-center gap-2">
               <GraduationCap className="w-6 h-6 text-amber-600" />
-              B.Tech (Dairy Technology) – 4-Year Degree
+              {academicsData.coursesOffered?.degreeTitle || 'B.Tech (Dairy Technology) – 4-Year Degree'}
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 mt-1">
-              Affiliated to MAFSU Nagpur | Approved by ICAR New Delhi | Govt of Maharashtra
+              {academicsData.coursesOffered?.affiliation || 'Affiliated to MAFSU Nagpur'} | {academicsData.coursesOffered?.approvalInfo || 'Approved by ICAR New Delhi | Govt of Maharashtra'}
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
               <span className="text-[10px] font-bold text-slate-500 uppercase">Degree Title</span>
-              <p className="font-bold text-[#0A2342] text-sm">Bachelor of Technology (Dairy Technology)</p>
+              <p className="font-bold text-[#0A2342] text-sm">{academicsData.coursesOffered?.courseName || 'Bachelor of Technology (Dairy Technology)'}</p>
             </div>
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
               <span className="text-[10px] font-bold text-slate-500 uppercase">Duration</span>
-              <p className="font-bold text-[#0A2342] text-sm">4 Academic Years (8 Semesters)</p>
+              <p className="font-bold text-[#0A2342] text-sm">{academicsData.coursesOffered?.duration || '4 Academic Years (8 Semesters)'}</p>
             </div>
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
               <span className="text-[10px] font-bold text-slate-500 uppercase">Curriculum Pattern</span>
-              <p className="font-bold text-amber-700 text-sm">ICAR VIth Deans' Committee</p>
+              <p className="font-bold text-amber-700 text-sm">{academicsData.coursesOffered?.curriculumPattern || "ICAR VIth Deans' Committee"}</p>
             </div>
           </div>
 
           <div className="space-y-3">
-            <h3 className="text-base font-bold font-serif text-slate-900">Career Scope & Opportunities:</h3>
+            <h3 className="text-base font-bold font-serif text-slate-900">{academicsData.coursesOffered?.careerScopeHeading || 'Career Scope & Opportunities:'}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-700">
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-start gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <span>Dairy Plant Operations Executive & Quality Assurance Officer in Amul, Mother Dairy, Nestlé, Dynamix, Britannia, Danone.</span>
-              </div>
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-start gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <span>Food Safety Officer (FSO / FSSAI) in Government Food & Drug Administration (FDA).</span>
-              </div>
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-start gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <span>R&D Product Development Scientist, Packaging Technologist, and Dairy Microbiology Consultant.</span>
-              </div>
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-start gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <span>Dairy Entrepreneurship, Milk Processing Startups, and Agricultural Supply Chain Management.</span>
-              </div>
+              {(academicsData.coursesOffered?.careerOpportunities || []).map((co, idx) => (
+                <div key={co.id || idx} className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-slate-900 block">{co.title}</span>
+                    <span className="text-slate-600">{co.description}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
           <div className="pt-2">
             <button
-              onClick={() => setActiveSidebarItem('portal')}
+              onClick={() => setActiveSidebarItem(academicsData.coursesOffered?.applyButtonUrl || 'portal')}
               className="bg-[#0A2342] hover:bg-slate-900 text-amber-400 font-bold px-6 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow-md transition-all"
             >
-              <FileText className="w-4 h-4" /> Apply Online in Admission Portal 2026–27
+              <FileText className="w-4 h-4" /> {academicsData.coursesOffered?.applyButtonText || 'Apply Online in Admission Portal 2026–27'}
             </button>
           </div>
         </div>
@@ -723,43 +654,40 @@ export const Academics: React.FC<AcademicsProps> = ({
           <div className="border-b border-slate-200 pb-4">
             <h2 className="text-2xl font-bold font-serif text-slate-900 flex items-center gap-2">
               <Building2 className="w-6 h-6 text-amber-600" />
-              Sanctioned Intake & Seat Matrix (2026–27)
+              {academicsData.intakeCapacity?.sectionTitle || 'Sanctioned Intake & Seat Matrix (2026–27)'}
             </h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="p-5 bg-[#0A2342] text-white rounded-2xl space-y-1">
               <span className="text-xs text-amber-400 font-bold uppercase tracking-wider">Total Sanctioned Intake</span>
-              <div className="text-3xl font-extrabold font-mono">64 Seats</div>
+              <div className="text-3xl font-extrabold font-mono">{academicsData.intakeCapacity?.totalIntakeLabel || `${academicsData.intakeCapacity?.totalIntake || 64} Seats`}</div>
               <p className="text-[11px] text-slate-300">Annual approved intake capacity by MAFSU Nagpur</p>
             </div>
             <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-1">
               <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">Maharashtra State Quota</span>
-              <div className="text-3xl font-extrabold font-mono text-slate-900">80%</div>
-              <p className="text-[11px] text-slate-600">Allotted strictly via Centralized CAP rounds by MCAER</p>
+              <div className="text-3xl font-extrabold font-mono text-slate-900">{academicsData.intakeCapacity?.stateQuotaPercentage || '80%'}</div>
+              <p className="text-[11px] text-slate-600">{academicsData.intakeCapacity?.stateQuotaNote || 'Allotted strictly via Centralized CAP rounds by MCAER'}</p>
             </div>
             <div className="p-5 bg-amber-50 border border-amber-200 rounded-2xl space-y-1">
               <span className="text-xs text-amber-800 font-bold uppercase tracking-wider">Institutional / NRI Quota</span>
-              <div className="text-3xl font-extrabold font-mono text-amber-900">20%</div>
-              <p className="text-[11px] text-amber-700">As per Govt of Maharashtra & MAFSU directives</p>
+              <div className="text-3xl font-extrabold font-mono text-amber-900">{academicsData.intakeCapacity?.institutionalQuotaPercentage || '20%'}</div>
+              <p className="text-[11px] text-amber-700">{academicsData.intakeCapacity?.institutionalQuotaNote || 'As per Govt of Maharashtra & MAFSU directives'}</p>
             </div>
           </div>
 
           <div className="space-y-3">
             <h3 className="text-base font-bold font-serif text-slate-900">Statutory Quotas & Weightages:</h3>
             <div className="space-y-2 text-xs text-slate-700">
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between">
-                <span className="font-semibold">Agriculturalist Quota (7/12 Land Record Holder)</span>
-                <span className="font-mono font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded">12% Weightage Points</span>
-              </div>
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between">
-                <span className="font-semibold">Agricultural Diploma Holder Weightage</span>
-                <span className="font-mono font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded">Special Quota</span>
-              </div>
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between">
-                <span className="font-semibold">Statutory Category Reservations (SC, ST, VJ/NT, OBC, EWS)</span>
-                <span className="font-mono font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">As Per Govt. Rules</span>
-              </div>
+              {(academicsData.intakeCapacity?.quotas || []).filter(q => q.isActive !== false).map((quota, idx) => (
+                <div key={quota.id || idx} className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between gap-2">
+                  <div>
+                    <span className="font-semibold text-slate-900 block">{quota.title}</span>
+                    {quota.description && <span className="text-slate-500 text-[11px]">{quota.description}</span>}
+                  </div>
+                  <span className="font-mono font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded shrink-0">{quota.seatsOrPercentage}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -771,38 +699,42 @@ export const Academics: React.FC<AcademicsProps> = ({
           <div className="border-b border-slate-200 pb-4">
             <h2 className="text-2xl font-bold font-serif text-slate-900 flex items-center gap-2">
               <ShieldCheck className="w-6 h-6 text-amber-600" />
-              Eligibility Criteria Matrix
+              {academicsData.eligibility?.heading || 'Eligibility Criteria Matrix'}
             </h2>
+            {academicsData.eligibility?.subtitle && (
+              <p className="text-xs text-slate-600 mt-1">{academicsData.eligibility.subtitle}</p>
+            )}
           </div>
 
           <div className="space-y-4 text-xs sm:text-sm text-slate-700">
-            <div className="p-5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-              <span className="font-extrabold text-[#0A2342] uppercase text-xs block">Qualifying Examination & Board</span>
-              <p className="leading-relaxed">
-                XII Std. passed in 10+2 pattern from Maharashtra State Board of Higher Secondary Education or an equivalent examination with Physics, Chemistry and Biology/Mathematics and English.
-              </p>
-            </div>
-
-            <div className="p-5 bg-amber-50/80 rounded-xl border border-amber-200/90 space-y-2">
-              <span className="font-extrabold text-[#0A2342] uppercase text-xs block">Deficiency Course Provision</span>
-              <p className="leading-relaxed font-medium text-slate-800">
-                (Candidates, who had not offered Mathematics/biology, shall have to complete deficiency course as prescribed by respective University.)
-              </p>
-            </div>
-
-            <div className="p-5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-              <span className="font-extrabold text-[#0A2342] uppercase text-xs block">Eligible HSC Groups & Entrance Exams</span>
-              <p className="leading-relaxed font-semibold text-slate-900">
-                In general Student with PCB/PCMB/PCM groups in HSC are eligible with valid score of MHTCET/NEET/JEE.
-              </p>
-            </div>
+            {(academicsData.eligibility?.items || []).filter(item => item.isActive !== false).map((item, idx) => (
+              <div key={item.id || idx} className={`p-5 rounded-xl border space-y-2 ${idx % 2 === 1 ? 'bg-amber-50/80 border-amber-200/90' : 'bg-slate-50 border-slate-200'}`}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-extrabold text-[#0A2342] uppercase text-xs block">{item.title}</span>
+                  {item.badge && <span className="text-[10px] font-bold bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded-full">{item.badge}</span>}
+                </div>
+                <p className="leading-relaxed text-slate-800">{item.description}</p>
+                {item.requiredSubjects && (
+                  <p className="text-xs text-slate-600"><strong>Required Subjects:</strong> {item.requiredSubjects}</p>
+                )}
+                {item.minimumMarks && (
+                  <p className="text-xs text-slate-600"><strong>Minimum Marks:</strong> {item.minimumMarks}</p>
+                )}
+                {item.entranceExams && (
+                  <p className="text-xs font-semibold text-blue-900"><strong>Entrance Exams:</strong> {item.entranceExams}</p>
+                )}
+                {item.notes && (
+                  <p className="text-[11px] text-slate-500 italic">Note: {item.notes}</p>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}
 
       {/* 1.4 ADMISSION PROCESS */}
       {activeSidebarItem === 'process' && (
-        <AdmissionProcessWorkflow admissionProcess={collegeInfo?.admissionProcess} />
+        <AdmissionProcessWorkflow admissionProcess={academicsData.admissionProcess} />
       )}
 
       {/* 1.5 DOCUMENTS REQUIRED */}
@@ -811,29 +743,31 @@ export const Academics: React.FC<AcademicsProps> = ({
           <div className="border-b border-slate-200 pb-4">
             <h2 className="text-2xl font-bold font-serif text-slate-900 flex items-center gap-2">
               <Paperclip className="w-6 h-6 text-amber-600" />
-              Mandatory Documents Checklist
+              {academicsData.documentsRequired?.sectionTitle || 'Mandatory Documents Checklist'}
             </h2>
+            {academicsData.documentsRequired?.subtitle && (
+              <p className="text-xs text-slate-600 mt-1">{academicsData.documentsRequired.subtitle}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-700">
-            {[
-              '10th (SSC) Marksheet & Passing Certificate',
-              '12th (HSC) Marksheet & Passing Certificate',
-              'MHT-CET / ICAR Score Card 2026',
-              'College Leaving Certificate (TC)',
-              'Domicile / Birth Certificate of Maharashtra',
-              'Caste Certificate & Caste Validity (if applicable)',
-              'Non-Creamy Layer Certificate (OBC/VJNT/SBC valid upto March 2027)',
-              'Aadhaar Card Copy & 4 Passport Photographs',
-              'Agriculturalist Certificate (for 12% agri quota weightage)',
-              'Migration Certificate (for non-MSBSHSE students)'
-            ].map((doc, idx) => (
-              <div key={idx} className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span className="font-semibold">{doc}</span>
+            {(academicsData.documentsRequired?.items || []).filter(item => item.isActive !== false).map((doc, idx) => (
+              <div key={doc.id || idx} className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-semibold text-slate-900 block">{doc.title}</span>
+                  {doc.description && <span className="text-slate-500 text-[11px] block">{doc.description}</span>}
+                  {doc.isMandatory && <span className="text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded inline-block mt-1">Mandatory</span>}
+                </div>
               </div>
             ))}
           </div>
+
+          {academicsData.documentsRequired?.note && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
+              <strong>Important Note: </strong>{academicsData.documentsRequired.note}
+            </div>
+          )}
         </div>
       )}
 
@@ -843,8 +777,11 @@ export const Academics: React.FC<AcademicsProps> = ({
           <div className="border-b border-slate-200 pb-4">
             <h2 className="text-2xl font-bold font-serif text-slate-900 flex items-center gap-2">
               <IndianRupee className="w-6 h-6 text-amber-600" />
-              Approved Fee Structure 2026–27
+              {academicsData.feesStructure?.heading || 'Approved Fee Structure'} {academicsData.feesStructure?.academicYear ? `(${academicsData.feesStructure.academicYear})` : ''}
             </h2>
+            {academicsData.feesStructure?.subtitle && (
+              <p className="text-xs text-slate-600 mt-1">{academicsData.feesStructure.subtitle}</p>
+            )}
           </div>
 
           <div className="overflow-x-auto text-xs">
@@ -858,27 +795,40 @@ export const Academics: React.FC<AcademicsProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                <tr>
-                  <td className="p-3 font-bold border border-slate-200">OPEN / General</td>
-                  <td className="p-3 border border-slate-200">₹ 75,000</td>
-                  <td className="p-3 border border-slate-200">₹ 15,000</td>
-                  <td className="p-3 font-bold text-blue-900 border border-slate-200">₹ 90,000</td>
-                </tr>
-                <tr className="bg-slate-50">
-                  <td className="p-3 font-bold border border-slate-200">OBC / EWS (50% Concession)</td>
-                  <td className="p-3 border border-slate-200">₹ 37,500</td>
-                  <td className="p-3 border border-slate-200">₹ 15,000</td>
-                  <td className="p-3 font-bold text-blue-900 border border-slate-200">₹ 52,500</td>
-                </tr>
-                <tr>
-                  <td className="p-3 font-bold border border-slate-200">SC / ST / VJNT (100% Govt Scholarship)</td>
-                  <td className="p-3 border border-slate-200">₹ 0 (Reimbursed by Govt)</td>
-                  <td className="p-3 border border-slate-200">₹ 15,000</td>
-                  <td className="p-3 font-bold text-emerald-700 border border-slate-200">₹ 15,000</td>
-                </tr>
+                {(academicsData.feesStructure?.categories || []).filter(cat => cat.isActive !== false).map((cat, idx) => (
+                  <tr key={cat.id || idx} className={idx % 2 === 1 ? 'bg-slate-50' : ''}>
+                    <td className="p-3 font-bold border border-slate-200">
+                      <div>{cat.categoryName}</div>
+                      {cat.concessionNote && <div className="text-[10px] font-normal text-slate-500">{cat.concessionNote}</div>}
+                    </td>
+                    <td className="p-3 border border-slate-200">{cat.tuitionFee}</td>
+                    <td className="p-3 border border-slate-200">{cat.otherFee}</td>
+                    <td className="p-3 font-bold text-blue-900 border border-slate-200">{cat.totalFee}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
+
+          {academicsData.feesStructure?.notes && academicsData.feesStructure.notes.length > 0 && (
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 text-xs text-slate-700">
+              <strong className="text-slate-900 block font-bold">Important Fee Rules:</strong>
+              <ul className="list-disc pl-5 space-y-1">
+                {academicsData.feesStructure.notes.map((note, idx) => (
+                  <li key={idx}>{note}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {academicsData.feesStructure?.bankDetails && (
+            <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-xl text-xs text-slate-800 space-y-1">
+              <strong className="text-blue-950 font-bold block">College Bank Account for Online Fee Transfer:</strong>
+              <p><strong>Account Name:</strong> {academicsData.feesStructure.bankDetails.accountName}</p>
+              <p><strong>Bank:</strong> {academicsData.feesStructure.bankDetails.bankName}, Branch: {academicsData.feesStructure.bankDetails.branch}</p>
+              <p><strong>Account Number:</strong> {academicsData.feesStructure.bankDetails.accountNumber} | <strong>IFSC:</strong> {academicsData.feesStructure.bankDetails.ifscCode}</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -888,23 +838,42 @@ export const Academics: React.FC<AcademicsProps> = ({
           <div className="border-b border-slate-200 pb-4">
             <h2 className="text-2xl font-bold font-serif text-slate-900 flex items-center gap-2">
               <Phone className="w-6 h-6 text-amber-600" />
-              Admission Enquiry & Helpline
+              {academicsData.admissionEnquiry?.heading || 'Admission Enquiry & Helpline'}
             </h2>
+            {academicsData.admissionEnquiry?.subtitle && (
+              <p className="text-xs text-slate-600 mt-1">{academicsData.admissionEnquiry.subtitle}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-slate-700">
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
               <span className="font-bold text-[#0A2342] block text-sm">Admission Helpline Phone</span>
-              <p className="font-mono text-sm text-blue-900 font-bold">+91 07267 222333 / +91 94228 81234</p>
-              <p className="text-slate-500 text-[11px]">Timing: Monday to Saturday (10:00 AM – 5:00 PM)</p>
+              <p className="font-mono text-sm text-blue-900 font-bold">{academicsData.admissionEnquiry?.helplinePhone || '+91 07267 222333 / +91 94228 81234'}</p>
+              <p className="text-slate-500 text-[11px]">Timing: {academicsData.admissionEnquiry?.workingHours || 'Monday to Saturday (10:00 AM – 5:00 PM)'}</p>
             </div>
 
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
               <span className="font-bold text-[#0A2342] block text-sm">Email & Address</span>
-              <p className="font-bold text-slate-800">admissions@cdtmalkapur.edu.in</p>
-              <p className="text-slate-600">Campus: CDTM Malkapur, NH-6, Buldhana District, Maharashtra - 443101</p>
+              <p className="font-bold text-slate-800">{academicsData.admissionEnquiry?.helplineEmail || 'admissions@cdtmalkapur.edu.in'}</p>
+              <p className="text-slate-600">{academicsData.admissionEnquiry?.officeAddress || 'Campus: CDTM Malkapur, NH-6, Buldhana District, Maharashtra - 443101'}</p>
             </div>
           </div>
+
+          {academicsData.admissionEnquiry?.coordinators && academicsData.admissionEnquiry.coordinators.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-sm font-bold text-[#0A2342] font-serif">Admission Nodal Officers & Counselors:</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                {academicsData.admissionEnquiry.coordinators.filter(c => c.isActive !== false).map((c, idx) => (
+                  <div key={c.id || idx} className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-0.5">
+                    <span className="font-bold text-slate-900 block">{c.name}</span>
+                    <span className="text-slate-600 text-[11px] block">{c.designation}</span>
+                    <span className="font-mono text-blue-900 font-semibold block">{c.phone}</span>
+                    {c.email && <span className="text-slate-500 text-[11px] block">{c.email}</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1492,23 +1461,55 @@ export const Academics: React.FC<AcademicsProps> = ({
           <div className="border-b border-slate-200 pb-4">
             <h2 className="text-2xl font-bold font-serif text-slate-900 flex items-center gap-2">
               <Download className="w-6 h-6 text-amber-600" />
-              Information Prospectus 2026–27
+              {academicsData.admissionProspectus?.heading || 'Information Prospectus 2026–27'}
             </h2>
+            {academicsData.admissionProspectus?.subtitle && (
+              <p className="text-xs text-slate-600 mt-1">{academicsData.admissionProspectus.subtitle}</p>
+            )}
           </div>
 
           <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-4 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div>
-              <h3 className="font-bold text-slate-900 text-base">Download Admission Information Brochure</h3>
+            <div className="space-y-1">
+              <h3 className="font-bold text-slate-900 text-base">{academicsData.admissionProspectus?.description || 'Download Admission Information Brochure'}</h3>
               <p className="text-xs text-slate-600">Complete details on course structure, faculty profiles, campus facilities & scholarship rules.</p>
+              {academicsData.admissionProspectus?.fileSize && (
+                <span className="text-[10px] font-mono bg-slate-200 text-slate-700 px-2 py-0.5 rounded inline-block mt-1">File Size: {academicsData.admissionProspectus.fileSize}</span>
+              )}
             </div>
 
-            <button
-              onClick={() => alert("Downloading official LSSCDT Admission Prospectus 2026-27 PDF...")}
-              className="bg-[#0A2342] hover:bg-slate-900 text-amber-400 font-bold px-5 py-3 rounded-xl text-xs flex items-center gap-2 shadow shrink-0"
-            >
-              <Download className="w-4 h-4" /> Download Prospectus PDF
-            </button>
+            {academicsData.admissionProspectus?.brochureFileUrl ? (
+              <a
+                href={academicsData.admissionProspectus.brochureFileUrl}
+                target="_blank"
+                rel="noreferrer"
+                download="LSSCDT_Admission_Prospectus.pdf"
+                className="bg-[#0A2342] hover:bg-slate-900 text-amber-400 font-bold px-5 py-3 rounded-xl text-xs flex items-center gap-2 shadow shrink-0 transition-colors"
+              >
+                <Download className="w-4 h-4" /> Download Prospectus PDF
+              </a>
+            ) : (
+              <button
+                onClick={() => alert("Downloading official LSSCDT Admission Prospectus 2026-27 PDF...")}
+                className="bg-[#0A2342] hover:bg-slate-900 text-amber-400 font-bold px-5 py-3 rounded-xl text-xs flex items-center gap-2 shadow shrink-0"
+              >
+                <Download className="w-4 h-4" /> Download Prospectus PDF
+              </button>
+            )}
           </div>
+
+          {academicsData.admissionProspectus?.highlights && academicsData.admissionProspectus.highlights.length > 0 && (
+            <div className="p-4 bg-amber-50/70 border border-amber-200/90 rounded-xl space-y-2">
+              <h4 className="text-xs font-bold text-amber-950 uppercase tracking-wider">Brochure Key Contents:</h4>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-700">
+                {academicsData.admissionProspectus.highlights.map((h, i) => (
+                  <li key={i} className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span>{h}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 
@@ -1518,14 +1519,17 @@ export const Academics: React.FC<AcademicsProps> = ({
           <div className="border-b border-slate-200 pb-4">
             <h2 className="text-2xl font-bold font-serif text-slate-900 flex items-center gap-2">
               <Search className="w-6 h-6 text-amber-600" />
-              Track Live Application Verification Status
+              {academicsData.trackApplicationStatus?.heading || 'Track Live Application Verification Status'}
             </h2>
+            {academicsData.trackApplicationStatus?.subtitle && (
+              <p className="text-xs text-slate-600 mt-1">{academicsData.trackApplicationStatus.subtitle}</p>
+            )}
           </div>
 
           <form onSubmit={handleSearchApp} className="flex flex-col sm:flex-row gap-3">
             <input
               type="text"
-              placeholder="Enter Application ID (e.g. LSSCDT-2026-1042) or Mobile Number"
+              placeholder={academicsData.trackApplicationStatus?.searchPlaceholder || 'Enter Application ID (e.g. LSSCDT-2026-1042) or Mobile Number'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1 p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 outline-none text-xs"
@@ -1594,49 +1598,56 @@ export const Academics: React.FC<AcademicsProps> = ({
           <div className="border-b border-slate-200 pb-4">
             <h2 className="text-2xl font-bold font-serif text-[#0A2342] flex items-center gap-2">
               <Award className="w-6 h-6 text-amber-600" />
-              B.Tech (Dairy Technology) Degree Program Specifications
+              {academicsData.programOverview?.title || 'B.Tech (Dairy Technology) Degree Program Specifications'}
             </h2>
             <p className="text-xs text-slate-600 mt-1">
-              Approved by ICAR New Delhi and Affiliated to MAFSU Nagpur
+              {academicsData.programOverview?.subtitle || 'Approved by ICAR New Delhi and Affiliated to MAFSU Nagpur'}
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1">
               <span className="text-[10px] font-bold text-slate-500 uppercase">Degree Title</span>
-              <div className="font-bold text-[#0A2342] text-sm">B.Tech (Dairy Technology)</div>
+              <div className="font-bold text-[#0A2342] text-sm">{academicsData.programOverview?.degreeTitle || 'B.Tech (Dairy Technology)'}</div>
             </div>
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1">
               <span className="text-[10px] font-bold text-slate-500 uppercase">Course Duration</span>
-              <div className="font-bold text-[#0A2342] text-sm">4 Years (8 Semesters)</div>
+              <div className="font-bold text-[#0A2342] text-sm">{academicsData.programOverview?.duration || '4 Years (8 Semesters)'}</div>
             </div>
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1">
               <span className="text-[10px] font-bold text-slate-500 uppercase">Medium of Instruction</span>
-              <div className="font-bold text-[#0A2342] text-sm">English</div>
+              <div className="font-bold text-[#0A2342] text-sm">{academicsData.programOverview?.mediumOfInstruction || 'English'}</div>
             </div>
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1">
               <span className="text-[10px] font-bold text-slate-500 uppercase">Curriculum Framework</span>
-              <div className="font-bold text-amber-700 text-sm">ICAR VIth Deans' Committee</div>
+              <div className="font-bold text-amber-700 text-sm">{academicsData.programOverview?.curriculumFramework || "ICAR VIth Deans' Committee"}</div>
             </div>
           </div>
 
-          <div className="p-5 bg-amber-50/80 rounded-xl border border-amber-200/90 space-y-3">
-            <h3 className="font-bold text-[#0A2342] text-sm font-serif">Eligibility & Admission Criteria:</h3>
-            <ul className="space-y-2 text-xs text-slate-700">
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <span>XII Std. passed in 10+2 pattern from Maharashtra State Board of Higher Secondary Education or an equivalent examination with Physics, Chemistry and Biology/Mathematics and English.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <span>(Candidates, who had not offered Mathematics/biology, shall have to complete deficiency course as prescribed by respective University.)</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <span>In general Student with PCB/PCMB/PCM groups in HSC are eligible with valid score of MHTCET/NEET/JEE.</span>
-              </li>
-            </ul>
-          </div>
+          {academicsData.programOverview?.highlights && academicsData.programOverview.highlights.length > 0 && (
+            <div className="p-5 bg-amber-50/80 rounded-xl border border-amber-200/90 space-y-3">
+              <h3 className="font-bold text-[#0A2342] text-sm font-serif">Key Program Highlights:</h3>
+              <ul className="space-y-2 text-xs text-slate-700">
+                {academicsData.programOverview.highlights.map((h, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <span>{h}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {academicsData.programOverview?.keyOutcomes && academicsData.programOverview.keyOutcomes.length > 0 && (
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+              <h3 className="font-bold text-[#0A2342] text-sm font-serif">Program Learning Outcomes:</h3>
+              <ul className="list-disc pl-5 space-y-1 text-xs text-slate-700">
+                {academicsData.programOverview.keyOutcomes.map((o, i) => (
+                  <li key={i}>{o}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 
@@ -1646,16 +1657,16 @@ export const Academics: React.FC<AcademicsProps> = ({
           <div className="border-b border-slate-200 pb-4">
             <h2 className="text-2xl font-bold font-serif text-[#0A2342] flex items-center gap-2">
               <BookOpen className="w-6 h-6 text-amber-600" />
-              Semester-Wise Syllabi & Course Scheme
+              {academicsData.curriculumSyllabus?.heading || 'Semester-Wise Syllabi & Course Scheme'}
             </h2>
             <p className="text-xs text-slate-600 mt-1">
-              Select a semester below to view course codes, titles, and credit hours based on ICAR VIth Deans' Committee framework.
+              {academicsData.curriculumSyllabus?.subtitle || "Select a semester below to view course codes, titles, and credit hours based on ICAR VIth Deans' Committee framework."}
             </p>
           </div>
 
           {/* Semester Selector Buttons */}
           <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-            {semesters.map((s) => (
+            {dynamicSemesters.map((s) => (
               <button
                 key={s.sem}
                 onClick={() => setActiveSem(s.sem)}
@@ -1671,10 +1682,10 @@ export const Academics: React.FC<AcademicsProps> = ({
           </div>
 
           {/* Selected Semester Courses Table */}
-          {semesters.find(s => s.sem === activeSem) && (
+          {dynamicSemesters.find(s => s.sem === activeSem) && (
             <div className="space-y-4 pt-2">
               <h3 className="text-base font-bold text-[#0A2342] font-serif border-l-4 border-amber-500 pl-3">
-                {semesters.find(s => s.sem === activeSem)?.title}
+                {dynamicSemesters.find(s => s.sem === activeSem)?.title}
               </h3>
 
               <div className="overflow-x-auto text-xs">
@@ -1687,7 +1698,7 @@ export const Academics: React.FC<AcademicsProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 text-slate-800">
-                    {semesters.find(s => s.sem === activeSem)?.courses.map((c, i) => (
+                    {dynamicSemesters.find(s => s.sem === activeSem)?.courses.map((c, i) => (
                       <tr key={i} className="hover:bg-slate-50">
                         <td className="p-3 font-mono font-bold text-amber-700">{c.code}</td>
                         <td className="p-3 font-medium text-slate-900">{c.name}</td>
@@ -1708,26 +1719,37 @@ export const Academics: React.FC<AcademicsProps> = ({
           <div className="border-b border-slate-200 pb-4">
             <h2 className="text-2xl font-bold font-serif text-[#0A2342] flex items-center gap-2">
               <Calendar className="w-6 h-6 text-amber-600" />
-              Academic Calendar & Examination Schedule (2026–27)
+              {academicsData.academicCalendar?.heading || 'Academic Calendar & Examination Schedule'} {academicsData.academicCalendar?.academicYear ? `(${academicsData.academicCalendar.academicYear})` : ''}
             </h2>
+            {academicsData.academicCalendar?.subtitle && (
+              <p className="text-xs text-slate-600 mt-1">{academicsData.academicCalendar.subtitle}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-              <span className="font-extrabold text-[#0A2342] uppercase block">Odd Semesters (Sem I, III, V, VII)</span>
-              <ul className="space-y-1 text-slate-700">
-                <li><strong>Commencement of Classes:</strong> August 1, 2026</li>
-                <li><strong>Mid-Term Examinations:</strong> October 12–20, 2026</li>
-                <li><strong>Semester End Theory & Practicals:</strong> December 10–24, 2026</li>
+              <span className="font-extrabold text-[#0A2342] uppercase block">{academicsData.academicCalendar?.oddSemesterHeading || 'Odd Semesters (Sem I, III, V, VII)'}</span>
+              <ul className="space-y-1.5 text-slate-700">
+                {(academicsData.academicCalendar?.oddSemesterEvents || [
+                  { event: 'Commencement of Classes', date: 'August 1, 2026' },
+                  { event: 'Mid-Term Examinations', date: 'October 12–20, 2026' },
+                  { event: 'Semester End Theory & Practicals', date: 'December 10–24, 2026' }
+                ]).map((e, idx) => (
+                  <li key={idx}><strong>{e.event}:</strong> {e.date}</li>
+                ))}
               </ul>
             </div>
 
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-              <span className="font-extrabold text-[#0A2342] uppercase block">Even Semesters (Sem II, IV, VI, VIII)</span>
-              <ul className="space-y-1 text-slate-700">
-                <li><strong>Commencement of Classes:</strong> January 5, 2027</li>
-                <li><strong>Mid-Term Examinations:</strong> March 15–22, 2027</li>
-                <li><strong>Semester End Theory & Practicals:</strong> May 10–25, 2027</li>
+              <span className="font-extrabold text-[#0A2342] uppercase block">{academicsData.academicCalendar?.evenSemesterHeading || 'Even Semesters (Sem II, IV, VI, VIII)'}</span>
+              <ul className="space-y-1.5 text-slate-700">
+                {(academicsData.academicCalendar?.evenSemesterEvents || [
+                  { event: 'Commencement of Classes', date: 'January 5, 2027' },
+                  { event: 'Mid-Term Examinations', date: 'March 15–22, 2027' },
+                  { event: 'Semester End Theory & Practicals', date: 'May 10–25, 2027' }
+                ]).map((e, idx) => (
+                  <li key={idx}><strong>{e.event}:</strong> {e.date}</li>
+                ))}
               </ul>
             </div>
           </div>
@@ -1740,20 +1762,43 @@ export const Academics: React.FC<AcademicsProps> = ({
           <div className="border-b border-slate-200 pb-4">
             <h2 className="text-2xl font-bold font-serif text-[#0A2342] flex items-center gap-2">
               <ShieldCheck className="w-6 h-6 text-amber-600" />
-              Academic Regulations & Attendance Rules
+              {academicsData.academicRegulations?.heading || 'Academic Regulations & Attendance Rules'}
             </h2>
+            {academicsData.academicRegulations?.subtitle && (
+              <p className="text-xs text-slate-600 mt-1">{academicsData.academicRegulations.subtitle}</p>
+            )}
           </div>
 
           <div className="space-y-4 text-xs text-slate-700 leading-relaxed">
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
               <strong className="text-slate-900 font-bold block text-sm">Attendance Policy</strong>
-              <p>Minimum 80% attendance in lectures and practicals is compulsory to appear for MAFSU end-term examinations.</p>
+              <p>{academicsData.academicRegulations?.attendancePolicy || 'Minimum 80% attendance in lectures and practicals is compulsory to appear for MAFSU end-term examinations.'}</p>
             </div>
 
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
               <strong className="text-slate-900 font-bold block text-sm">Evaluation System</strong>
-              <p>Continuous internal evaluation (20% mid-term + 10% practicals) + 70% University End-Semester Theory Examination.</p>
+              <p>{academicsData.academicRegulations?.evaluationSystem || 'Continuous internal evaluation (20% mid-term + 10% practicals) + 70% University End-Semester Theory Examination.'}</p>
             </div>
+
+            {academicsData.academicRegulations?.gradingScheme && (
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                <strong className="text-slate-900 font-bold block text-sm">Grading & Passing Scheme</strong>
+                <p>{academicsData.academicRegulations.gradingScheme}</p>
+              </div>
+            )}
+
+            {academicsData.academicRegulations?.regulations && academicsData.academicRegulations.regulations.length > 0 && (
+              <div className="p-4 bg-amber-50/70 border border-amber-200 rounded-xl space-y-2">
+                <strong className="text-amber-950 font-bold block text-sm">General Academic Rules:</strong>
+                <ul className="space-y-1.5 list-disc pl-5">
+                  {academicsData.academicRegulations.regulations.filter(r => r.isActive !== false).map((r, idx) => (
+                    <li key={r.id || idx}>
+                      <strong>{r.title}:</strong> {r.description}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       )}

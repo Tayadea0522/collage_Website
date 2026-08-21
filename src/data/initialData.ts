@@ -1,4 +1,5 @@
 import { CollegeInfo, DepartmentInfo, Facility, FacultyMember, Notice, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser, DownloadableDocument, PopupBanner } from '../types';
+import { initialAcademicsData } from './initialAcademicsData';
 
 export const initialCollegeInfo: CollegeInfo = {
   name: "Late Shaktikumar Sancheti College of Dairy Technology",
@@ -150,7 +151,8 @@ export const initialCollegeInfo: CollegeInfo = {
         description: "Final fee payment and issuance of official admission confirmation receipt by the institute."
       }
     ]
-  }
+  },
+  academicsData: initialAcademicsData
 };
 
 export const initialNotices: Notice[] = [

@@ -8,6 +8,7 @@ import { supabase } from '../supabaseClient.js';
 import { printApplicationSlip, downloadApplicationSlip } from '../utils/printUtils';
 import { PopupBannerManager } from './PopupBannerManager';
 import { PopupBannerModal } from './PopupBannerModal';
+import { AcademicsCmsManager } from './admin/academics/AcademicsCmsManager';
 import { 
   Lock, 
   LogOut, 
@@ -87,6 +88,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     | 'approved' 
     | 'departments' 
     | 'faculty' 
+    | 'academics'
     | 'gallery' 
     | 'notices' 
     | 'events' 
@@ -101,7 +103,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     try {
       const saved = sessionStorage.getItem('lsscdt_admin_active_tab') as AdminTab;
       if (saved && [
-        'dashboard', 'applications', 'approved', 'departments', 'faculty', 
+        'dashboard', 'applications', 'approved', 'departments', 'faculty', 'academics',
         'gallery', 'notices', 'events', 'downloads', 'popup', 'info', 
         'admission_process', 'contact', 'admin_users'
       ].includes(saved)) {
@@ -1372,6 +1374,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     { id: 'approved', label: 'Students', icon: Users },
     { id: 'departments', label: 'Departments', icon: Building2 },
     { id: 'faculty', label: 'Faculty', icon: GraduationCap },
+    { id: 'academics', label: 'Academics CMS', icon: GraduationCap },
     { id: 'gallery', label: 'Gallery', icon: ImageIcon },
     { id: 'notices', label: 'Notices', icon: FileText },
     { id: 'events', label: 'Events', icon: Calendar },
@@ -2983,6 +2986,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             </div>
           </div>
+        )}
+
+        {/* TAB: ACADEMICS & ADMISSIONS CMS */}
+        {activeTab === 'academics' && (
+          <AcademicsCmsManager
+            collegeInfo={collegeInfo}
+            onSaveCollegeInfo={async (updated) => {
+              const saved = await storageService.saveCollegeInfo(updated);
+              await onRefreshAll();
+              showToast('Academics & Admissions content saved to database!');
+              return saved;
+            }}
+          />
         )}
 
         {/* TAB 6: GALLERY MANAGER */}

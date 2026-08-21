@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { EligibilitySection, EligibilityCriteriaItem } from '../../../types';
 import { Plus, Trash2, ArrowUp, ArrowDown, CheckCircle2, Save, Award } from 'lucide-react';
 
@@ -8,9 +8,15 @@ interface EligibilityManagerProps {
 }
 
 export const EligibilityManager: React.FC<EligibilityManagerProps> = ({ data, onSave }) => {
-  const [formData, setFormData] = useState<EligibilitySection>(data);
+  const [formData, setFormData] = useState<EligibilitySection>(data || {});
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    if (data) {
+      setFormData(data);
+    }
+  }, [data]);
 
   // New Item State
   const [newTitle, setNewTitle] = useState('');
@@ -76,6 +82,9 @@ export const EligibilityManager: React.FC<EligibilityManagerProps> = ({ data, on
       await onSave(formData);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err: any) {
+      console.error('Eligibility save error:', err);
+      alert(`Failed to save eligibility criteria: ${err?.message || err}`);
     } finally {
       setIsSaving(false);
     }

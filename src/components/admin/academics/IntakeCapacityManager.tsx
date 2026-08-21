@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IntakeCapacitySection, IntakeQuotaRow } from '../../../types';
 import { Plus, Trash2, ArrowUp, ArrowDown, CheckCircle2, Save, Users } from 'lucide-react';
 
@@ -8,9 +8,15 @@ interface IntakeCapacityManagerProps {
 }
 
 export const IntakeCapacityManager: React.FC<IntakeCapacityManagerProps> = ({ data, onSave }) => {
-  const [formData, setFormData] = useState<IntakeCapacitySection>(data);
+  const [formData, setFormData] = useState<IntakeCapacitySection>(data || {});
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    if (data) {
+      setFormData(data);
+    }
+  }, [data]);
 
   // New Quota Row state
   const [newTitle, setNewTitle] = useState('');
@@ -67,6 +73,9 @@ export const IntakeCapacityManager: React.FC<IntakeCapacityManagerProps> = ({ da
       await onSave(formData);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err: any) {
+      console.error('IntakeCapacity save error:', err);
+      alert(`Failed to save intake capacity: ${err?.message || err}`);
     } finally {
       setIsSaving(false);
     }

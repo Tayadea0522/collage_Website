@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AcademicCalendarSection, AcademicRegulationsSection, AcademicCalendarEvent, AcademicRuleItem } from '../../../types';
 import { supabaseStorageService } from '../../../services/supabaseStorageService';
 import { Plus, Trash2, CheckCircle2, Save, Calendar, ShieldCheck, Upload, FileText, Loader2 } from 'lucide-react';
@@ -17,13 +17,21 @@ export const CalendarAndRegulationsManager: React.FC<CalendarAndRegulationsManag
   regulationsData,
   onSave
 }) => {
-  const [calendar, setCalendar] = useState<AcademicCalendarSection>(calendarData);
-  const [regulations, setRegulations] = useState<AcademicRegulationsSection>(regulationsData);
+  const [calendar, setCalendar] = useState<AcademicCalendarSection>(calendarData || {});
+  const [regulations, setRegulations] = useState<AcademicRegulationsSection>(regulationsData || {});
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isUploadingCalPdf, setIsUploadingCalPdf] = useState(false);
   const [isUploadingRegPdf, setIsUploadingRegPdf] = useState(false);
+
+  useEffect(() => {
+    if (calendarData) setCalendar(calendarData);
+  }, [calendarData]);
+
+  useEffect(() => {
+    if (regulationsData) setRegulations(regulationsData);
+  }, [regulationsData]);
 
   // New Calendar Event state
   const [newEventTitle, setNewEventTitle] = useState('');
@@ -143,6 +151,9 @@ export const CalendarAndRegulationsManager: React.FC<CalendarAndRegulationsManag
       });
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err: any) {
+      console.error('CalendarAndRegulations save error:', err);
+      alert(`Failed to save calendar & regulations: ${err?.message || err}`);
     } finally {
       setIsSaving(false);
     }

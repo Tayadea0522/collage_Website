@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CoursesOfferedSection, CareerOpportunity } from '../../../types';
 import { Plus, Trash2, ArrowUp, ArrowDown, CheckCircle2, Save, BookOpen } from 'lucide-react';
 
@@ -8,9 +8,15 @@ interface CoursesOfferedManagerProps {
 }
 
 export const CoursesOfferedManager: React.FC<CoursesOfferedManagerProps> = ({ data, onSave }) => {
-  const [formData, setFormData] = useState<CoursesOfferedSection>(data);
+  const [formData, setFormData] = useState<CoursesOfferedSection>(data || {});
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    if (data) {
+      setFormData(data);
+    }
+  }, [data]);
 
   // New Career Opportunity state
   const [newCareerTitle, setNewCareerTitle] = useState('');
@@ -60,6 +66,9 @@ export const CoursesOfferedManager: React.FC<CoursesOfferedManagerProps> = ({ da
       await onSave(formData);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err: any) {
+      console.error('CoursesOffered save error:', err);
+      alert(`Failed to save courses offered: ${err?.message || err}`);
     } finally {
       setIsSaving(false);
     }

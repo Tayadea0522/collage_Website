@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AdmissionPortalSection, AdmissionProspectusSection, TrackApplicationStatusSection } from '../../../types';
 import { supabaseStorageService } from '../../../services/supabaseStorageService';
 import { CheckCircle2, Save, Download, Globe, Search, Upload, FileText, Loader2 } from 'lucide-react';
@@ -20,13 +20,25 @@ export const ProspectusAndPortalManager: React.FC<ProspectusAndPortalManagerProp
   trackData,
   onSave
 }) => {
-  const [portal, setPortal] = useState<AdmissionPortalSection>(portalData);
-  const [prospectus, setProspectus] = useState<AdmissionProspectusSection>(prospectusData);
-  const [track, setTrack] = useState<TrackApplicationStatusSection>(trackData);
+  const [portal, setPortal] = useState<AdmissionPortalSection>(portalData || {});
+  const [prospectus, setProspectus] = useState<AdmissionProspectusSection>(prospectusData || {});
+  const [track, setTrack] = useState<TrackApplicationStatusSection>(trackData || {});
   
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isUploadingPdf, setIsUploadingPdf] = useState(false);
+
+  useEffect(() => {
+    if (portalData) setPortal(portalData);
+  }, [portalData]);
+
+  useEffect(() => {
+    if (prospectusData) setProspectus(prospectusData);
+  }, [prospectusData]);
+
+  useEffect(() => {
+    if (trackData) setTrack(trackData);
+  }, [trackData]);
 
   // Upload Prospectus PDF to Supabase Storage
   const handleProspectusPdfUpload = async (file: File) => {
@@ -76,6 +88,9 @@ export const ProspectusAndPortalManager: React.FC<ProspectusAndPortalManagerProp
       });
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err: any) {
+      console.error('ProspectusAndPortal save error:', err);
+      alert(`Failed to save portal & prospectus data: ${err?.message || err}`);
     } finally {
       setIsSaving(false);
     }

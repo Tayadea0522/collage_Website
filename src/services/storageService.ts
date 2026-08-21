@@ -162,8 +162,16 @@ export const storageService = {
   // --- College Information ---
   fetchCollegeInfo: async (): Promise<CollegeInfo> => {
     try {
-      const { data, error } = await supabase.from('college_info').select('*').limit(1);
-      if (error || !data || data.length === 0) return initialCollegeInfo;
+      const { data, error } = await supabase
+        .from('college_info')
+        .select('*')
+        .order('updated_at', { ascending: false })
+        .limit(1);
+
+      if (error || !data || data.length === 0) {
+        if (error) console.warn('Supabase fetchCollegeInfo error:', error.message);
+        return initialCollegeInfo;
+      }
       const row = data[0];
       const loadedInfo = { ...(row.data || row) };
       if (!loadedInfo.trustName) {
@@ -213,20 +221,20 @@ export const storageService = {
         loadedInfo.academicsData = {
           ...initialCollegeInfo.academicsData,
           ...loadedInfo.academicsData,
-          coursesOffered: { ...initialCollegeInfo.academicsData?.coursesOffered, ...loadedInfo.academicsData.coursesOffered },
-          intakeCapacity: { ...initialCollegeInfo.academicsData?.intakeCapacity, ...loadedInfo.academicsData.intakeCapacity },
-          eligibility: { ...initialCollegeInfo.academicsData?.eligibility, ...loadedInfo.academicsData.eligibility },
-          admissionProcess: { ...initialCollegeInfo.academicsData?.admissionProcess, ...loadedInfo.academicsData.admissionProcess },
-          documentsRequired: { ...initialCollegeInfo.academicsData?.documentsRequired, ...loadedInfo.academicsData.documentsRequired },
-          feesStructure: { ...initialCollegeInfo.academicsData?.feesStructure, ...loadedInfo.academicsData.feesStructure },
-          admissionEnquiry: { ...initialCollegeInfo.academicsData?.admissionEnquiry, ...loadedInfo.academicsData.admissionEnquiry },
-          admissionPortal: { ...initialCollegeInfo.academicsData?.admissionPortal, ...loadedInfo.academicsData.admissionPortal },
-          admissionProspectus: { ...initialCollegeInfo.academicsData?.admissionProspectus, ...loadedInfo.academicsData.admissionProspectus },
-          trackApplicationStatus: { ...initialCollegeInfo.academicsData?.trackApplicationStatus, ...loadedInfo.academicsData.trackApplicationStatus },
-          programOverview: { ...initialCollegeInfo.academicsData?.programOverview, ...loadedInfo.academicsData.programOverview },
-          curriculumSyllabus: { ...initialCollegeInfo.academicsData?.curriculumSyllabus, ...loadedInfo.academicsData.curriculumSyllabus },
-          academicCalendar: { ...initialCollegeInfo.academicsData?.academicCalendar, ...loadedInfo.academicsData.academicCalendar },
-          academicRegulations: { ...initialCollegeInfo.academicsData?.academicRegulations, ...loadedInfo.academicsData.academicRegulations },
+          coursesOffered: loadedInfo.academicsData.coursesOffered ? { ...initialCollegeInfo.academicsData?.coursesOffered, ...loadedInfo.academicsData.coursesOffered } : initialCollegeInfo.academicsData?.coursesOffered,
+          intakeCapacity: loadedInfo.academicsData.intakeCapacity ? { ...initialCollegeInfo.academicsData?.intakeCapacity, ...loadedInfo.academicsData.intakeCapacity } : initialCollegeInfo.academicsData?.intakeCapacity,
+          eligibility: loadedInfo.academicsData.eligibility ? { ...initialCollegeInfo.academicsData?.eligibility, ...loadedInfo.academicsData.eligibility } : initialCollegeInfo.academicsData?.eligibility,
+          admissionProcess: loadedInfo.academicsData.admissionProcess || initialCollegeInfo.academicsData?.admissionProcess,
+          documentsRequired: loadedInfo.academicsData.documentsRequired ? { ...initialCollegeInfo.academicsData?.documentsRequired, ...loadedInfo.academicsData.documentsRequired } : initialCollegeInfo.academicsData?.documentsRequired,
+          feesStructure: loadedInfo.academicsData.feesStructure ? { ...initialCollegeInfo.academicsData?.feesStructure, ...loadedInfo.academicsData.feesStructure } : initialCollegeInfo.academicsData?.feesStructure,
+          admissionEnquiry: loadedInfo.academicsData.admissionEnquiry ? { ...initialCollegeInfo.academicsData?.admissionEnquiry, ...loadedInfo.academicsData.admissionEnquiry } : initialCollegeInfo.academicsData?.admissionEnquiry,
+          admissionPortal: loadedInfo.academicsData.admissionPortal ? { ...initialCollegeInfo.academicsData?.admissionPortal, ...loadedInfo.academicsData.admissionPortal } : initialCollegeInfo.academicsData?.admissionPortal,
+          admissionProspectus: loadedInfo.academicsData.admissionProspectus ? { ...initialCollegeInfo.academicsData?.admissionProspectus, ...loadedInfo.academicsData.admissionProspectus } : initialCollegeInfo.academicsData?.admissionProspectus,
+          trackApplicationStatus: loadedInfo.academicsData.trackApplicationStatus ? { ...initialCollegeInfo.academicsData?.trackApplicationStatus, ...loadedInfo.academicsData.trackApplicationStatus } : initialCollegeInfo.academicsData?.trackApplicationStatus,
+          programOverview: loadedInfo.academicsData.programOverview ? { ...initialCollegeInfo.academicsData?.programOverview, ...loadedInfo.academicsData.programOverview } : initialCollegeInfo.academicsData?.programOverview,
+          curriculumSyllabus: loadedInfo.academicsData.curriculumSyllabus ? { ...initialCollegeInfo.academicsData?.curriculumSyllabus, ...loadedInfo.academicsData.curriculumSyllabus } : initialCollegeInfo.academicsData?.curriculumSyllabus,
+          academicCalendar: loadedInfo.academicsData.academicCalendar ? { ...initialCollegeInfo.academicsData?.academicCalendar, ...loadedInfo.academicsData.academicCalendar } : initialCollegeInfo.academicsData?.academicCalendar,
+          academicRegulations: loadedInfo.academicsData.academicRegulations ? { ...initialCollegeInfo.academicsData?.academicRegulations, ...loadedInfo.academicsData.academicRegulations } : initialCollegeInfo.academicsData?.academicRegulations,
         } as any;
       }
       return loadedInfo;
@@ -236,68 +244,94 @@ export const storageService = {
   },
   getCollegeInfo: (): CollegeInfo => initialCollegeInfo,
 
-    saveCollegeInfo: async (info: CollegeInfo): Promise<CollegeInfo> => {
-      try {
-        let updatedInfo = { ...info };
+  saveCollegeInfo: async (info: CollegeInfo): Promise<CollegeInfo> => {
+    try {
+      let updatedInfo = { ...info };
 
-        if (isInvalidOrPrivateUrl(updatedInfo.logoImage)) {
-          const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.logoImage!, 'college');
-          if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.logoImage = cloudUrl;
-        }
-        if (isInvalidOrPrivateUrl(updatedInfo.leftLogoImage)) {
-          const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.leftLogoImage!, 'college');
-          if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) {
-            updatedInfo.leftLogoImage = cloudUrl;
-            if (!updatedInfo.logoImage || isInvalidOrPrivateUrl(updatedInfo.logoImage)) {
-              updatedInfo.logoImage = cloudUrl;
-            }
+      if (isInvalidOrPrivateUrl(updatedInfo.logoImage)) {
+        const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.logoImage!, 'college');
+        if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.logoImage = cloudUrl;
+      }
+      if (isInvalidOrPrivateUrl(updatedInfo.leftLogoImage)) {
+        const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.leftLogoImage!, 'college');
+        if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) {
+          updatedInfo.leftLogoImage = cloudUrl;
+          if (!updatedInfo.logoImage || isInvalidOrPrivateUrl(updatedInfo.logoImage)) {
+            updatedInfo.logoImage = cloudUrl;
           }
         }
-        if (isInvalidOrPrivateUrl(updatedInfo.rightLogoImage)) {
-          const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.rightLogoImage!, 'college');
-          if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.rightLogoImage = cloudUrl;
-        }
-        if (isInvalidOrPrivateUrl(updatedInfo.shaktikumarImage)) {
-          const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.shaktikumarImage!, 'college');
-          if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.shaktikumarImage = cloudUrl;
-        }
-        if (isInvalidOrPrivateUrl(updatedInfo.deanImage)) {
-          const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.deanImage!, 'college');
-          if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.deanImage = cloudUrl;
-        }
-        if (isInvalidOrPrivateUrl(updatedInfo.secretaryImage)) {
-          const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.secretaryImage!, 'college');
-          if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.secretaryImage = cloudUrl;
-        }
-        if (isInvalidOrPrivateUrl(updatedInfo.adminOfficerImage)) {
-          const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.adminOfficerImage!, 'college');
-          if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.adminOfficerImage = cloudUrl;
-        }
-        if (isInvalidOrPrivateUrl(updatedInfo.presidentImage)) {
-          const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.presidentImage!, 'college');
-          if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.presidentImage = cloudUrl;
-        }
-        if (updatedInfo.heroBanners && updatedInfo.heroBanners.length > 0) {
-          updatedInfo.heroBanners = await Promise.all(
-            updatedInfo.heroBanners.map(async b => {
-              if (isInvalidOrPrivateUrl(b.image)) {
-                const cloudUrl = await supabaseStorageService.uploadImage(b.image, 'hero');
-                if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) {
-                  return { ...b, image: cloudUrl };
-                }
-              }
-              return b;
-            })
-          );
-        }
-
-        const { error } = await supabase.from('college_info').upsert([{ id: 'default', data: updatedInfo, updated_at: new Date().toISOString() }]);
-        if (error) console.warn('Supabase college_info save warning:', error.message);
-      } catch (err) {
-        console.warn('saveCollegeInfo exception:', err);
       }
-      return await storageService.fetchCollegeInfo();
-    },
+      if (isInvalidOrPrivateUrl(updatedInfo.rightLogoImage)) {
+        const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.rightLogoImage!, 'college');
+        if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.rightLogoImage = cloudUrl;
+      }
+      if (isInvalidOrPrivateUrl(updatedInfo.shaktikumarImage)) {
+        const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.shaktikumarImage!, 'college');
+        if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.shaktikumarImage = cloudUrl;
+      }
+      if (isInvalidOrPrivateUrl(updatedInfo.deanImage)) {
+        const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.deanImage!, 'college');
+        if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.deanImage = cloudUrl;
+      }
+      if (isInvalidOrPrivateUrl(updatedInfo.secretaryImage)) {
+        const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.secretaryImage!, 'college');
+        if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.secretaryImage = cloudUrl;
+      }
+      if (isInvalidOrPrivateUrl(updatedInfo.adminOfficerImage)) {
+        const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.adminOfficerImage!, 'college');
+        if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.adminOfficerImage = cloudUrl;
+      }
+      if (isInvalidOrPrivateUrl(updatedInfo.presidentImage)) {
+        const cloudUrl = await supabaseStorageService.uploadImage(updatedInfo.presidentImage!, 'college');
+        if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) updatedInfo.presidentImage = cloudUrl;
+      }
+      if (updatedInfo.heroBanners && updatedInfo.heroBanners.length > 0) {
+        updatedInfo.heroBanners = await Promise.all(
+          updatedInfo.heroBanners.map(async b => {
+            if (isInvalidOrPrivateUrl(b.image)) {
+              const cloudUrl = await supabaseStorageService.uploadImage(b.image, 'hero');
+              if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) {
+                return { ...b, image: cloudUrl };
+              }
+            }
+            return b;
+          })
+        );
+      }
+
+      // Query existing rows to find authoritative ID and clean duplicates
+      const { data: existingRows } = await supabase
+        .from('college_info')
+        .select('id')
+        .order('updated_at', { ascending: false });
+
+      const targetId = existingRows && existingRows.length > 0 && existingRows[0].id ? existingRows[0].id : 'default';
+
+      const { error } = await supabase.from('college_info').upsert([{ 
+        id: targetId, 
+        data: updatedInfo, 
+        updated_at: new Date().toISOString() 
+      }]);
+
+      if (error) {
+        console.error('Supabase college_info save error:', error.message);
+        throw new Error(`Failed to save to Supabase: ${error.message}`);
+      }
+
+      // Clean up duplicate rows if multiple existed
+      if (existingRows && existingRows.length > 1) {
+        for (let i = 1; i < existingRows.length; i++) {
+          if (existingRows[i].id !== targetId) {
+            await supabase.from('college_info').delete().eq('id', existingRows[i].id);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('saveCollegeInfo exception:', err);
+      throw err;
+    }
+    return await storageService.fetchCollegeInfo();
+  },
 
   saveAcademicsData: async (academicsData: any): Promise<CollegeInfo> => {
     try {
@@ -311,8 +345,8 @@ export const storageService = {
       };
       return await storageService.saveCollegeInfo(updated);
     } catch (err) {
-      console.warn('saveAcademicsData exception:', err);
-      return await storageService.fetchCollegeInfo();
+      console.error('saveAcademicsData exception:', err);
+      throw err;
     }
   },
 

@@ -148,6 +148,9 @@ export const CurriculumManager: React.FC<CurriculumManagerProps> = ({ data, onSa
       await onSave(payload);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err: any) {
+      console.error('Curriculum save error:', err);
+      alert(`Failed to save curriculum: ${err?.message || err}`);
     } finally {
       setIsSaving(false);
     }

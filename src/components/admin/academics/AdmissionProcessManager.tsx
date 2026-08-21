@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AdmissionProcessSection, AdmissionProcessStepItem } from '../../../types';
 import { Plus, Trash2, ArrowUp, ArrowDown, CheckCircle2, Save, FileCheck, ExternalLink } from 'lucide-react';
 
@@ -8,9 +8,15 @@ interface AdmissionProcessManagerProps {
 }
 
 export const AdmissionProcessManager: React.FC<AdmissionProcessManagerProps> = ({ data, onSave }) => {
-  const [formData, setFormData] = useState<AdmissionProcessSection>(data);
+  const [formData, setFormData] = useState<AdmissionProcessSection>(data || {});
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    if (data) {
+      setFormData(data);
+    }
+  }, [data]);
 
   // New Step State
   const [newTitle, setNewTitle] = useState('');
@@ -78,6 +84,9 @@ export const AdmissionProcessManager: React.FC<AdmissionProcessManagerProps> = (
       await onSave(formData);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err: any) {
+      console.error('AdmissionProcess save error:', err);
+      alert(`Failed to save admission process: ${err?.message || err}`);
     } finally {
       setIsSaving(false);
     }

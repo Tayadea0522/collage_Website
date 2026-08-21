@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FeeStructureSection, FeeStructureRow } from '../../../types';
 import { supabaseStorageService } from '../../../services/supabaseStorageService';
 import { Plus, Trash2, ArrowUp, ArrowDown, CheckCircle2, Save, CreditCard, Upload, FileText, Loader2 } from 'lucide-react';
@@ -9,10 +9,16 @@ interface FeesStructureManagerProps {
 }
 
 export const FeesStructureManager: React.FC<FeesStructureManagerProps> = ({ data, onSave }) => {
-  const [formData, setFormData] = useState<FeeStructureSection>(data);
+  const [formData, setFormData] = useState<FeeStructureSection>(data || {});
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isUploadingPdf, setIsUploadingPdf] = useState(false);
+
+  useEffect(() => {
+    if (data) {
+      setFormData(data);
+    }
+  }, [data]);
 
   // New Fee Row state
   const [newCategory, setNewCategory] = useState('');
@@ -107,6 +113,9 @@ export const FeesStructureManager: React.FC<FeesStructureManagerProps> = ({ data
       await onSave(formData);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err: any) {
+      console.error('FeesStructure save error:', err);
+      alert(`Failed to save fees structure: ${err?.message || err}`);
     } finally {
       setIsSaving(false);
     }

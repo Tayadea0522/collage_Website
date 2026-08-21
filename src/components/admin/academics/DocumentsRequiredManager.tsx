@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DocumentsRequiredSection, RequiredDocumentItem } from '../../../types';
 import { supabaseStorageService } from '../../../services/supabaseStorageService';
 import { Plus, Trash2, ArrowUp, ArrowDown, CheckCircle2, Save, FileText, Upload, Download, Loader2 } from 'lucide-react';
@@ -9,10 +9,16 @@ interface DocumentsRequiredManagerProps {
 }
 
 export const DocumentsRequiredManager: React.FC<DocumentsRequiredManagerProps> = ({ data, onSave }) => {
-  const [formData, setFormData] = useState<DocumentsRequiredSection>(data);
+  const [formData, setFormData] = useState<DocumentsRequiredSection>(data || {});
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [uploadingDocId, setUploadingDocId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (data) {
+      setFormData(data);
+    }
+  }, [data]);
 
   // New Doc state
   const [newName, setNewName] = useState('');
@@ -113,6 +119,9 @@ export const DocumentsRequiredManager: React.FC<DocumentsRequiredManagerProps> =
       await onSave(formData);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err: any) {
+      console.error('DocumentsRequired save error:', err);
+      alert(`Failed to save documents checklist: ${err?.message || err}`);
     } finally {
       setIsSaving(false);
     }

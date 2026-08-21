@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ProgramOverviewSection } from '../../../types';
 import { supabaseStorageService } from '../../../services/supabaseStorageService';
 import { Plus, Trash2, CheckCircle2, Save, Award, Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
@@ -9,11 +9,17 @@ interface ProgramOverviewManagerProps {
 }
 
 export const ProgramOverviewManager: React.FC<ProgramOverviewManagerProps> = ({ data, onSave }) => {
-  const [formData, setFormData] = useState<ProgramOverviewSection>(data);
+  const [formData, setFormData] = useState<ProgramOverviewSection>(data || {});
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isUploadingEntryExitImage, setIsUploadingEntryExitImage] = useState(false);
+
+  useEffect(() => {
+    if (data) {
+      setFormData(data);
+    }
+  }, [data]);
 
   // New list items
   const [newObjective, setNewObjective] = useState('');
@@ -109,6 +115,9 @@ export const ProgramOverviewManager: React.FC<ProgramOverviewManagerProps> = ({ 
       await onSave(formData);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err: any) {
+      console.error('ProgramOverview save error:', err);
+      alert(`Failed to save program overview: ${err?.message || err}`);
     } finally {
       setIsSaving(false);
     }

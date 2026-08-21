@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AdmissionEnquirySection } from '../../../types';
 import { CheckCircle2, Save, Phone, Mail, MapPin, Clock, MessageSquare } from 'lucide-react';
 
@@ -8,9 +8,15 @@ interface AdmissionEnquiryManagerProps {
 }
 
 export const AdmissionEnquiryManager: React.FC<AdmissionEnquiryManagerProps> = ({ data, onSave }) => {
-  const [formData, setFormData] = useState<AdmissionEnquirySection>(data);
+  const [formData, setFormData] = useState<AdmissionEnquirySection>(data || {});
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    if (data) {
+      setFormData(data);
+    }
+  }, [data]);
 
   const handleFieldChange = (field: keyof AdmissionEnquirySection, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -23,6 +29,9 @@ export const AdmissionEnquiryManager: React.FC<AdmissionEnquiryManagerProps> = (
       await onSave(formData);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err: any) {
+      console.error('AdmissionEnquiry save error:', err);
+      alert(`Failed to save admission enquiry: ${err?.message || err}`);
     } finally {
       setIsSaving(false);
     }

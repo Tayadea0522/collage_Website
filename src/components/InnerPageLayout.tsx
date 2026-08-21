@@ -6,6 +6,7 @@ export interface SidebarItem {
   label: string;
   icon?: React.ComponentType<{ className?: string }>;
   badge?: string;
+  group?: string;
 }
 
 export interface BreadcrumbItem {
@@ -110,35 +111,48 @@ export const InnerPageLayout: React.FC<InnerPageLayoutProps> = ({
           </div>
 
           {mobileMenuOpen && (
-            <div className="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-1">
-              {sidebarItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = item.id === activeItem;
+            <div className="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-2">
+              {Array.from(new Set(sidebarItems.map(item => item.group || ''))).map((groupName) => {
+                const itemsInGroup = sidebarItems.filter(item => (item.group || '') === groupName);
                 return (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      onSelectSidebarItem(item.id);
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between ${
-                      isActive
-                        ? 'bg-[#0A2342] text-amber-400 shadow-sm'
-                        : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      {Icon && <Icon className={`w-4 h-4 ${isActive ? 'text-amber-400' : 'text-slate-500'}`} />}
-                      <span>{item.label}</span>
-                    </div>
-                    {item.badge && (
-                      <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${
-                        isActive ? 'bg-amber-400 text-slate-900' : 'bg-slate-200 text-slate-700'
-                      }`}>
-                        {item.badge}
-                      </span>
+                  <div key={groupName || 'default'} className="space-y-1">
+                    {groupName && (
+                      <div className="px-2 pt-1.5 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-amber-700 bg-amber-50 rounded-md">
+                        {groupName}
+                      </div>
                     )}
-                  </button>
+                    {itemsInGroup.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = item.id === activeItem;
+                      return (
+                        <button
+                          key={item.id}
+                          id={`mobile-sidebar-${item.id}`}
+                          onClick={() => {
+                            onSelectSidebarItem(item.id);
+                            setMobileMenuOpen(false);
+                          }}
+                          className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between ${
+                            isActive
+                              ? 'bg-[#0A2342] text-amber-400 shadow-sm'
+                              : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            {Icon && <Icon className={`w-4 h-4 ${isActive ? 'text-amber-400' : 'text-slate-500'}`} />}
+                            <span>{item.label}</span>
+                          </div>
+                          {item.badge && (
+                            <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${
+                              isActive ? 'bg-amber-400 text-slate-900' : 'bg-slate-200 text-slate-700'
+                            }`}>
+                              {item.badge}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 );
               })}
             </div>
@@ -150,45 +164,59 @@ export const InnerPageLayout: React.FC<InnerPageLayoutProps> = ({
           
           {/* LEFT SIDEBAR (Desktop) */}
           <aside className="hidden lg:block w-72 shrink-0 space-y-4">
-            <div className="bg-gradient-to-b from-[#0A2342] to-[#071931] text-white rounded-2xl border border-slate-800 shadow-md p-4 space-y-2">
+            <div className="bg-gradient-to-b from-[#0A2342] to-[#071931] text-white rounded-2xl border border-slate-800 shadow-md p-4 space-y-3">
               <div className="px-3 py-2 text-xs font-extrabold uppercase tracking-widest text-amber-400 border-b border-blue-900/80 mb-2 pb-2.5 flex items-center justify-between">
                 <span>Navigation Menu</span>
                 <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
               </div>
 
-              <div className="space-y-1">
-                {sidebarItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = item.id === activeItem;
+              <div className="space-y-3">
+                {Array.from(new Set(sidebarItems.map(item => item.group || ''))).map((groupName) => {
+                  const itemsInGroup = sidebarItems.filter(item => (item.group || '') === groupName);
                   return (
-                    <button
-                      key={item.id}
-                      onClick={() => onSelectSidebarItem(item.id)}
-                      className={`w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-between group ${
-                        isActive
-                          ? 'bg-amber-500 text-slate-950 font-extrabold shadow-md transform scale-[1.02]'
-                          : 'text-slate-200 hover:bg-white/10 hover:text-white'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0 pr-1">
-                        {Icon && (
-                          <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-slate-950' : 'text-amber-400 group-hover:scale-110 transition-transform'}`} />
-                        )}
-                        <span className="truncate">{item.label}</span>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        {item.badge && (
-                          <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${
-                            isActive ? 'bg-slate-950 text-amber-300' : 'bg-amber-500/20 text-amber-300 border border-amber-400/30'
-                          }`}>
-                            {item.badge}
-                          </span>
-                        )}
-                        <ChevronRight className={`w-3.5 h-3.5 transition-transform ${
-                          isActive ? 'text-slate-950 translate-x-0.5' : 'text-slate-400 opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5'
-                        }`} />
-                      </div>
-                    </button>
+                    <div key={groupName || 'default'} className="space-y-1">
+                      {groupName && (
+                        <div className="px-3 pt-2 pb-1 text-[10px] font-extrabold uppercase tracking-widest text-amber-400/90 flex items-center gap-1.5 border-b border-blue-900/40 mb-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                          <span>{groupName}</span>
+                        </div>
+                      )}
+                      {itemsInGroup.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = item.id === activeItem;
+                        return (
+                          <button
+                            key={item.id}
+                            id={`sidebar-item-${item.id}`}
+                            onClick={() => onSelectSidebarItem(item.id)}
+                            className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between group ${
+                              isActive
+                                ? 'bg-amber-500 text-slate-950 font-extrabold shadow-md transform scale-[1.02]'
+                                : 'text-slate-200 hover:bg-white/10 hover:text-white'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0 pr-1">
+                              {Icon && (
+                                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-slate-950' : 'text-amber-400 group-hover:scale-110 transition-transform'}`} />
+                              )}
+                              <span className="truncate">{item.label}</span>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              {item.badge && (
+                                <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${
+                                  isActive ? 'bg-slate-950 text-amber-300' : 'bg-amber-500/20 text-amber-300 border border-amber-400/30'
+                                }`}>
+                                  {item.badge}
+                                </span>
+                              )}
+                              <ChevronRight className={`w-3.5 h-3.5 transition-transform ${
+                                isActive ? 'text-slate-950 translate-x-0.5' : 'text-slate-400 opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5'
+                              }`} />
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
                   );
                 })}
               </div>

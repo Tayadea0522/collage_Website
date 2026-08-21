@@ -36,7 +36,6 @@ export const Header: React.FC<HeaderProps> = ({
   const navItems = [
     { id: 'home', label: 'Home' },
     { id: 'about', label: 'About' },
-    { id: 'admissions', label: 'Admissions' },
     { id: 'academics', label: 'Academics' },
     { id: 'faculties', label: 'Faculties' },
     { id: 'departments', label: 'Departments' },
@@ -298,7 +297,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Apply Now CTA Button */}
           <div className="hidden md:flex items-center">
             <button
-              onClick={() => handleNavClick('admissions')}
+              onClick={() => handleNavClick('academics')}
               className="bg-[#D97706] hover:bg-amber-600 text-slate-950 font-bold px-4 py-1.5 rounded-md text-xs shadow-md transition-all flex items-center gap-1.5 whitespace-nowrap"
             >
               <Sparkles className="w-3.5 h-3.5 text-slate-950" />
@@ -344,7 +343,7 @@ export const Header: React.FC<HeaderProps> = ({
           })}
           <div className="pt-2 border-t border-slate-700">
             <button
-              onClick={() => handleNavClick('admissions')}
+              onClick={() => handleNavClick('academics')}
               className="w-full bg-[#D97706] hover:bg-amber-600 text-slate-950 font-bold py-2.5 rounded-lg text-xs text-center shadow"
             >
               Apply Now

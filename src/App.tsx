@@ -437,8 +437,14 @@ export default function App() {
           />
         )}
 
-        {currentTab === 'academics' && (
-          <Academics onNavigateTab={setCurrentTab} />
+        {(currentTab === 'academics' || currentTab === 'admissions') && (
+          <Academics 
+            collegeInfo={collegeInfo}
+            applications={applications}
+            onRefreshApplications={refreshAllData}
+            onNavigateTab={setCurrentTab}
+            initialSection={currentTab === 'admissions' ? 'portal' : undefined}
+          />
         )}
 
         {currentTab === 'departments' && (
@@ -447,14 +453,6 @@ export default function App() {
 
         {currentTab === 'facilities' && (
           <Facilities facilities={facilities} />
-        )}
-
-        {currentTab === 'admissions' && (
-          <Admissions
-            collegeInfo={collegeInfo}
-            applications={applications}
-            onRefreshApplications={refreshAllData}
-          />
         )}
 
         {(currentTab === 'faculties' || currentTab === 'faculty') && (

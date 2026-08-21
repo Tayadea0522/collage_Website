@@ -261,7 +261,7 @@ export const Home: React.FC<HomeProps> = ({
                   </p>
                   <div className="pt-2 flex flex-wrap items-center gap-4">
                     <button
-                      onClick={() => onNavigate('admissions')}
+                      onClick={() => onNavigate('academics')}
                       className="bg-[#D97706] hover:bg-[#b46304] text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg hover:shadow-amber-600/30 transition-all flex items-center gap-2 group"
                     >
                       <span>{banner.ctaText || 'Apply Now'}</span>

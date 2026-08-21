@@ -122,11 +122,11 @@ export const Footer: React.FC<FooterProps> = ({
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             {[
-              { id: 'admissions', label: 'Admissions' },
+              { id: 'about', label: 'About Us' },
               { id: 'academics', label: 'Academics' },
+              { id: 'faculties', label: 'Faculties' },
               { id: 'departments', label: 'Departments' },
-              { id: 'gallery', label: 'Gallery' },
-              { id: 'news', label: 'News' },
+              { id: 'facilities', label: 'Facilities' },
               { id: 'contact', label: 'Contact' },
             ].map((item) => (
               <button

@@ -452,7 +452,7 @@ export default function App() {
         )}
 
         {currentTab === 'facilities' && (
-          <Facilities facilities={facilities} />
+          <Facilities facilities={facilities} onNavigateTab={setCurrentTab} />
         )}
 
         {(currentTab === 'faculties' || currentTab === 'faculty') && (
@@ -736,6 +736,7 @@ export default function App() {
                 events={events}
                 departments={departments}
                 faculty={faculty}
+                facilities={facilities}
                 applications={applications}
                 gallery={gallery}
                 downloads={downloads}

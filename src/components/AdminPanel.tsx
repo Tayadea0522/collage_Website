@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import * as XLSX from 'xlsx';
-import { CollegeInfo, Notice, DepartmentInfo, FacultyMember, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser, DownloadableDocument, NoticeAttachment, PopupBanner, AdmissionProcessStep, AdmissionProcessData } from '../types';
+import { CollegeInfo, Notice, DepartmentInfo, FacultyMember, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser, DownloadableDocument, NoticeAttachment, PopupBanner, AdmissionProcessStep, AdmissionProcessData, Facility } from '../types';
 import { storageService } from '../services/storageService';
 import { zipService } from '../services/zipService';
 import { supabaseStorageService } from '../services/supabaseStorageService';
@@ -9,6 +9,7 @@ import { printApplicationSlip, downloadApplicationSlip } from '../utils/printUti
 import { PopupBannerManager } from './PopupBannerManager';
 import { PopupBannerModal } from './PopupBannerModal';
 import { AcademicsCmsManager } from './admin/academics/AcademicsCmsManager';
+import { FacilitiesCmsManager } from './admin/facilities/FacilitiesCmsManager';
 import { 
   Lock, 
   LogOut, 
@@ -61,6 +62,7 @@ interface AdminPanelProps {
   events: CollegeEvent[];
   departments: DepartmentInfo[];
   faculty: FacultyMember[];
+  facilities?: Facility[];
   applications: AdmissionApplication[];
   gallery: GalleryItem[];
   downloads: DownloadableDocument[];
@@ -75,6 +77,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   events,
   departments,
   faculty,
+  facilities = [],
   applications,
   gallery,
   downloads,
@@ -89,6 +92,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     | 'departments' 
     | 'faculty' 
     | 'academics'
+    | 'facilities'
     | 'gallery' 
     | 'notices' 
     | 'events' 
@@ -104,7 +108,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       const saved = sessionStorage.getItem('lsscdt_admin_active_tab') as AdminTab;
       if (saved && [
         'dashboard', 'applications', 'approved', 'departments', 'faculty', 'academics',
-        'gallery', 'notices', 'events', 'downloads', 'popup', 'info', 
+        'facilities', 'gallery', 'notices', 'events', 'downloads', 'popup', 'info', 
         'admission_process', 'contact', 'admin_users'
       ].includes(saved)) {
         return saved;
@@ -1375,6 +1379,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     { id: 'departments', label: 'Departments', icon: Building2 },
     { id: 'faculty', label: 'Faculty', icon: GraduationCap },
     { id: 'academics', label: 'Academics CMS', icon: GraduationCap },
+    { id: 'facilities', label: 'Infrastructure & Photos', icon: Building2 },
     { id: 'gallery', label: 'Gallery', icon: ImageIcon },
     { id: 'notices', label: 'Notices', icon: FileText },
     { id: 'events', label: 'Events', icon: Calendar },
@@ -1563,6 +1568,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <Sliders className="w-5 h-5 text-blue-600" />
                     <div className="font-bold text-xs text-slate-900">Update Banners</div>
                     <div className="text-[10px] text-slate-500">Hero Slider Images</div>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('facilities')}
+                    className="p-3 bg-white hover:bg-slate-50 rounded-xl border border-slate-200 text-left space-y-1 shadow-sm transition-colors"
+                  >
+                    <Building2 className="w-5 h-5 text-amber-600" />
+                    <div className="font-bold text-xs text-slate-900">Infrastructure Photos</div>
+                    <div className="text-[10px] text-slate-500">Pilot Plant, Labs, Gym</div>
                   </button>
 
                   <button
@@ -2997,6 +3011,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               await onRefreshAll();
               showToast('Academics & Admissions content saved to database!');
               return saved;
+            }}
+          />
+        )}
+
+        {/* TAB: INFRASTRUCTURE & FACILITIES PHOTO MANAGER */}
+        {activeTab === 'facilities' && (
+          <FacilitiesCmsManager
+            facilities={facilities}
+            onRefreshAll={async () => {
+              await onRefreshAll();
+              showToast('Infrastructure & Facilities photos synchronized with Supabase!');
             }}
           />
         )}

@@ -59,6 +59,16 @@ export interface DownloadableDocument {
   updatedAt?: string;
 }
 
+export interface FacilityPhoto {
+  id: string;
+  url: string;
+  title?: string;
+  caption?: string;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt?: string;
+}
+
 export interface Facility {
   id: string;
   title: string;
@@ -66,6 +76,10 @@ export interface Facility {
   description: string;
   features: string[];
   image: string;
+  images?: string[];
+  photos?: FacilityPhoto[];
+  displayOrder?: number;
+  isActive?: boolean;
 }
 
 export interface AdmissionApplication {

@@ -307,36 +307,208 @@ export const initialFaculty: FacultyMember[] = [
 
 export const initialFacilities: Facility[] = [
   {
+    id: "fac-overview",
+    title: "All Infrastructure Overview",
+    category: "Overview",
+    description: "Our expansive 35-acre green academic campus at Malkapur houses state-of-the-art pilot dairy processing plants, accredited testing laboratories, smart multimedia classrooms, modern student hostels, a central digital library, and vast sports arenas.",
+    features: ["35-Acre Eco-Friendly Green Campus", "Pilot Dairy Processing Plants", "Advanced Quality Control Labs", "Digital Smart Learning Theatres", "Hostels & Student Activity Complex"],
+    image: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80",
+    photos: [
+      {
+        id: "p-ov-1",
+        url: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80",
+        title: "Main Academic Building & Campus Entrance",
+        caption: "Main administrative and academic complex with landscaped gardens and modern architecture.",
+        displayOrder: 1,
+        isActive: true
+      },
+      {
+        id: "p-ov-2",
+        url: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80",
+        title: "Campus Aerial View & Learning Quadrangles",
+        caption: "Spacious academic blocks and outdoor student gathering courtyards.",
+        displayOrder: 2,
+        isActive: true
+      },
+      {
+        id: "p-ov-3",
+        url: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1200&q=80",
+        title: "Student Convocation & Academic Walkways",
+        caption: "Dedicated pedestrian avenues connecting all departmental blocks.",
+        displayOrder: 3,
+        isActive: true
+      }
+    ]
+  },
+  {
     id: "fac-plant",
-    title: "500 LPD Dairy Processing Plant",
+    title: "Experimental Dairy Plant",
     category: "Plant",
-    description: "State-of-the-art pilot processing plant with 500 Litres Per Day (LPD) capacity for milk pasteurization, cream separation, paneer, ghee, and curd/lassi manufacturing.",
-    features: ["500 LPD Milk Pasteurization", "Paneer & Cheese Processing Vats", "Cream Separator & Ghee Kettle", "Automatic Pouch Packaging & Cold Storage"],
-    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80"
+    description: "State-of-the-art pilot processing plant with commercial-grade processing lines for milk pasteurization, homogenisation, cream separation, paneer, ghee, butter, ice cream, and curd/lassi manufacturing.",
+    features: ["500 LPD Milk Pasteurization & Homogenizer", "Paneer & Cheese Processing Vats", "Cream Separator & Stainless Steel Ghee Kettle", "Automatic Pouch Packaging & Cold Storage Room"],
+    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1200&q=80",
+    photos: [
+      {
+        id: "p-plant-1",
+        url: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1200&q=80",
+        title: "Automated Pasteurization & Processing Line",
+        caption: "Sanitary stainless steel pipelines and plate heat exchangers for milk processing.",
+        displayOrder: 1,
+        isActive: true
+      },
+      {
+        id: "p-plant-2",
+        url: "https://images.unsplash.com/photo-1527153857715-3908f2bae5e8?auto=format&fit=crop&w=1200&q=80",
+        title: "Cream Separation & Butter Churning Unit",
+        caption: "High-speed centrifugal cream separation equipment and temperature-controlled storage tanks.",
+        displayOrder: 2,
+        isActive: true
+      },
+      {
+        id: "p-plant-3",
+        url: "https://images.unsplash.com/photo-1584905066893-7d5c142ba4e1?auto=format&fit=crop&w=1200&q=80",
+        title: "Packaging & Cold Storage Section",
+        caption: "Hygienic automatic pouch packing machines and zero-degree cold rooms.",
+        displayOrder: 3,
+        isActive: true
+      }
+    ]
   },
   {
     id: "fac-lab",
-    title: "Latest Laboratories",
+    title: "Quality Control Labs",
     category: "Laboratories",
-    description: "Fully equipped modern quality testing and research laboratories with Gerber centrifuges, FTIR milk analyzers, HPLC, laminar airflows, and spectrophotometers.",
-    features: ["FTIR Milk Spectroscopy", "Microbiology Incubators & Biosafety", "Chemical Titration Desks", "Sensory & Quality Testing"],
-    image: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=800&q=80"
+    description: "Fully equipped modern quality testing and analytical research laboratories with Gerber centrifuges, FTIR milk analyzers, HPLC systems, spectrophotometers, laminar airflows, and autoclave chambers.",
+    features: ["FTIR Milk Spectroscopy & Milko-Scan", "Microbiology Biosafety Cabinets & Incubators", "Chemical Titration & Adulteration Testing Benches", "Sensory Evaluation & Quality Assurance Lab"],
+    image: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=1200&q=80",
+    photos: [
+      {
+        id: "p-lab-1",
+        url: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=1200&q=80",
+        title: "Dairy Chemistry & Analytical Benches",
+        caption: "Precision titration apparatus and digital spectrophotometers for milk constituent analysis.",
+        displayOrder: 1,
+        isActive: true
+      },
+      {
+        id: "p-lab-2",
+        url: "https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=1200&q=80",
+        title: "Microbiology & Starter Culture Lab",
+        caption: "Sterile laminar airflow hoods and culture incubation facilities for probiotic research.",
+        displayOrder: 2,
+        isActive: true
+      },
+      {
+        id: "p-lab-3",
+        url: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80",
+        title: "Instrumentation & Chromatography Suite",
+        caption: "High-performance analytical instruments for dairy product quality certification.",
+        displayOrder: 3,
+        isActive: true
+      }
+    ]
   },
   {
     id: "fac-lib",
-    title: "Complete Library",
+    title: "Central Library & E-Resource",
     category: "Library",
-    description: "Comprehensive learning resource center housing thousands of reference textbooks, scientific dairy journals, ICAR e-learning modules, and digital reading kiosks.",
-    features: ["12,000+ Printed Reference Books", "CeRA E-Journal Access", "Digital Reading Kiosks", "Quiet Study Zone"],
-    image: "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=800&q=80"
+    description: "Comprehensive learning resource center housing thousands of reference textbooks, scientific dairy and food journals, ICAR e-learning modules, digital reading terminals, and quiet study carrels.",
+    features: ["12,000+ Printed Reference Books & Bound Journals", "CeRA & ICAR E-Journal Online Database Access", "Digital Computer Reading Terminals", "Air-Conditioned Quiet Study & Research Zones"],
+    image: "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1200&q=80",
+    photos: [
+      {
+        id: "p-lib-1",
+        url: "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1200&q=80",
+        title: "Main Library Reading Hall",
+        caption: "Spacious reading hall with natural lighting and curated dairy technology reference stacks.",
+        displayOrder: 1,
+        isActive: true
+      },
+      {
+        id: "p-lib-2",
+        url: "https://images.unsplash.com/photo-1568667256549-094345857637?auto=format&fit=crop&w=1200&q=80",
+        title: "Digital E-Resource Center & Terminals",
+        caption: "High-speed networked computer kiosks for accessing online research papers and e-books.",
+        displayOrder: 2,
+        isActive: true
+      },
+      {
+        id: "p-lib-3",
+        url: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=1200&q=80",
+        title: "Reference Stacks & Journal Archive",
+        caption: "Extensive collection of national and international dairy science publications.",
+        displayOrder: 3,
+        isActive: true
+      }
+    ]
   },
   {
     id: "fac-hostel",
-    title: "Hostel Services",
+    title: "Hostel & Mess Facilities",
     category: "Hostel",
-    description: "Separate, secure student hostels for Boys and Girls with solar hot water systems, study rooms, 24/7 CCTV security, power backup, and mess facilities.",
-    features: ["Separate Boys & Girls Hostels", "Solar Water Heaters", "Pure Veg Hygienic Mess", "24/7 CCTV & Security Guard"],
-    image: "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80"
+    description: "Separate, secure student residential complexes for Boys and Girls with solar hot water systems, study rooms, 24/7 CCTV surveillance, Wi-Fi connectivity, backup power generators, and a hygienic dining mess.",
+    features: ["Separate Boys & Girls Multi-Storey Hostels", "Solar Water Heating & RO Purified Drinking Water", "Hygienic Pure Vegetarian Dining Mess", "24/7 CCTV Security & Resident Wardens"],
+    image: "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=1200&q=80",
+    photos: [
+      {
+        id: "p-hostel-1",
+        url: "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=1200&q=80",
+        title: "Student Residential Rooms",
+        caption: "Well-ventilated twin-sharing rooms with individual study tables and storage wardrobes.",
+        displayOrder: 1,
+        isActive: true
+      },
+      {
+        id: "p-hostel-2",
+        url: "https://images.unsplash.com/photo-1567521464027-f127ff144326?auto=format&fit=crop&w=1200&q=80",
+        title: "Hygienic Campus Dining Mess",
+        caption: "Nutritious and delicious vegetarian breakfast, lunch, and dinner served in a spotless hall.",
+        displayOrder: 2,
+        isActive: true
+      },
+      {
+        id: "p-hostel-3",
+        url: "https://images.unsplash.com/photo-1590402494682-cd3fb53b1f70?auto=format&fit=crop&w=1200&q=80",
+        title: "Common Recreation & Study Lounge",
+        caption: "Hostel recreation room with indoor games, television, and study desks.",
+        displayOrder: 3,
+        isActive: true
+      }
+    ]
+  },
+  {
+    id: "fac-sports",
+    title: "Sports Complex & Gym",
+    category: "Sports",
+    description: "Spacious outdoor sports fields and modern indoor sports facilities equipped for volleyball, cricket, badminton, table tennis, yoga, athletics, and a well-equipped fitness gymnasium.",
+    features: ["Outdoor Volleyball, Cricket & Football Grounds", "Indoor Badminton Courts & Table Tennis Arena", "Modern Gymnasium with Cardio & Strength Machines", "Annual Inter-College Sports & Athletic Meets"],
+    image: "https://images.unsplash.com/photo-1526676037777-05a232554f77?auto=format&fit=crop&w=1200&q=80",
+    photos: [
+      {
+        id: "p-sports-1",
+        url: "https://images.unsplash.com/photo-1526676037777-05a232554f77?auto=format&fit=crop&w=1200&q=80",
+        title: "College Sports Grounds & Athletics Track",
+        caption: "Lush outdoor grounds host to daily sports practices and inter-collegiate tournaments.",
+        displayOrder: 1,
+        isActive: true
+      },
+      {
+        id: "p-sports-2",
+        url: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1200&q=80",
+        title: "Student Fitness Center & Gymnasium",
+        caption: "Equipped with modern fitness machines, free weights, and cross-training gear.",
+        displayOrder: 2,
+        isActive: true
+      },
+      {
+        id: "p-sports-3",
+        url: "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=1200&q=80",
+        title: "Indoor Badminton & Sports Arena",
+        caption: "Well-lit indoor arena with standard badminton courts and table tennis tables.",
+        displayOrder: 3,
+        isActive: true
+      }
+    ]
   },
   {
     id: "fac-smartroom",
@@ -344,7 +516,17 @@ export const initialFacilities: Facility[] = [
     category: "Classroom",
     description: "Tech-enabled interactive classrooms with digital smart touchboards, high-definition projectors, acoustic sound systems, and video conferencing capabilities.",
     features: ["Interactive Smart Touchboards", "HD Projector & Sound System", "E-Learning & Virtual Lectures", "Ergonomic Air-Conditioned Seating"],
-    image: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=800&q=80"
+    image: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=800&q=80",
+    photos: [
+      {
+        id: "p-smart-1",
+        url: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=800&q=80",
+        title: "Interactive Smart Classroom",
+        caption: "Multimedia lecture hall with interactive smart display and ergonomic seating.",
+        displayOrder: 1,
+        isActive: true
+      }
+    ]
   },
   {
     id: "fac-bus",
@@ -352,7 +534,17 @@ export const initialFacilities: Facility[] = [
     category: "Transport",
     description: "Dedicated college bus fleet providing comfortable and safe daily transport connecting the campus with Malkapur city, railway station, bus stand, and surrounding routes.",
     features: ["Multiple Daily Commute Routes", "Safe Experienced Drivers", "GPS Fleet Tracking", "Punctual Morning & Evening Pickups"],
-    image: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80"
+    image: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80",
+    photos: [
+      {
+        id: "p-bus-1",
+        url: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80",
+        title: "Campus Transportation Fleet",
+        caption: "Safe daily transit buses covering key student pickup routes.",
+        displayOrder: 1,
+        isActive: true
+      }
+    ]
   },
   {
     id: "fac-medical",
@@ -360,15 +552,17 @@ export const initialFacilities: Facility[] = [
     category: "Healthcare",
     description: "On-campus medical first-aid care center equipped with essential emergency medicines, regular visiting doctor facility, and emergency transport tie-ups.",
     features: ["First-Aid Care Unit", "Visiting Qualified Doctor", "24/7 Emergency Ambulance Tie-up", "Annual Health Checkup Camps"],
-    image: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=800&q=80"
-  },
-  {
-    id: "fac-sports",
-    title: "Sports Services",
-    category: "Sports",
-    description: "Spacious sports ground and indoor games facilities equipped for volleyball, cricket, badminton, table tennis, chess, and athletic events.",
-    features: ["Volleyball & Cricket Pitch", "Indoor Badminton & Table Tennis", "Athletics & Track Gear", "Inter-College Sports Competitions"],
-    image: "https://images.unsplash.com/photo-1526676037777-05a232554f77?auto=format&fit=crop&w=800&q=80"
+    image: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=800&q=80",
+    photos: [
+      {
+        id: "p-med-1",
+        url: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=800&q=80",
+        title: "First Aid & Health Center",
+        caption: "Well-equipped health desk and basic emergency medical care.",
+        displayOrder: 1,
+        isActive: true
+      }
+    ]
   },
   {
     id: "fac-canteen",
@@ -376,7 +570,17 @@ export const initialFacilities: Facility[] = [
     category: "Canteen",
     description: "Hygienic campus canteen serving fresh, delicious vegetarian meals, snacks, beverages, and fresh dairy items like lassi and peda made on campus.",
     features: ["Fresh & Hygienic Veg Food", "Campus Fresh Dairy Snacks & Drinks", "Clean Dining Space", "Affordable Student Pricing"],
-    image: "https://images.unsplash.com/photo-1567521464027-f127ff144326?auto=format&fit=crop&w=800&q=80"
+    image: "https://images.unsplash.com/photo-1567521464027-f127ff144326?auto=format&fit=crop&w=800&q=80",
+    photos: [
+      {
+        id: "p-can-1",
+        url: "https://images.unsplash.com/photo-1567521464027-f127ff144326?auto=format&fit=crop&w=800&q=80",
+        title: "Campus Refreshment Canteen",
+        caption: "Clean dining space serving student meals, tea, and college dairy products.",
+        displayOrder: 1,
+        isActive: true
+      }
+    ]
   }
 ];
 

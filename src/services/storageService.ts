@@ -625,35 +625,109 @@ export const storageService = {
   fetchFacilities: async (): Promise<Facility[]> => {
     try {
       const { data, error } = await supabase.from('facilities').select('*');
-      if (error || !data) return [];
-      return data.map(row => ({ ...(row.data || row), id: row.id || row.data?.id }));
-    } catch {
-      return [];
+      if (error || !data || data.length === 0) return initialFacilities;
+      
+      const dbFacilities: Facility[] = data.map(row => {
+        const d = row.data || {};
+        const base: Facility = {
+          ...(d || {}),
+          id: row.id || d.id,
+          title: row.title || d.title || 'Campus Facility',
+          category: row.category || d.category || 'General',
+          description: d.description || '',
+          features: Array.isArray(d.features) ? d.features : [],
+          image: d.image || row.image || '',
+          photos: Array.isArray(d.photos) ? d.photos : []
+        };
+
+        // If photos is empty but image is present, construct initial photo item
+        if ((!base.photos || base.photos.length === 0) && base.image) {
+          base.photos = [
+            {
+              id: `p-${base.id}-1`,
+              url: base.image,
+              title: base.title,
+              caption: base.description || base.title,
+              displayOrder: 1,
+              isActive: true
+            }
+          ];
+        }
+
+        return base;
+      });
+
+      // Merge with initialFacilities to ensure all 6 core categories exist if not yet seeded
+      const existingIds = new Set(dbFacilities.map(f => f.id));
+      const missingInitial = initialFacilities.filter(initF => !existingIds.has(initF.id));
+      
+      return [...dbFacilities, ...missingInitial];
+    } catch (err) {
+      console.warn('fetchFacilities exception:', err);
+      return initialFacilities;
     }
   },
   getFacilities: (): Facility[] => initialFacilities,
 
   saveFacilities: async (facs: Facility[]): Promise<Facility[]> => {
     try {
-      const processed = await Promise.all(
+      const processed: Facility[] = await Promise.all(
         facs.map(async f => {
-          if (isInvalidOrPrivateUrl(f.image)) {
-            const cloudUrl = await supabaseStorageService.uploadImage(f.image, 'facilities');
+          let updatedCover = f.image || '';
+          if (isInvalidOrPrivateUrl(updatedCover)) {
+            const cloudUrl = await supabaseStorageService.uploadImage(updatedCover, 'facilities');
             if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) {
-              return { ...f, image: cloudUrl };
+              updatedCover = cloudUrl;
             }
           }
-          return f;
+
+          let updatedPhotos = f.photos && f.photos.length > 0 
+            ? await Promise.all(
+                f.photos.map(async (p, idx) => {
+                  let pUrl = p.url;
+                  if (isInvalidOrPrivateUrl(pUrl)) {
+                    const cloudUrl = await supabaseStorageService.uploadImage(pUrl, 'facilities');
+                    if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) {
+                      pUrl = cloudUrl;
+                    }
+                  }
+                  return {
+                    ...p,
+                    id: p.id || `p-${f.id}-${idx + 1}-${Date.now()}`,
+                    url: pUrl,
+                    displayOrder: typeof p.displayOrder === 'number' ? p.displayOrder : (idx + 1),
+                    isActive: p.isActive !== false
+                  };
+                })
+              )
+            : [];
+
+          // Sort photos by displayOrder
+          updatedPhotos.sort((a, b) => (a.displayOrder || 1) - (b.displayOrder || 1));
+
+          // Ensure cover image aligns with first active photo if empty or updated
+          const firstActive = updatedPhotos.find(p => p.isActive !== false);
+          if (firstActive && (!updatedCover || isInvalidOrPrivateUrl(updatedCover))) {
+            updatedCover = firstActive.url;
+          }
+
+          return {
+            ...f,
+            image: updatedCover || (firstActive ? firstActive.url : ''),
+            photos: updatedPhotos
+          };
         })
       );
 
-      const { error } = await supabase.from('facilities').upsert(processed.map(f => ({
+      const dbRows = processed.map(f => ({
         id: f.id,
         title: f.title,
         category: f.category,
         data: f,
         updated_at: new Date().toISOString()
-      })));
+      }));
+
+      const { error } = await supabase.from('facilities').upsert(dbRows);
       if (error) console.warn('Supabase facilities save warning:', error.message);
     } catch (err) {
       console.warn('saveFacilities exception:', err);

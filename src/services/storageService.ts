@@ -425,7 +425,19 @@ export const storageService = {
 
   saveDepartments: async (depts: DepartmentInfo[]): Promise<DepartmentInfo[]> => {
     try {
-      const { error } = await supabase.from('departments').upsert(depts.map(d => ({
+      const processed = await Promise.all(
+        depts.map(async (d) => {
+          if (isInvalidOrPrivateUrl(d.image)) {
+            const cloudUrl = await supabaseStorageService.uploadImage(d.image, 'departments');
+            if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) {
+              return { ...d, image: cloudUrl };
+            }
+          }
+          return d;
+        })
+      );
+
+      const { error } = await supabase.from('departments').upsert(processed.map(d => ({
         id: d.id,
         name: d.name,
         data: d,

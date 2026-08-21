@@ -715,6 +715,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [deptList, setDeptList] = useState<DepartmentInfo[]>([...departments]);
   const [isDeptModalOpen, setIsDeptModalOpen] = useState<boolean>(false);
   const [editingDept, setEditingDept] = useState<DepartmentInfo | null>(null);
+  const [selectedDeptImageFile, setSelectedDeptImageFile] = useState<File | null>(null);
+  const [deptImageLocalPreview, setDeptImageLocalPreview] = useState<string | null>(null);
+  const [deptImageError, setDeptImageError] = useState<string>('');
+  const [isUploadingDeptImage, setIsUploadingDeptImage] = useState<boolean>(false);
   const [deptForm, setDeptForm] = useState<{
     name: string;
     code: string;
@@ -737,7 +741,65 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     displayOrder: 1
   });
 
+  const handleDeptImageFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDeptImageError('');
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate format: JPG/JPEG, PNG, WEBP
+    const validMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const validExtensions = /\.(jpe?g|png|webp)$/i;
+    if (!validMimeTypes.includes(file.type) && !validExtensions.test(file.name)) {
+      setDeptImageError('Please select a valid image file (JPG, PNG, or WEBP).');
+      e.target.value = '';
+      return;
+    }
+
+    // Validate size: Maximum 5 MB
+    if (file.size > 5 * 1024 * 1024) {
+      setDeptImageError('Image size exceeds the maximum limit of 5 MB. Please choose a smaller file.');
+      e.target.value = '';
+      return;
+    }
+
+    if (deptImageLocalPreview) {
+      URL.revokeObjectURL(deptImageLocalPreview);
+    }
+
+    setSelectedDeptImageFile(file);
+    const objectUrl = URL.createObjectURL(file);
+    setDeptImageLocalPreview(objectUrl);
+    setDeptForm(prev => ({ ...prev, image: '' }));
+  };
+
+  const handleDeptImageUrlChange = (url: string) => {
+    setDeptImageError('');
+    if (deptImageLocalPreview) {
+      URL.revokeObjectURL(deptImageLocalPreview);
+    }
+    setSelectedDeptImageFile(null);
+    setDeptImageLocalPreview(null);
+    setDeptForm(prev => ({ ...prev, image: url }));
+  };
+
+  const handleRemoveDeptImage = () => {
+    setDeptImageError('');
+    if (deptImageLocalPreview) {
+      URL.revokeObjectURL(deptImageLocalPreview);
+    }
+    setSelectedDeptImageFile(null);
+    setDeptImageLocalPreview(null);
+    setDeptForm(prev => ({ ...prev, image: '' }));
+  };
+
   const handleOpenNewDeptModal = () => {
+    if (deptImageLocalPreview) {
+      URL.revokeObjectURL(deptImageLocalPreview);
+    }
+    setSelectedDeptImageFile(null);
+    setDeptImageLocalPreview(null);
+    setDeptImageError('');
+    setIsUploadingDeptImage(false);
     setEditingDept(null);
     setDeptForm({
       name: '',
@@ -754,6 +816,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   const handleOpenEditDeptModal = (dept: DepartmentInfo) => {
+    if (deptImageLocalPreview) {
+      URL.revokeObjectURL(deptImageLocalPreview);
+    }
+    setSelectedDeptImageFile(null);
+    setDeptImageLocalPreview(null);
+    setDeptImageError('');
+    setIsUploadingDeptImage(false);
     setEditingDept(dept);
     setDeptForm({
       name: dept.name,
@@ -771,7 +840,37 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const handleSaveDepartmentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!deptForm.name.trim() || !deptForm.code.trim()) return;
+    setDeptImageError('');
+    if (!deptForm.name.trim() || !deptForm.code.trim()) {
+      setDeptImageError('Department Name and Department Code are required.');
+      return;
+    }
+
+    let finalImageUrl = deptForm.image.trim();
+
+    // If local image file was chosen, upload it to popup-banners Supabase bucket
+    if (selectedDeptImageFile) {
+      setIsUploadingDeptImage(true);
+      showToast('Uploading department banner to cloud storage...');
+      try {
+        const uploadedUrl = await supabaseStorageService.uploadImage(selectedDeptImageFile, 'departments');
+        if (!uploadedUrl || uploadedUrl.startsWith('data:')) {
+          throw new Error('Could not obtain permanent public URL from cloud storage.');
+        }
+        finalImageUrl = uploadedUrl;
+      } catch (err: any) {
+        setIsUploadingDeptImage(false);
+        const errMsg = err?.message || 'Failed to upload department image to Supabase Storage.';
+        setDeptImageError(errMsg);
+        showToast(`Upload failed: ${errMsg}`);
+        return;
+      }
+      setIsUploadingDeptImage(false);
+    }
+
+    if (!finalImageUrl) {
+      finalImageUrl = 'https://images.unsplash.com/photo-1527153857715-3908f2bae5e8?auto=format&fit=crop&w=800&q=80';
+    }
 
     const labs = deptForm.labsStr.split(',').map(s => s.trim()).filter(Boolean);
     const keySubjects = deptForm.keySubjectsStr.split(',').map(s => s.trim()).filter(Boolean);
@@ -785,7 +884,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       description: deptForm.description.trim(),
       labs: labs.length > 0 ? labs : ['Specialized Practical Laboratory'],
       keySubjects: keySubjects.length > 0 ? keySubjects : ['Core Dairy Course'],
-      image: deptForm.image.trim() || 'https://images.unsplash.com/photo-1527153857715-3908f2bae5e8?auto=format&fit=crop&w=800&q=80',
+      image: finalImageUrl,
       isActive: deptForm.isActive,
       displayOrder: Number(deptForm.displayOrder) || 1
     };
@@ -801,6 +900,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     await storageService.saveDepartments(updated);
     await onRefreshAll();
     setIsDeptModalOpen(false);
+    if (deptImageLocalPreview) {
+      URL.revokeObjectURL(deptImageLocalPreview);
+      setDeptImageLocalPreview(null);
+    }
+    setSelectedDeptImageFile(null);
     showToast(editingDept ? 'Department updated successfully!' : 'New department added successfully!');
   };
 
@@ -2413,8 +2517,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {deptList.map((d) => (
-                <div key={d.id} className="bg-[#F0F4F8] p-6 rounded-2xl border border-slate-200 space-y-4 flex flex-col justify-between shadow-sm">
+                <div key={d.id} className="bg-[#F0F4F8] p-5 rounded-2xl border border-slate-200 space-y-3 flex flex-col justify-between shadow-sm">
                   <div className="space-y-3">
+                    {/* Department Banner Preview Thumbnail */}
+                    {d.image && (
+                      <div className="w-full h-32 rounded-xl overflow-hidden border border-slate-200 bg-slate-200">
+                        <img src={d.image} alt={d.name} className="w-full h-full object-cover" />
+                      </div>
+                    )}
+
                     <div className="flex justify-between items-center">
                       <span className="font-mono text-xs font-bold text-[#D97706] bg-amber-100 px-2.5 py-0.5 rounded border border-amber-200">
                         [{d.code}]
@@ -2551,15 +2662,94 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       />
                     </div>
 
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">Department Banner Image URL</label>
-                      <input
-                        type="text"
-                        placeholder="https://..."
-                        value={deptForm.image}
-                        onChange={(e) => setDeptForm({ ...deptForm, image: e.target.value })}
-                        className="w-full p-2.5 rounded-lg border border-slate-300 text-slate-600 font-mono text-[11px]"
-                      />
+                    {/* Department Banner Image Upload & URL Section */}
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="block font-bold text-[#0A2342] text-xs flex items-center gap-1.5">
+                          <ImageIcon className="w-4 h-4 text-[#D97706]" />
+                          Department Banner Image
+                        </label>
+                        {(deptImageLocalPreview || deptForm.image) && (
+                          <button
+                            type="button"
+                            onClick={handleRemoveDeptImage}
+                            className="text-red-600 hover:text-red-700 font-bold text-[11px] flex items-center gap-1 hover:underline"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Remove Image
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Choose Image File button */}
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                        <label className="cursor-pointer bg-[#0A2342] text-amber-400 hover:bg-slate-900 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 transition-colors shadow-sm shrink-0">
+                          <Upload className="w-4 h-4" />
+                          <span>Choose Image</span>
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/jpg"
+                            className="hidden"
+                            onChange={handleDeptImageFileSelect}
+                          />
+                        </label>
+                        <span className="text-[11px] text-slate-500">
+                          Supports JPG, PNG, WEBP (Max size: 5 MB)
+                        </span>
+                      </div>
+
+                      {/* Error display */}
+                      {deptImageError && (
+                        <div className="bg-red-50 text-red-700 p-2.5 rounded-lg border border-red-200 text-xs flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 shrink-0" />
+                          <span>{deptImageError}</span>
+                        </div>
+                      )}
+
+                      {/* Image Preview Box */}
+                      {(deptImageLocalPreview || deptForm.image) ? (
+                        <div className="relative group rounded-xl overflow-hidden border border-slate-300 bg-slate-900 max-h-48 w-full flex items-center justify-center shadow-inner">
+                          <img
+                            src={deptImageLocalPreview || deptForm.image}
+                            alt="Department Banner Preview"
+                            className="w-full h-44 object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1527153857715-3908f2bae5e8?auto=format&fit=crop&w=800&q=80';
+                            }}
+                          />
+                          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950/80 to-transparent p-2 flex items-center justify-between text-[11px] text-white">
+                            <span className="truncate">
+                              {selectedDeptImageFile ? `Selected: ${selectedDeptImageFile.name}` : 'Current Department Banner'}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={handleRemoveDeptImage}
+                              className="bg-red-600 hover:bg-red-700 text-white font-bold px-2.5 py-1 rounded-md text-[10px] flex items-center gap-1 shadow shrink-0"
+                            >
+                              <Trash2 className="w-3 h-3" /> Clear
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="h-24 rounded-xl border-2 border-dashed border-slate-300 bg-white flex flex-col items-center justify-center text-slate-400 text-xs gap-1">
+                          <ImageIcon className="w-6 h-6 text-slate-300" />
+                          <span>No banner image selected</span>
+                        </div>
+                      )}
+
+                      {/* OR Image URL input */}
+                      <div className="pt-2 border-t border-slate-200">
+                        <label className="block font-bold text-slate-600 mb-1 text-[11px]">
+                          OR Image URL
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="https://..."
+                          value={deptForm.image}
+                          onChange={(e) => handleDeptImageUrlChange(e.target.value)}
+                          className="w-full p-2.5 rounded-lg border border-slate-300 text-slate-700 font-mono text-[11px] bg-white"
+                        />
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-2 pt-1">
@@ -2579,15 +2769,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       <button
                         type="button"
                         onClick={() => setIsDeptModalOpen(false)}
-                        className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs hover:bg-slate-200"
+                        disabled={isUploadingDeptImage}
+                        className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs hover:bg-slate-200 disabled:opacity-50"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
-                        className="px-5 py-2 bg-[#D97706] hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs shadow"
+                        disabled={isUploadingDeptImage}
+                        className="px-5 py-2 bg-[#D97706] hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs shadow flex items-center gap-2 disabled:opacity-50"
                       >
-                        {editingDept ? 'Save Department Changes' : 'Create Department'}
+                        {isUploadingDeptImage ? (
+                          <>
+                            <div className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                            <span>Uploading Banner...</span>
+                          </>
+                        ) : (
+                          <span>{editingDept ? 'Save Department Changes' : 'Create Department'}</span>
+                        )}
                       </button>
                     </div>
                   </form>

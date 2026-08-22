@@ -312,7 +312,7 @@ export const initialFacilities: Facility[] = [
     category: "Overview",
     isActive: true,
     description: "Our expansive 35-acre green academic campus at Malkapur houses state-of-the-art pilot dairy processing plants, accredited testing laboratories, smart multimedia classrooms, modern student hostels, a central digital library, and vast sports arenas.",
-    features: ["35-Acre Eco-Friendly Green Campus", "Pilot Dairy Processing Plants", "Advanced Quality Control Labs", "Digital Smart Learning Theatres", "Hostels & Student Activity Complex"],
+    features: ["35-Acre Eco-Friendly Green Campus", "Pilot Dairy Processing Plants", "Advanced Labs", "Digital Smart Learning Theatres", "Hostels & Student Activity Complex"],
     image: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80",
     photos: [
       {
@@ -378,7 +378,7 @@ export const initialFacilities: Facility[] = [
   },
   {
     id: "fac-lab",
-    title: "Quality Control Labs",
+    title: "Labs",
     category: "Laboratories",
     isActive: true,
     description: "Fully equipped modern quality testing and analytical research laboratories with Gerber centrifuges, FTIR milk analyzers, HPLC systems, spectrophotometers, laminar airflows, and autoclave chambers.",

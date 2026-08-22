@@ -67,7 +67,7 @@ const CORE_CATEGORIES: CategoryConfig[] = [
   },
   {
     id: 'fac-lab',
-    defaultTitle: 'Quality Control Labs',
+    defaultTitle: 'Labs',
     category: 'Laboratories',
     icon: Microscope,
     description: 'FTIR spectroscopy, chemical titration benches, microbiology & research equipment.'

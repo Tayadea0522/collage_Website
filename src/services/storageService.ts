@@ -668,6 +668,7 @@ export const storageService = {
           id: row.id || d.id,
           title: row.title || d.title || 'Campus Facility',
           category: row.category || d.category || 'General',
+          isActive: typeof d.isActive === 'boolean' ? d.isActive : (typeof row.is_active === 'boolean' ? row.is_active : true),
           description: d.description || '',
           features: Array.isArray(d.features) ? d.features : [],
           image: d.image || row.image || '',
@@ -691,7 +692,7 @@ export const storageService = {
         return base;
       });
 
-      // Merge with initialFacilities to ensure all 6 core categories exist if not yet seeded
+      // Merge with initialFacilities to ensure all 10 core categories exist if not yet seeded
       const existingIds = new Set(dbFacilities.map(f => f.id));
       const missingInitial = initialFacilities.filter(initF => !existingIds.has(initF.id));
       
@@ -747,6 +748,7 @@ export const storageService = {
 
           return {
             ...f,
+            isActive: f.isActive !== false,
             image: updatedCover || (firstActive ? firstActive.url : ''),
             photos: updatedPhotos
           };

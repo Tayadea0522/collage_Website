@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Facility, FacilityPhoto } from '../types';
 import { 
   Building2, 
@@ -7,6 +7,10 @@ import {
   BookOpen, 
   Home, 
   Trophy, 
+  Stethoscope, 
+  UtensilsCrossed, 
+  Tv, 
+  Bus,
   Maximize2, 
   X, 
   ChevronLeft, 
@@ -23,6 +27,19 @@ interface FacilitiesProps {
   onNavigateTab?: (tab: string) => void;
 }
 
+const CATEGORY_META: Record<string, { icon: React.ComponentType<{ className?: string }>; badge?: string; defaultTitle: string }> = {
+  'fac-overview': { icon: Building2, defaultTitle: 'All Infrastructure Overview' },
+  'fac-plant': { icon: Factory, badge: '10K LPD', defaultTitle: 'Experimental Dairy Plant' },
+  'fac-lab': { icon: Microscope, defaultTitle: 'Quality Control Labs' },
+  'fac-lib': { icon: BookOpen, defaultTitle: 'Central Library & E-Resource' },
+  'fac-hostel': { icon: Home, defaultTitle: 'Hostel & Mess Facilities' },
+  'fac-sports': { icon: Trophy, defaultTitle: 'Sports Complex & Gym' },
+  'fac-medical': { icon: Stethoscope, defaultTitle: 'Medical Services' },
+  'fac-canteen': { icon: UtensilsCrossed, defaultTitle: 'Canteen' },
+  'fac-smartroom': { icon: Tv, defaultTitle: 'Digital Smart Classroom' },
+  'fac-bus': { icon: Bus, defaultTitle: 'Bus Service' },
+};
+
 export const Facilities: React.FC<FacilitiesProps> = ({ facilities, onNavigateTab }) => {
   const [activeSidebarItem, setActiveSidebarItem] = useState<string>('all');
   const [activeLightbox, setActiveLightbox] = useState<{
@@ -31,14 +48,33 @@ export const Facilities: React.FC<FacilitiesProps> = ({ facilities, onNavigateTa
     categoryTitle: string;
   } | null>(null);
 
+  // Filter only active facilities (isActive !== false)
+  const visibleFacilities = (facilities || []).filter(f => f.isActive !== false);
+
+  // Build dynamic sidebar items for only active facilities
   const sidebarItems: SidebarItem[] = [
-    { id: 'all', label: 'All Infrastructure Overview', icon: Building2 },
-    { id: 'plant', label: 'Experimental Dairy Plant', icon: Factory, badge: '10K LPD' },
-    { id: 'labs', label: 'Quality Control Labs', icon: Microscope },
-    { id: 'library', label: 'Central Library & E-Resource', icon: BookOpen },
-    { id: 'hostel', label: 'Hostel & Mess Facilities', icon: Home },
-    { id: 'sports', label: 'Sports Complex & Gym', icon: Trophy },
+    { id: 'all', label: 'All Infrastructure Overview', icon: Building2 }
   ];
+
+  visibleFacilities.forEach(fac => {
+    // Add individual tab if not the generic overview item
+    if (fac.id !== 'fac-overview') {
+      const meta: { icon: React.ComponentType<{ className?: string }>; badge?: string; defaultTitle?: string } = CATEGORY_META[fac.id] || { icon: Building2, defaultTitle: fac.title };
+      sidebarItems.push({
+        id: fac.id,
+        label: fac.title,
+        icon: meta.icon,
+        badge: meta.badge
+      });
+    }
+  });
+
+  // Fallback to 'all' if selected sidebar item is no longer visible
+  useEffect(() => {
+    if (activeSidebarItem !== 'all' && !visibleFacilities.some(f => f.id === activeSidebarItem)) {
+      setActiveSidebarItem('all');
+    }
+  }, [activeSidebarItem, visibleFacilities]);
 
   // Helper to extract active photos from a facility
   const getActivePhotos = (fac: Facility): FacilityPhoto[] => {
@@ -64,25 +100,12 @@ export const Facilities: React.FC<FacilitiesProps> = ({ facilities, onNavigateTa
   };
 
   // Filter facilities based on selected sidebar item
-  const filteredFacilities = (facilities || []).filter(f => {
+  const filteredFacilities = visibleFacilities.filter(f => {
     if (activeSidebarItem === 'all') return true;
-    if (activeSidebarItem === 'plant') {
-      return f.id === 'fac-plant' || f.category.toLowerCase().includes('plant') || f.title.toLowerCase().includes('dairy plant');
-    }
-    if (activeSidebarItem === 'labs') {
-      return f.id === 'fac-lab' || f.category.toLowerCase().includes('lab') || f.title.toLowerCase().includes('quality');
-    }
-    if (activeSidebarItem === 'library') {
-      return f.id === 'fac-lib' || f.category.toLowerCase().includes('lib') || f.title.toLowerCase().includes('library');
-    }
-    if (activeSidebarItem === 'hostel') {
-      return f.id === 'fac-hostel' || f.category.toLowerCase().includes('hostel') || f.title.toLowerCase().includes('hostel');
-    }
-    if (activeSidebarItem === 'sports') {
-      return f.id === 'fac-sports' || f.category.toLowerCase().includes('sport') || f.title.toLowerCase().includes('sports');
-    }
-    return true;
+    return f.id === activeSidebarItem;
   });
+
+  const currentCategoryTitle = sidebarItems.find(s => s.id === activeSidebarItem)?.label || 'Campus Infrastructure';
 
   const openLightbox = (photos: FacilityPhoto[], index: number, categoryTitle: string) => {
     if (!photos || photos.length === 0) return;
@@ -114,7 +137,7 @@ export const Facilities: React.FC<FacilitiesProps> = ({ facilities, onNavigateTa
   };
 
   // Keyboard navigation for Lightbox
-  React.useEffect(() => {
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!activeLightbox) return;
       if (e.key === 'Escape') setActiveLightbox(null);
@@ -133,7 +156,7 @@ export const Facilities: React.FC<FacilitiesProps> = ({ facilities, onNavigateTa
       breadcrumbPath={[
         { label: 'Home', tab: 'home' },
         { label: 'Infrastructure' },
-        { label: sidebarItems.find(s => s.id === activeSidebarItem)?.label || 'All Infrastructure' }
+        { label: currentCategoryTitle }
       ]}
       sidebarItems={sidebarItems}
       activeItem={activeSidebarItem}
@@ -150,7 +173,7 @@ export const Facilities: React.FC<FacilitiesProps> = ({ facilities, onNavigateTa
           </div>
           <h2 className="text-2xl sm:text-3xl font-bold font-serif text-[#0A2342] flex items-center gap-2">
             <Building2 className="w-7 h-7 text-amber-600 shrink-0" />
-            {sidebarItems.find(s => s.id === activeSidebarItem)?.label || 'Campus Infrastructure'}
+            {currentCategoryTitle}
           </h2>
           <p className="text-xs sm:text-sm text-slate-600 mt-2 max-w-3xl leading-relaxed">
             Our 35-acre lush green campus at Malkapur houses state-of-the-art pilot dairy processing machinery, accredited testing laboratories, smart multimedia classrooms, modern student residences, and sports facilities.
@@ -158,143 +181,153 @@ export const Facilities: React.FC<FacilitiesProps> = ({ facilities, onNavigateTa
         </div>
 
         {/* Facilities List & Galleries */}
-        <div className="space-y-10">
-          {filteredFacilities.map((fac) => {
-            const activePhotos = getActivePhotos(fac);
+        {filteredFacilities.length === 0 ? (
+          <div className="bg-white rounded-2xl p-12 text-center space-y-3 border border-slate-200 shadow-sm">
+            <Layers className="w-12 h-12 text-slate-300 mx-auto" />
+            <h3 className="text-base font-bold text-slate-700">No Infrastructure Facilities Published</h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              Campus infrastructure details will be published here shortly.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-10">
+            {filteredFacilities.map((fac) => {
+              const activePhotos = getActivePhotos(fac);
 
-            return (
-              <div
-                key={fac.id}
-                className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6 hover:border-amber-400/40 transition-colors"
-              >
-                {/* Facility Header Info */}
-                <div className="space-y-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="bg-[#0A2342] text-amber-400 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                        {fac.category} Division
-                      </span>
-                      {activePhotos.length > 0 && (
-                        <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                          <ImageIcon className="w-3 h-3 text-amber-600" />
-                          {activePhotos.length} {activePhotos.length === 1 ? 'Photo' : 'Photos'}
+              return (
+                <div
+                  key={fac.id}
+                  className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6 hover:border-amber-400/40 transition-colors"
+                >
+                  {/* Facility Header Info */}
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="bg-[#0A2342] text-amber-400 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                          {fac.category} Division
                         </span>
-                      )}
+                        {activePhotos.length > 0 && (
+                          <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                            <ImageIcon className="w-3 h-3 text-amber-600" />
+                            {activePhotos.length} {activePhotos.length === 1 ? 'Photo' : 'Photos'}
+                          </span>
+                        )}
+                      </div>
                     </div>
+
+                    <h3 className="text-xl sm:text-2xl font-bold font-serif text-[#0A2342]">
+                      {fac.title}
+                    </h3>
+
+                    <p className="text-slate-700 text-xs sm:text-sm leading-relaxed max-w-4xl">
+                      {fac.description}
+                    </p>
+
+                    {/* Highlights / Features Chips */}
+                    {fac.features && fac.features.length > 0 && (
+                      <div className="pt-2">
+                        <div className="flex flex-wrap gap-2">
+                          {fac.features.map((feat, fIdx) => (
+                            <span
+                              key={fIdx}
+                              className="bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold px-3 py-1 rounded-lg flex items-center gap-1.5 shadow-sm"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> {feat}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  <h3 className="text-xl sm:text-2xl font-bold font-serif text-[#0A2342]">
-                    {fac.title}
-                  </h3>
+                  {/* Photo Display: Single Hero OR Multi-Photo Gallery */}
+                  {activePhotos.length === 0 ? (
+                    <div className="bg-slate-50 rounded-xl p-8 text-center text-slate-400 text-xs border border-slate-200">
+                      No active photos uploaded for this facility yet.
+                    </div>
+                  ) : activePhotos.length === 1 ? (
+                    /* Single Large Hero Photo */
+                    <div
+                      onClick={() => openLightbox(activePhotos, 0, fac.title)}
+                      className="relative rounded-2xl overflow-hidden shadow-md group cursor-pointer border border-slate-200 bg-slate-900 h-72 sm:h-96"
+                    >
+                      <img
+                        src={activePhotos[0].url}
+                        alt={activePhotos[0].title || fac.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/10 opacity-90 group-hover:opacity-100 transition-opacity" />
 
-                  <p className="text-slate-700 text-xs sm:text-sm leading-relaxed max-w-4xl">
-                    {fac.description}
-                  </p>
-
-                  {/* Highlights / Features Chips */}
-                  {fac.features && fac.features.length > 0 && (
-                    <div className="pt-2">
-                      <div className="flex flex-wrap gap-2">
-                        {fac.features.map((feat, fIdx) => (
-                          <span
-                            key={fIdx}
-                            className="bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold px-3 py-1 rounded-lg flex items-center gap-1.5 shadow-sm"
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> {feat}
+                      <div className="absolute bottom-0 inset-x-0 p-4 sm:p-6 text-white space-y-1">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-base sm:text-lg font-bold font-serif text-white">
+                            {activePhotos[0].title || fac.title}
+                          </h4>
+                          <span className="bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                            <Maximize2 className="w-3.5 h-3.5" /> View Photo
                           </span>
+                        </div>
+                        {activePhotos[0].caption && (
+                          <p className="text-xs text-slate-200 line-clamp-2">
+                            {activePhotos[0].caption}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    /* Responsive Multi-Photo Gallery Grid */
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {activePhotos.map((photo, pIdx) => (
+                          <div
+                            key={photo.id || pIdx}
+                            onClick={() => openLightbox(activePhotos, pIdx, fac.title)}
+                            className="group relative bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md hover:border-amber-400 cursor-pointer transition-all flex flex-col"
+                          >
+                            <div className="relative h-48 sm:h-52 overflow-hidden bg-slate-900">
+                              <img
+                                src={photo.url}
+                                alt={photo.title || `${fac.title} photo ${pIdx + 1}`}
+                                className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
+                              />
+                              <div className="absolute inset-0 bg-slate-950/20 group-hover:bg-slate-950/40 transition-colors" />
+
+                              {/* View Badge */}
+                              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span className="bg-slate-950/80 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1 shadow">
+                                  <Maximize2 className="w-3 h-3 text-amber-400" /> Fullscreen
+                                </span>
+                              </div>
+
+                              {/* Photo Number indicator */}
+                              <div className="absolute bottom-2 left-2">
+                                <span className="bg-slate-950/70 text-slate-200 text-[10px] font-mono px-2 py-0.5 rounded">
+                                  {pIdx + 1} of {activePhotos.length}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Caption footer */}
+                            <div className="p-3 bg-white space-y-1 flex-1 flex flex-col justify-between">
+                              <div className="font-bold text-xs text-slate-900 line-clamp-1 group-hover:text-amber-700 transition-colors">
+                                {photo.title || `${fac.title} - View ${pIdx + 1}`}
+                              </div>
+                              {photo.caption && (
+                                <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
+                                  {photo.caption}
+                                </p>
+                              )}
+                            </div>
+                          </div>
                         ))}
                       </div>
                     </div>
                   )}
                 </div>
-
-                {/* Photo Display: Single Hero OR Multi-Photo Gallery */}
-                {activePhotos.length === 0 ? (
-                  <div className="bg-slate-50 rounded-xl p-8 text-center text-slate-400 text-xs border border-slate-200">
-                    No active photos uploaded for this facility yet.
-                  </div>
-                ) : activePhotos.length === 1 ? (
-                  /* Single Large Hero Photo */
-                  <div
-                    onClick={() => openLightbox(activePhotos, 0, fac.title)}
-                    className="relative rounded-2xl overflow-hidden shadow-md group cursor-pointer border border-slate-200 bg-slate-900 h-72 sm:h-96"
-                  >
-                    <img
-                      src={activePhotos[0].url}
-                      alt={activePhotos[0].title || fac.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/10 opacity-90 group-hover:opacity-100 transition-opacity" />
-
-                    <div className="absolute bottom-0 inset-x-0 p-4 sm:p-6 text-white space-y-1">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-base sm:text-lg font-bold font-serif text-white">
-                          {activePhotos[0].title || fac.title}
-                        </h4>
-                        <span className="bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
-                          <Maximize2 className="w-3.5 h-3.5" /> View Photo
-                        </span>
-                      </div>
-                      {activePhotos[0].caption && (
-                        <p className="text-xs text-slate-200 line-clamp-2">
-                          {activePhotos[0].caption}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  /* Responsive Multi-Photo Gallery Grid */
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {activePhotos.map((photo, pIdx) => (
-                        <div
-                          key={photo.id || pIdx}
-                          onClick={() => openLightbox(activePhotos, pIdx, fac.title)}
-                          className="group relative bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md hover:border-amber-400 cursor-pointer transition-all flex flex-col"
-                        >
-                          <div className="relative h-48 sm:h-52 overflow-hidden bg-slate-900">
-                            <img
-                              src={photo.url}
-                              alt={photo.title || `${fac.title} photo ${pIdx + 1}`}
-                              className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
-                            />
-                            <div className="absolute inset-0 bg-slate-950/20 group-hover:bg-slate-950/40 transition-colors" />
-
-                            {/* View Badge */}
-                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <span className="bg-slate-950/80 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1 shadow">
-                                <Maximize2 className="w-3 h-3 text-amber-400" /> Fullscreen
-                              </span>
-                            </div>
-
-                            {/* Photo Number indicator */}
-                            <div className="absolute bottom-2 left-2">
-                              <span className="bg-slate-950/70 text-slate-200 text-[10px] font-mono px-2 py-0.5 rounded">
-                                {pIdx + 1} of {activePhotos.length}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Caption footer */}
-                          <div className="p-3 bg-white space-y-1 flex-1 flex flex-col justify-between">
-                            <div className="font-bold text-xs text-slate-900 line-clamp-1 group-hover:text-amber-700 transition-colors">
-                              {photo.title || `${fac.title} - View ${pIdx + 1}`}
-                            </div>
-                            {photo.caption && (
-                              <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
-                                {photo.caption}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* High-Resolution Public Lightbox Modal */}

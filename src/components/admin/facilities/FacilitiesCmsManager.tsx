@@ -9,6 +9,10 @@ import {
   BookOpen, 
   Home, 
   Trophy, 
+  Stethoscope, 
+  UtensilsCrossed, 
+  Tv, 
+  Bus,
   Upload, 
   Trash2, 
   ArrowUp, 
@@ -21,11 +25,11 @@ import {
   Sparkles, 
   RefreshCw, 
   Image as ImageIcon,
-  Plus,
-  Edit3,
   Layers,
   X,
-  Maximize2
+  Maximize2,
+  ToggleLeft,
+  ToggleRight
 } from 'lucide-react';
 
 interface FacilitiesCmsManagerProps {
@@ -86,6 +90,34 @@ const CORE_CATEGORIES: CategoryConfig[] = [
     category: 'Sports',
     icon: Trophy,
     description: 'Outdoor sports grounds, indoor badminton arena, gym equipment and athletic facilities.'
+  },
+  {
+    id: 'fac-medical',
+    defaultTitle: 'Medical Services',
+    category: 'Healthcare',
+    icon: Stethoscope,
+    description: 'On-campus first-aid care center, emergency medical support, visiting doctor and ambulance tie-up.'
+  },
+  {
+    id: 'fac-canteen',
+    defaultTitle: 'Canteen',
+    category: 'Canteen',
+    icon: UtensilsCrossed,
+    description: 'Hygienic campus cafeteria serving fresh vegetarian meals, snacks, beverages and dairy products.'
+  },
+  {
+    id: 'fac-smartroom',
+    defaultTitle: 'Digital Smart Classroom',
+    category: 'Classroom',
+    icon: Tv,
+    description: 'Interactive smart touchboards, HD multimedia projectors, acoustic audio systems and virtual lectures.'
+  },
+  {
+    id: 'fac-bus',
+    defaultTitle: 'Bus Service',
+    category: 'Transport',
+    icon: Bus,
+    description: 'Safe college bus fleet providing daily commute connecting campus with Malkapur city and routes.'
   }
 ];
 
@@ -111,6 +143,7 @@ export const FacilitiesCmsManager: React.FC<FacilitiesCmsManagerProps> = ({
       }
       return {
         ...f,
+        isActive: f.isActive !== false,
         photos
       };
     });
@@ -147,6 +180,7 @@ export const FacilitiesCmsManager: React.FC<FacilitiesCmsManagerProps> = ({
           }
           return {
             ...f,
+            isActive: f.isActive !== false,
             photos
           };
         });
@@ -159,7 +193,8 @@ export const FacilitiesCmsManager: React.FC<FacilitiesCmsManagerProps> = ({
     id: activeCategoryId,
     title: CORE_CATEGORIES.find(c => c.id === activeCategoryId)?.defaultTitle || 'Facility',
     category: CORE_CATEGORIES.find(c => c.id === activeCategoryId)?.category || 'Infrastructure',
-    description: '',
+    isActive: true,
+    description: CORE_CATEGORIES.find(c => c.id === activeCategoryId)?.description || '',
     features: [],
     image: '',
     photos: []
@@ -177,17 +212,36 @@ export const FacilitiesCmsManager: React.FC<FacilitiesCmsManagerProps> = ({
         copy[idx] = updated;
         return copy;
       } else {
+        const catConfig = CORE_CATEGORIES.find(c => c.id === activeCategoryId);
         const newFac = updater({
           id: activeCategoryId,
-          title: CORE_CATEGORIES.find(c => c.id === activeCategoryId)?.defaultTitle || 'Infrastructure',
-          category: CORE_CATEGORIES.find(c => c.id === activeCategoryId)?.category || 'Overview',
-          description: '',
+          title: catConfig?.defaultTitle || 'Infrastructure',
+          category: catConfig?.category || 'Overview',
+          isActive: true,
+          description: catConfig?.description || '',
           features: [],
           image: '',
           photos: []
         });
         return [...prev, newFac];
       }
+    });
+  };
+
+  // Toggle Entire Facility Active (Show/Hide on Public Website)
+  const handleToggleFacilityActive = (facilityId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setFacilities(prev => {
+      return prev.map(f => {
+        if (f.id === facilityId) {
+          const nextActive = f.isActive === false ? true : false;
+          return {
+            ...f,
+            isActive: nextActive
+          };
+        }
+        return f;
+      });
     });
   };
 
@@ -198,78 +252,71 @@ export const FacilitiesCmsManager: React.FC<FacilitiesCmsManagerProps> = ({
     const validFiles: File[] = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      // Validate file format
-      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-      if (!validTypes.includes(file.type) && !file.name.match(/\.(jpg|jpeg|png|webp)$/i)) {
-        setStatusMessage({
-          type: 'error',
-          text: `File "${file.name}" is not a valid format. Accepted formats: JPG, JPEG, PNG, WEBP.`
-        });
-        continue;
+      if (file.type.startsWith('image/')) {
+        validFiles.push(file);
       }
-
-      // Max size: 10MB
-      if (file.size > 10 * 1024 * 1024) {
-        setStatusMessage({
-          type: 'error',
-          text: `File "${file.name}" exceeds the 10MB size limit (${(file.size / (1024 * 1024)).toFixed(1)}MB).`
-        });
-        continue;
-      }
-
-      validFiles.push(file);
     }
 
-    if (validFiles.length === 0) return;
+    if (validFiles.length === 0) {
+      setStatusMessage({
+        type: 'error',
+        text: 'Please select valid image files (JPG, PNG, WEBP).'
+      });
+      return;
+    }
 
     setIsUploading(true);
     setStatusMessage(null);
 
     try {
-      const newUploadedPhotos: FacilityPhoto[] = [];
-      const startOrder = currentPhotos.length;
+      const newPhotos: FacilityPhoto[] = [];
+      const startIdx = currentPhotos.length;
 
       for (let i = 0; i < validFiles.length; i++) {
         const file = validFiles[i];
         setUploadProgress(`Uploading photo ${i + 1} of ${validFiles.length}: ${file.name}...`);
 
+        // Upload to Supabase Storage bucket
         const cloudUrl = await supabaseStorageService.uploadImage(file, 'facilities');
         if (!cloudUrl) {
-          throw new Error(`Failed to upload ${file.name} to cloud storage.`);
+          throw new Error(`Failed to upload ${file.name} to Supabase storage.`);
         }
 
-        const photoTitle = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
-        newUploadedPhotos.push({
-          id: `photo-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+        const safeTitle = file.name
+          .replace(/\.[^/.]+$/, '')
+          .replace(/[_-]/g, ' ')
+          .replace(/\b\w/g, c => c.toUpperCase());
+
+        newPhotos.push({
+          id: `p-${currentFacility.id}-${Date.now()}-${i + 1}`,
           url: cloudUrl,
-          title: photoTitle,
-          caption: `${currentFacility.title} - ${photoTitle}`,
-          displayOrder: startOrder + i + 1,
-          isActive: true,
-          createdAt: new Date().toISOString()
+          title: safeTitle,
+          caption: `${currentFacility.title} - ${safeTitle}`,
+          displayOrder: startIdx + i + 1,
+          isActive: true
         });
       }
 
+      // Update state with newly uploaded photos
       updateCurrentFacility(prev => {
-        const existing = prev.photos || [];
-        const combined = [...existing, ...newUploadedPhotos];
-        const firstActive = combined.find(p => p.isActive !== false);
+        const mergedPhotos = [...(prev.photos || []), ...newPhotos];
+        const firstActive = mergedPhotos.find(p => p.isActive !== false);
         return {
           ...prev,
-          image: prev.image || (firstActive ? firstActive.url : ''),
-          photos: combined
+          image: prev.image || (firstActive ? firstActive.url : newPhotos[0]?.url || ''),
+          photos: mergedPhotos
         };
       });
 
       setStatusMessage({
         type: 'success',
-        text: `Successfully uploaded ${newUploadedPhotos.length} photo(s). Click "Save Changes" to publish to live database.`
+        text: `Successfully uploaded ${validFiles.length} photo(s) to ${currentFacility.title}! Click 'Save All Changes' to persist.`
       });
     } catch (err: any) {
-      console.error('Photo upload error:', err);
+      console.error('Photo upload failed:', err);
       setStatusMessage({
         type: 'error',
-        text: err.message || 'Error occurred while uploading photos to Supabase Storage.'
+        text: err.message || 'Failed to upload one or more photos. Please retry.'
       });
     } finally {
       setIsUploading(false);
@@ -282,20 +329,10 @@ export const FacilitiesCmsManager: React.FC<FacilitiesCmsManagerProps> = ({
 
   // Replace Single Photo Handler
   const handleReplacePhoto = async (photoId: string, file: File) => {
-    // Validate
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!validTypes.includes(file.type) && !file.name.match(/\.(jpg|jpeg|png|webp)$/i)) {
+    if (!file || !file.type.startsWith('image/')) {
       setStatusMessage({
         type: 'error',
-        text: `File "${file.name}" is not a valid format. Accepted formats: JPG, JPEG, PNG, WEBP.`
-      });
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      setStatusMessage({
-        type: 'error',
-        text: `File exceeds 10MB limit (${(file.size / (1024 * 1024)).toFixed(1)}MB).`
+        text: 'Please select a valid image file to replace.'
       });
       return;
     }
@@ -306,10 +343,12 @@ export const FacilitiesCmsManager: React.FC<FacilitiesCmsManagerProps> = ({
 
     try {
       const cloudUrl = await supabaseStorageService.uploadImage(file, 'facilities');
-      if (!cloudUrl) throw new Error('Cloud upload failed');
+      if (!cloudUrl) {
+        throw new Error('Could not upload replacement photo.');
+      }
 
       updateCurrentFacility(prev => {
-        const updated = (prev.photos || []).map(p => {
+        const updatedPhotos = (prev.photos || []).map(p => {
           if (p.id === photoId) {
             return {
               ...p,
@@ -319,25 +358,21 @@ export const FacilitiesCmsManager: React.FC<FacilitiesCmsManagerProps> = ({
           return p;
         });
 
-        // Also update cover image if this photo was the cover
-        let cover = prev.image;
-        const targetPhoto = (prev.photos || []).find(p => p.id === photoId);
-        if (targetPhoto && targetPhoto.url === prev.image) {
-          cover = cloudUrl;
-        }
+        const isCover = prev.image === prev.photos?.find(p => p.id === photoId)?.url;
 
         return {
           ...prev,
-          image: cover,
-          photos: updated
+          image: isCover ? cloudUrl : prev.image,
+          photos: updatedPhotos
         };
       });
 
       setStatusMessage({
         type: 'success',
-        text: `Photo replaced successfully. Click "Save Changes" to publish.`
+        text: 'Photo replaced successfully! Remember to Save Changes.'
       });
     } catch (err: any) {
+      console.error('Photo replacement failed:', err);
       setStatusMessage({
         type: 'error',
         text: err.message || 'Failed to replace photo.'
@@ -352,98 +387,95 @@ export const FacilitiesCmsManager: React.FC<FacilitiesCmsManagerProps> = ({
     }
   };
 
-  // Reorder Photo (Up or Down)
-  const handleMovePhoto = (photoId: string, direction: 'up' | 'down') => {
-    const list = [...currentPhotos];
-    const index = list.findIndex(p => p.id === photoId);
-    if (index < 0) return;
-
-    if (direction === 'up' && index > 0) {
-      const temp = list[index];
-      list[index] = list[index - 1];
-      list[index - 1] = temp;
-    } else if (direction === 'down' && index < list.length - 1) {
-      const temp = list[index];
-      list[index] = list[index + 1];
-      list[index + 1] = temp;
-    }
-
-    // Re-assign displayOrder sequentially
-    const updated = list.map((p, idx) => ({ ...p, displayOrder: idx + 1 }));
-
-    updateCurrentFacility(prev => {
-      const firstActive = updated.find(p => p.isActive !== false);
-      return {
-        ...prev,
-        image: firstActive ? firstActive.url : prev.image,
-        photos: updated
-      };
-    });
-  };
-
-  // Toggle Photo Active / Inactive
-  const handleToggleActive = (photoId: string) => {
-    updateCurrentFacility(prev => {
-      const updated = (prev.photos || []).map(p => {
-        if (p.id === photoId) {
-          return { ...p, isActive: p.isActive === false };
-        }
-        return p;
-      });
-      const firstActive = updated.find(p => p.isActive !== false);
-      return {
-        ...prev,
-        image: firstActive ? firstActive.url : prev.image,
-        photos: updated
-      };
-    });
-  };
-
-  // Delete Photo
+  // Delete Photo Handler
   const handleDeletePhoto = (photoId: string) => {
-    if (!window.confirm('Are you sure you want to delete this photo from this infrastructure category?')) {
+    if (!window.confirm('Are you sure you want to remove this photo from this facility?')) {
       return;
     }
 
     updateCurrentFacility(prev => {
       const remaining = (prev.photos || []).filter(p => p.id !== photoId);
-      const reindexed = remaining.map((p, idx) => ({ ...p, displayOrder: idx + 1 }));
-      const firstActive = reindexed.find(p => p.isActive !== false);
+      // Re-index display orders
+      const reindexed = remaining.map((p, idx) => ({
+        ...p,
+        displayOrder: idx + 1
+      }));
+
+      // If deleted photo was cover, assign new cover to first active photo
+      const wasCover = prev.photos?.find(p => p.id === photoId)?.url === prev.image;
+      const nextCover = wasCover
+        ? (reindexed.find(p => p.isActive !== false)?.url || reindexed[0]?.url || '')
+        : prev.image;
+
       return {
         ...prev,
-        image: firstActive ? firstActive.url : (reindexed.length > 0 ? reindexed[0].url : ''),
+        image: nextCover,
         photos: reindexed
       };
     });
 
     setStatusMessage({
       type: 'success',
-      text: 'Photo removed. Remember to click "Save Changes" to commit changes to Supabase.'
+      text: 'Photo removed from category. Click "Save All Changes" to finalize.'
     });
   };
 
-  // Set as Main Cover Photo
+  // Move Photo Order (Up / Down)
+  const handleMovePhoto = (photoId: string, direction: 'up' | 'down') => {
+    const list = [...currentPhotos];
+    const index = list.findIndex(p => p.id === photoId);
+    if (index === -1) return;
+
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= list.length) return;
+
+    // Swap elements
+    const temp = list[index];
+    list[index] = list[targetIndex];
+    list[targetIndex] = temp;
+
+    // Update display orders sequentially
+    const updated = list.map((p, idx) => ({
+      ...p,
+      displayOrder: idx + 1
+    }));
+
+    updateCurrentFacility(prev => ({
+      ...prev,
+      photos: updated
+    }));
+  };
+
+  // Toggle Active State for an Individual Photo
+  const handleTogglePhotoActive = (photoId: string) => {
+    updateCurrentFacility(prev => ({
+      ...prev,
+      photos: (prev.photos || []).map(p => {
+        if (p.id === photoId) {
+          return {
+            ...p,
+            isActive: p.isActive === false ? true : false
+          };
+        }
+        return p;
+      })
+    }));
+  };
+
+  // Set As Primary Cover Photo
   const handleSetAsCover = (photo: FacilityPhoto) => {
-    updateCurrentFacility(prev => {
-      const list = (prev.photos || []).filter(p => p.id !== photo.id);
-      const reordered = [
-        { ...photo, displayOrder: 1, isActive: true },
-        ...list.map((p, idx) => ({ ...p, displayOrder: idx + 2 }))
-      ];
-      return {
-        ...prev,
-        image: photo.url,
-        photos: reordered
-      };
-    });
+    updateCurrentFacility(prev => ({
+      ...prev,
+      image: photo.url
+    }));
 
     setStatusMessage({
       type: 'success',
-      text: 'Photo set as primary cover! Click "Save Changes" to commit.'
+      text: `Set "${photo.title || 'Selected Photo'}" as the main cover photo for ${currentFacility.title}.`
     });
   };
 
-  // Update Photo Title / Caption text
+  // Update Photo Title / Caption
   const handleUpdatePhotoField = (photoId: string, field: 'title' | 'caption', value: string) => {
     updateCurrentFacility(prev => ({
       ...prev,
@@ -475,6 +507,7 @@ export const FacilitiesCmsManager: React.FC<FacilitiesCmsManagerProps> = ({
         const firstActive = sortedPhotos.find(p => p.isActive !== false);
         return {
           ...f,
+          isActive: f.isActive !== false,
           image: firstActive ? firstActive.url : (sortedPhotos.length > 0 ? sortedPhotos[0].url : f.image),
           photos: sortedPhotos
         };
@@ -486,7 +519,7 @@ export const FacilitiesCmsManager: React.FC<FacilitiesCmsManagerProps> = ({
 
       setStatusMessage({
         type: 'success',
-        text: 'All Infrastructure & Facilities photos have been saved to Supabase! The public website is now dynamically updated.'
+        text: 'All Infrastructure & Facilities photos and visibility settings have been saved to Supabase! The public website is now live.'
       });
     } catch (err: any) {
       console.error('Failed to save facilities:', err);
@@ -522,14 +555,14 @@ export const FacilitiesCmsManager: React.FC<FacilitiesCmsManagerProps> = ({
               <Building2 className="w-3 h-3 text-amber-400" /> Infrastructure CMS
             </span>
             <span className="text-xs text-slate-300 font-mono">
-              Live Supabase Integration
+              Live Supabase Integration &bull; 10 Facilities
             </span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-bold font-serif text-white">
             Infrastructure & Facilities Photo Manager
           </h2>
           <p className="text-slate-300 text-xs sm:text-sm max-w-2xl leading-relaxed">
-            Upload, arrange, caption, replace, and manage high-resolution photos for each campus infrastructure category. All uploads are stored directly in Supabase Storage with permanent public URLs.
+            Manage photos, titles, captions, and independent Show/Hide visibility for all 10 campus infrastructure facilities. All media uploads are stored directly in Supabase Storage with permanent public access.
           </p>
         </div>
 
@@ -598,16 +631,22 @@ export const FacilitiesCmsManager: React.FC<FacilitiesCmsManagerProps> = ({
       )}
 
       {/* Category Tabs / Switcher */}
-      <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
-        <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-3 pb-2 flex items-center gap-1.5">
-          <Layers className="w-3.5 h-3.5" /> Select Infrastructure Category to Manage
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <Layers className="w-3.5 h-3.5 text-amber-600" /> Select Infrastructure Category ({CORE_CATEGORIES.length} Total)
+          </div>
+          <div className="text-[11px] text-slate-500 font-mono hidden sm:block">
+            Green = Visible on Website &bull; Amber/Slate = Hidden
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-          {CORE_CATEGORIES.map((cat, idx) => {
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+          {CORE_CATEGORIES.map((cat) => {
             const Icon = cat.icon;
             const isSelected = activeCategoryId === cat.id;
             const fac = facilities.find(f => f.id === cat.id);
+            const isFacilityActive = fac?.isActive !== false;
             const photoCount = (fac?.photos || []).length;
             const activePhotoCount = (fac?.photos || []).filter(p => p.isActive !== false).length;
 
@@ -618,17 +657,39 @@ export const FacilitiesCmsManager: React.FC<FacilitiesCmsManagerProps> = ({
                 className={`p-3 rounded-xl text-left transition-all border flex flex-col justify-between gap-2 relative ${
                   isSelected
                     ? 'bg-[#0A2342] text-white border-[#0A2342] shadow-md ring-2 ring-amber-500/50'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                    : isFacilityActive
+                    ? 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                    : 'bg-amber-50/50 hover:bg-amber-100/60 text-slate-600 border-amber-200/80 opacity-80'
                 }`}
               >
                 <div className="flex items-start justify-between">
-                  <div className={`p-2 rounded-lg ${isSelected ? 'bg-amber-500 text-slate-950' : 'bg-white text-slate-700 shadow-sm'}`}>
+                  <div className={`p-2 rounded-lg ${
+                    isSelected 
+                      ? 'bg-amber-500 text-slate-950' 
+                      : isFacilityActive 
+                      ? 'bg-white text-slate-700 shadow-sm' 
+                      : 'bg-amber-100 text-amber-900'
+                  }`}>
                     <Icon className="w-4 h-4" />
                   </div>
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                    isSelected ? 'bg-white/20 text-amber-300' : 'bg-slate-200 text-slate-700'
+
+                  {/* Show/Hide Pill on Tab */}
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-1 ${
+                    isSelected
+                      ? isFacilityActive ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-400/40' : 'bg-rose-500/30 text-rose-300 border border-rose-400/40'
+                      : isFacilityActive ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-900 border border-amber-300'
                   }`}>
-                    {photoCount} {photoCount === 1 ? 'photo' : 'photos'}
+                    {isFacilityActive ? (
+                      <>
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        ON
+                      </>
+                    ) : (
+                      <>
+                        <EyeOff className="w-2.5 h-2.5 text-amber-700" />
+                        OFF
+                      </>
+                    )}
                   </span>
                 </div>
 
@@ -636,8 +697,9 @@ export const FacilitiesCmsManager: React.FC<FacilitiesCmsManagerProps> = ({
                   <div className="text-[11px] font-bold leading-snug line-clamp-1">
                     {cat.defaultTitle}
                   </div>
-                  <div className={`text-[9px] mt-0.5 ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>
-                    {activePhotoCount} active on website
+                  <div className={`text-[9px] mt-0.5 flex items-center justify-between ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>
+                    <span>{photoCount} {photoCount === 1 ? 'photo' : 'photos'}</span>
+                    <span>{activePhotoCount} active</span>
                   </div>
                 </div>
               </button>
@@ -659,7 +721,7 @@ export const FacilitiesCmsManager: React.FC<FacilitiesCmsManagerProps> = ({
                 ID: {currentFacility.id}
               </span>
             </div>
-            <h3 className="text-xl font-bold font-serif text-[#0A2342]">
+            <h3 className="text-xl sm:text-2xl font-bold font-serif text-[#0A2342]">
               {currentFacility.title}
             </h3>
             <p className="text-xs text-slate-600 max-w-2xl">
@@ -683,9 +745,64 @@ export const FacilitiesCmsManager: React.FC<FacilitiesCmsManagerProps> = ({
               className="bg-[#0A2342] hover:bg-[#071931] text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow transition-all disabled:opacity-50"
             >
               <Upload className="w-4 h-4 text-amber-400" />
-              Upload Photos to {currentFacility.title}
+              Upload Photos
             </button>
           </div>
+        </div>
+
+        {/* Visibility Toggle Card */}
+        <div className={`p-4 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+          currentFacility.isActive !== false 
+            ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950' 
+            : 'bg-amber-50/90 border-amber-300 text-amber-950'
+        }`}>
+          <div className="flex items-start sm:items-center gap-3">
+            <div className={`p-2.5 rounded-xl shrink-0 ${
+              currentFacility.isActive !== false ? 'bg-emerald-600 text-white shadow-sm' : 'bg-amber-600 text-white shadow-sm'
+            }`}>
+              {currentFacility.isActive !== false ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+            </div>
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold">
+                  {currentFacility.title}
+                </span>
+                <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                  currentFacility.isActive !== false ? 'bg-emerald-200 text-emerald-900' : 'bg-amber-200 text-amber-950'
+                }`}>
+                  {currentFacility.isActive !== false ? '● Visible on Website (ON)' : '○ Hidden from Website (OFF)'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-600">
+                {currentFacility.isActive !== false 
+                  ? 'This facility and its photo gallery are currently displayed to all visitors on the public website.'
+                  : 'This facility is completely hidden from the public website navigation & cards. All photos and descriptions remain safely preserved in the database.'}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => handleToggleFacilityActive(currentFacility.id)}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-sm shrink-0 ${
+              currentFacility.isActive !== false
+                ? 'bg-emerald-700 hover:bg-emerald-800 text-white'
+                : 'bg-amber-700 hover:bg-amber-800 text-white'
+            }`}
+            title="Toggle visibility on public website"
+          >
+            {currentFacility.isActive !== false ? (
+              <>
+                <ToggleRight className="w-5 h-5 text-emerald-200" />
+                <span>Turn OFF (Hide from Website)</span>
+              </>
+            ) : (
+              <>
+                <ToggleLeft className="w-5 h-5 text-amber-200" />
+                <span>Turn ON (Show on Website)</span>
+              </>
+            )}
+          </button>
         </div>
 
         {/* Drag and Drop / Quick Upload Box */}
@@ -712,7 +829,7 @@ export const FacilitiesCmsManager: React.FC<FacilitiesCmsManagerProps> = ({
               Click or Drag & Drop Photos Here to Upload
             </div>
             <p className="text-[11px] text-slate-500">
-              Select multiple photos at once. Supported formats: <strong>JPG, JPEG, PNG, WEBP</strong> (Max 10 MB per photo).
+              Select multiple photos at once for {currentFacility.title}. Supported formats: <strong>JPG, JPEG, PNG, WEBP</strong> (Max 10 MB per photo).
             </p>
           </div>
         </div>
@@ -783,13 +900,13 @@ export const FacilitiesCmsManager: React.FC<FacilitiesCmsManagerProps> = ({
                       {/* Active / Inactive Badge */}
                       <div className="absolute top-2 right-2">
                         <button
-                          onClick={() => handleToggleActive(photo.id)}
+                          onClick={() => handleTogglePhotoActive(photo.id)}
                           className={`text-[10px] font-bold px-2.5 py-1 rounded-full shadow flex items-center gap-1 transition-all ${
                             photo.isActive !== false
                               ? 'bg-emerald-600 text-white'
                               : 'bg-slate-800 text-slate-300'
                           }`}
-                          title="Click to toggle visibility on public site"
+                          title="Click to toggle photo visibility in gallery"
                         >
                           {photo.isActive !== false ? (
                             <>
@@ -797,7 +914,7 @@ export const FacilitiesCmsManager: React.FC<FacilitiesCmsManagerProps> = ({
                             </>
                           ) : (
                             <>
-                              <EyeOff className="w-3 h-3" /> Inactive (Hidden)
+                              <EyeOff className="w-3 h-3" /> Hidden
                             </>
                           )}
                         </button>
@@ -827,7 +944,7 @@ export const FacilitiesCmsManager: React.FC<FacilitiesCmsManagerProps> = ({
                             type="text"
                             value={photo.title || ''}
                             onChange={(e) => handleUpdatePhotoField(photo.id, 'title', e.target.value)}
-                            placeholder="e.g. Processing Vat & Homogenizer"
+                            placeholder="e.g. Modern Equipment Setup"
                             className="w-full text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-amber-500 bg-slate-50"
                           />
                         </div>

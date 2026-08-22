@@ -27,17 +27,17 @@ interface FacilitiesProps {
   onNavigateTab?: (tab: string) => void;
 }
 
-const CATEGORY_META: Record<string, { icon: React.ComponentType<{ className?: string }>; badge?: string; defaultTitle: string }> = {
-  'fac-overview': { icon: Building2, defaultTitle: 'All Infrastructure Overview' },
-  'fac-plant': { icon: Factory, badge: '10K LPD', defaultTitle: 'Experimental Dairy Plant' },
-  'fac-lab': { icon: Microscope, defaultTitle: 'Quality Control Labs' },
-  'fac-lib': { icon: BookOpen, defaultTitle: 'Central Library & E-Resource' },
-  'fac-hostel': { icon: Home, defaultTitle: 'Hostel & Mess Facilities' },
-  'fac-sports': { icon: Trophy, defaultTitle: 'Sports Complex & Gym' },
-  'fac-medical': { icon: Stethoscope, defaultTitle: 'Medical Services' },
-  'fac-canteen': { icon: UtensilsCrossed, defaultTitle: 'Canteen' },
-  'fac-smartroom': { icon: Tv, defaultTitle: 'Digital Smart Classroom' },
-  'fac-bus': { icon: Bus, defaultTitle: 'Bus Service' },
+const CATEGORY_META: Record<string, { icon: React.ComponentType<{ className?: string }>; badge?: string }> = {
+  'fac-overview': { icon: Building2 },
+  'fac-plant': { icon: Factory, badge: '10K LPD' },
+  'fac-lab': { icon: Microscope },
+  'fac-lib': { icon: BookOpen },
+  'fac-hostel': { icon: Home },
+  'fac-sports': { icon: Trophy },
+  'fac-medical': { icon: Stethoscope },
+  'fac-canteen': { icon: UtensilsCrossed },
+  'fac-smartroom': { icon: Tv },
+  'fac-bus': { icon: Bus },
 };
 
 export const Facilities: React.FC<FacilitiesProps> = ({ facilities, onNavigateTab }) => {
@@ -51,15 +51,19 @@ export const Facilities: React.FC<FacilitiesProps> = ({ facilities, onNavigateTa
   // Filter only active facilities (isActive !== false)
   const visibleFacilities = (facilities || []).filter(f => f.isActive !== false);
 
+  // Derive overview title dynamically from facility.title
+  const overviewFacility = visibleFacilities.find(f => f.id === 'fac-overview') || facilities.find(f => f.id === 'fac-overview');
+  const overviewTitle = overviewFacility?.title || 'All Infrastructure Overview';
+
   // Build dynamic sidebar items for only active facilities
   const sidebarItems: SidebarItem[] = [
-    { id: 'all', label: 'All Infrastructure Overview', icon: Building2 }
+    { id: 'all', label: overviewTitle, icon: Building2 }
   ];
 
   visibleFacilities.forEach(fac => {
     // Add individual tab if not the generic overview item
     if (fac.id !== 'fac-overview') {
-      const meta: { icon: React.ComponentType<{ className?: string }>; badge?: string; defaultTitle?: string } = CATEGORY_META[fac.id] || { icon: Building2, defaultTitle: fac.title };
+      const meta = CATEGORY_META[fac.id] || { icon: Building2 };
       sidebarItems.push({
         id: fac.id,
         label: fac.title,
@@ -105,7 +109,10 @@ export const Facilities: React.FC<FacilitiesProps> = ({ facilities, onNavigateTa
     return f.id === activeSidebarItem;
   });
 
-  const currentCategoryTitle = sidebarItems.find(s => s.id === activeSidebarItem)?.label || 'Campus Infrastructure';
+  const currentFacilityObj = visibleFacilities.find(f => f.id === activeSidebarItem);
+  const currentCategoryTitle = activeSidebarItem === 'all' 
+    ? overviewTitle 
+    : (currentFacilityObj?.title || sidebarItems.find(s => s.id === activeSidebarItem)?.label || 'Campus Infrastructure');
 
   const openLightbox = (photos: FacilityPhoto[], index: number, categoryTitle: string) => {
     if (!photos || photos.length === 0) return;

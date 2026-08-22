@@ -29,7 +29,9 @@ import {
   X,
   Maximize2,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  Edit3,
+  Globe
 } from 'lucide-react';
 
 interface FacilitiesCmsManagerProps {
@@ -243,6 +245,22 @@ export const FacilitiesCmsManager: React.FC<FacilitiesCmsManagerProps> = ({
         return f;
       });
     });
+  };
+
+  // Update Facility Name / Title
+  const handleUpdateFacilityTitle = (newTitle: string) => {
+    updateCurrentFacility(prev => ({
+      ...prev,
+      title: newTitle
+    }));
+  };
+
+  // Update Facility Description
+  const handleUpdateFacilityDescription = (newDescription: string) => {
+    updateCurrentFacility(prev => ({
+      ...prev,
+      description: newDescription
+    }));
   };
 
   // Upload Multiple Photos Handler
@@ -695,7 +713,7 @@ export const FacilitiesCmsManager: React.FC<FacilitiesCmsManagerProps> = ({
 
                 <div>
                   <div className="text-[11px] font-bold leading-snug line-clamp-1">
-                    {cat.defaultTitle}
+                    {fac?.title || cat.defaultTitle}
                   </div>
                   <div className={`text-[9px] mt-0.5 flex items-center justify-between ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>
                     <span>{photoCount} {photoCount === 1 ? 'photo' : 'photos'}</span>
@@ -750,7 +768,37 @@ export const FacilitiesCmsManager: React.FC<FacilitiesCmsManagerProps> = ({
           </div>
         </div>
 
-        {/* Visibility Toggle Card */}
+        {/* 1. Facility Name / Title Management */}
+        <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-5 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+              <Edit3 className="w-4 h-4 text-amber-600" /> Facility Name / Title
+            </label>
+            <span className="text-[11px] text-slate-500 font-medium">
+              Changes reflect immediately on public navigation, cards & breadcrumbs
+            </span>
+          </div>
+          <div className="relative">
+            <input
+              type="text"
+              value={currentFacility.title || ''}
+              onChange={(e) => handleUpdateFacilityTitle(e.target.value)}
+              placeholder="e.g. Sports & Recreation Complex, Digital Smart Classroom"
+              className="w-full text-base font-bold text-[#0A2342] px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white shadow-sm transition-all placeholder:font-normal placeholder:text-slate-400"
+            />
+          </div>
+          <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+            <span className="flex items-center gap-1">
+              <Globe className="w-3.5 h-3.5 text-blue-600" />
+              Default name: <span className="font-mono text-slate-700">{CORE_CATEGORIES.find(c => c.id === activeCategoryId)?.defaultTitle}</span>
+            </span>
+            <span className="text-slate-400 italic">
+              Click &apos;Save All Changes&apos; to persist to database
+            </span>
+          </div>
+        </div>
+
+        {/* 2. Visibility Toggle Card */}
         <div className={`p-4 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
           currentFacility.isActive !== false 
             ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950' 

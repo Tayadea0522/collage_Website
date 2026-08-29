@@ -3840,6 +3840,30 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     className="w-full p-2 rounded border border-slate-300 bg-white"
                   />
                 </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-bold text-slate-700">Established Year</label>
+                    <input
+                      type="text"
+                      value={infoForm.establishedYear || ''}
+                      onChange={(e) => setInfoForm({ ...infoForm, establishedYear: e.target.value })}
+                      className="w-full p-2 rounded border border-slate-300 font-bold bg-white text-slate-900"
+                      placeholder="e.g. 2026"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-slate-700">Campus Area</label>
+                    <input
+                      type="text"
+                      value={infoForm.campusArea || ''}
+                      onChange={(e) => setInfoForm({ ...infoForm, campusArea: e.target.value })}
+                      className="w-full p-2 rounded border border-slate-300 font-bold bg-white text-slate-900"
+                      placeholder="e.g. 35 Acres Green Campus"
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label className="font-bold text-slate-700">About College Summary (Paragraph 1)</label>
                   <textarea

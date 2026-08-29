@@ -189,6 +189,12 @@ export const storageService = {
       }
       const row = data[0];
       const loadedInfo = { ...(row.data || row) };
+      if (!loadedInfo.establishedYear || loadedInfo.establishedYear === '2008') {
+        loadedInfo.establishedYear = initialCollegeInfo.establishedYear || '2026';
+      }
+      if (!loadedInfo.campusArea) {
+        loadedInfo.campusArea = initialCollegeInfo.campusArea || '35 Acres Green Campus';
+      }
       if (!loadedInfo.trustName) {
         loadedInfo.trustName = initialCollegeInfo.trustName;
       }

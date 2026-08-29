@@ -85,7 +85,7 @@ export const AboutUs: React.FC<AboutUsProps> = ({ collegeInfo, onNavigateTab }) 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             <div className="lg:col-span-8 space-y-4 text-slate-700 text-sm leading-relaxed">
               <p>
-                Established in the year <strong>{collegeInfo.establishedYear}</strong>, <strong>Late Shaktikumar Sancheti College of Dairy Technology (LSSCDT)</strong> was founded with a forward-looking mission: to address the growing national requirement for highly skilled, technologically proficient professionals in the dairy and food processing sectors.
+                Established in the year <strong>{collegeInfo.establishedYear || '2026'}</strong>, <strong>Late Shaktikumar Sancheti College of Dairy Technology (LSSCDT)</strong> was founded with a forward-looking mission: to address the growing national requirement for highly skilled, technologically proficient professionals in the dairy and food processing sectors.
               </p>
               <p>
                 Situated in the agrarian heartland of Malkapur (District Buldhana, Maharashtra), our college provides an integrated learning environment that combines rigorous academic coursework with hands-on industrial plant operations. The college is affiliated with the prestigious <strong>Maharashtra Animal & Fishery Sciences University (MAFSU), Nagpur</strong> and approved by the <strong>Government of Maharashtra</strong>, strictly implementing the nationwide uniform curriculum designed by the Sixth Deans' Committee of the <strong>Indian Council of Agricultural Research (ICAR), New Delhi</strong>.
@@ -104,7 +104,7 @@ export const AboutUs: React.FC<AboutUsProps> = ({ collegeInfo, onNavigateTab }) 
               <div className="space-y-3 text-xs divide-y divide-blue-800/60">
                 <div className="pt-2 flex justify-between items-center">
                   <span className="text-slate-300">Established</span>
-                  <strong className="text-white font-mono">{collegeInfo.establishedYear}</strong>
+                  <strong className="text-white font-mono">{collegeInfo.establishedYear || '2026'}</strong>
                 </div>
                 <div className="pt-2 flex justify-between items-center">
                   <span className="text-slate-300">Campus Area</span>

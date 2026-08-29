@@ -12,7 +12,16 @@ export default defineConfig(() => {
         'rollup': '@rollup/wasm-node',
       },
     },
+    esbuild: {
+      target: 'es2022',
+    },
+    optimizeDeps: {
+      esbuildOptions: {
+        target: 'es2022',
+      },
+    },
     build: {
+      target: 'es2022',
       rollupOptions: {
         output: {
           manualChunks: {

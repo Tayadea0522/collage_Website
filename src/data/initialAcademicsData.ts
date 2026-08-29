@@ -364,7 +364,7 @@ export const initialAcademicsData: AcademicsData = {
   },
 
   admissionPortal: {
-    isActive: true,
+    isActive: false, // Default OFF: Hidden from public website until toggled ON by Admin
     title: "Official Direct Admission Application Portal",
     academicYear: "2026–27",
     description: "Register online in 3 easy steps: Candidate Profile, Academic Marks Entry, and Mandatory Document Upload.",
@@ -379,7 +379,7 @@ export const initialAcademicsData: AcademicsData = {
   },
 
   trackApplicationStatus: {
-    isActive: true,
+    isActive: false, // Default OFF: Hidden from public website until toggled ON by Admin
     heading: "Track Live Application Verification Status",
     description: "Check the live verification status of your online registration using your Application ID or registered Mobile Number.",
     buttonText: "Search Status",

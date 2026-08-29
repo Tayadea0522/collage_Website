@@ -111,15 +111,31 @@ export const Admissions: React.FC<AdmissionsProps> = ({
   onRefreshApplications,
   onNavigateTab
 }) => {
+  const isEnquiryActive = collegeInfo.academicsData?.admissionEnquiry?.isActive !== false;
+  const isPortalActive = collegeInfo.academicsData?.admissionPortal?.isActive === true;
+  const isTrackActive = collegeInfo.academicsData?.trackApplicationStatus?.isActive === true;
+  const isProspectusActive = collegeInfo.academicsData?.admissionProspectus?.isActive !== false;
+
   const [activeSidebarItem, setActiveSidebarItem] = useState<string>(() => {
     try {
       const saved = sessionStorage.getItem(ADMISSION_SIDEBAR_KEY);
-      if (saved && ['portal', 'guidelines', 'criteria', 'intake', 'track'].includes(saved)) {
+      if (saved) {
+        if (saved === 'portal' && !isPortalActive) return 'course';
+        if (saved === 'track' && !isTrackActive) return 'course';
         return saved;
       }
     } catch (e) {}
-    return 'portal';
+    return isPortalActive ? 'portal' : 'course';
   });
+
+  useEffect(() => {
+    if (!isPortalActive && activeSidebarItem === 'portal') {
+      setActiveSidebarItem('course');
+    }
+    if (!isTrackActive && activeSidebarItem === 'track') {
+      setActiveSidebarItem('course');
+    }
+  }, [isPortalActive, isTrackActive, activeSidebarItem]);
 
   const handleSelectSidebar = (item: string) => {
     setActiveSidebarItem(item);
@@ -521,18 +537,17 @@ export const Admissions: React.FC<AdmissionsProps> = ({
     }
   };
 
-  const isEnquiryActive = collegeInfo.academicsData?.admissionEnquiry?.isActive !== false;
   const sidebarItems: SidebarItem[] = [
-    { id: 'portal', label: 'Admission Portal 2026–27', icon: FileText, badge: 'Online' },
+    ...(isPortalActive ? [{ id: 'portal', label: 'Admission Portal 2026–27', icon: FileText, badge: 'Online' }] : []),
     { id: 'course', label: 'Course Offered', icon: GraduationCap },
     { id: 'intake', label: 'Intake Capacity', icon: Building2 },
     { id: 'eligibility', label: 'Eligibility', icon: ShieldCheck },
     { id: 'process', label: 'Admission Process', icon: FileCheck },
     { id: 'documents', label: 'Documents Required', icon: Paperclip },
     { id: 'fees', label: 'Fees Structure', icon: IndianRupee },
-    { id: 'prospectus', label: 'Admission Prospectus', icon: Download },
+    ...(isProspectusActive ? [{ id: 'prospectus', label: 'Admission Prospectus', icon: Download }] : []),
     ...(isEnquiryActive ? [{ id: 'contact', label: 'Admission Enquiry', icon: Phone }] : []),
-    { id: 'track', label: 'Track Application Status', icon: Search }
+    ...(isTrackActive ? [{ id: 'track', label: 'Track Application Status', icon: Search }] : [])
   ];
 
   return (
@@ -543,7 +558,7 @@ export const Admissions: React.FC<AdmissionsProps> = ({
       breadcrumbPath={[
         { label: 'Home', tab: 'home' },
         { label: 'Admissions' },
-        { label: sidebarItems.find(s => s.id === activeSidebarItem)?.label || 'Admission Portal' }
+        { label: sidebarItems.find(s => s.id === activeSidebarItem)?.label || 'Course Offered' }
       ]}
       sidebarItems={sidebarItems}
       activeItem={activeSidebarItem}
@@ -552,7 +567,7 @@ export const Admissions: React.FC<AdmissionsProps> = ({
       helplinePhone={collegeInfo.academicsData?.admissionEnquiry?.phoneNumbers || collegeInfo.phone}
     >
       {/* 1. ADMISSION PORTAL (FORM) */}
-      {activeSidebarItem === 'portal' && (
+      {activeSidebarItem === 'portal' && isPortalActive && (
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-4 gap-2">
             <div>
@@ -1299,7 +1314,7 @@ export const Admissions: React.FC<AdmissionsProps> = ({
       )}
 
       {/* 10. TRACK APPLICATION STATUS */}
-      {activeSidebarItem === 'track' && (
+      {activeSidebarItem === 'track' && isTrackActive && (
         <div className="space-y-6">
           <div className="border-b border-slate-200 pb-4">
             <h2 className="text-2xl font-bold font-serif text-slate-900 flex items-center gap-2">

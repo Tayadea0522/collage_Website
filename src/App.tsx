@@ -454,7 +454,11 @@ export default function App() {
             applications={applications}
             onRefreshApplications={refreshAllData}
             onNavigateTab={setCurrentTab}
-            initialSection={currentTab === 'admissions' ? 'portal' : undefined}
+            initialSection={
+              currentTab === 'admissions' 
+                ? (collegeInfo?.academicsData?.admissionPortal?.isActive ? 'portal' : 'course') 
+                : undefined
+            }
           />
         )}
 

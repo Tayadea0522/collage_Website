@@ -59,6 +59,8 @@ export const Header: React.FC<HeaderProps> = ({
     ? collegeInfo.name.replace('College of Dairy Technology', '').trim()
     : (collegeInfo.name || 'Late Shaktikumar Sancheti');
 
+  const isOnlineAdmissionActive = collegeInfo?.academicsData?.admissionPortal?.isActive === true;
+
   const locationCity = collegeInfo.location ? collegeInfo.location.split(',')[0].trim() : 'Malkapur';
   const collegeSubName = `College of Dairy Technology, ${locationCity}`;
 
@@ -303,15 +305,17 @@ export const Header: React.FC<HeaderProps> = ({
           </nav>
 
           {/* Apply Now CTA Button */}
-          <div className="hidden md:flex items-center">
-            <button
-              onClick={() => handleNavClick('academics')}
-              className="bg-[#D97706] hover:bg-amber-600 text-slate-950 font-bold px-4 py-1.5 rounded-md text-xs shadow-md transition-all flex items-center gap-1.5 whitespace-nowrap"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-slate-950" />
-              <span>Apply Now</span>
-            </button>
-          </div>
+          {isOnlineAdmissionActive && (
+            <div className="hidden md:flex items-center">
+              <button
+                onClick={() => handleNavClick('academics')}
+                className="bg-[#D97706] hover:bg-amber-600 text-slate-950 font-bold px-4 py-1.5 rounded-md text-xs shadow-md transition-all flex items-center gap-1.5 whitespace-nowrap"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-slate-950" />
+                <span>Apply Now</span>
+              </button>
+            </div>
+          )}
 
           {/* Mobile Header Menu Toggle */}
           <div className="md:hidden flex items-center justify-between w-full py-1">
@@ -349,14 +353,16 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             );
           })}
-          <div className="pt-2 border-t border-slate-700">
-            <button
-              onClick={() => handleNavClick('academics')}
-              className="w-full bg-[#D97706] hover:bg-amber-600 text-slate-950 font-bold py-2.5 rounded-lg text-xs text-center shadow"
-            >
-              Apply Now
-            </button>
-          </div>
+          {isOnlineAdmissionActive && (
+            <div className="pt-2 border-t border-slate-700">
+              <button
+                onClick={() => handleNavClick('academics')}
+                className="w-full bg-[#D97706] hover:bg-amber-600 text-slate-950 font-bold py-2.5 rounded-lg text-xs text-center shadow"
+              >
+                Apply Now
+              </button>
+            </div>
+          )}
         </div>
       )}
 

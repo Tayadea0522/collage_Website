@@ -154,6 +154,20 @@ export const Academics: React.FC<AcademicsProps> = ({
     academicRegulations: { ...initialAcademicsData.academicRegulations, ...collegeInfo?.academicsData?.academicRegulations }
   };
 
+  const isEnquiryActive = academicsData.admissionEnquiry?.isActive !== false;
+  const isPortalActive = academicsData.admissionPortal?.isActive === true;
+  const isTrackActive = academicsData.trackApplicationStatus?.isActive === true;
+
+  // Auto-redirect if on a hidden/disabled tab
+  useEffect(() => {
+    if (!isPortalActive && activeSidebarItem === 'portal') {
+      setActiveSidebarItem('course');
+    }
+    if (!isTrackActive && activeSidebarItem === 'track') {
+      setActiveSidebarItem('course');
+    }
+  }, [isPortalActive, isTrackActive, activeSidebarItem]);
+
   // Curricula Semesters
   const [activeSem, setActiveSem] = useState(1);
   const dynamicSemesters = academicsData.curriculumSyllabus?.semesters && academicsData.curriculumSyllabus.semesters.length > 0
@@ -555,7 +569,6 @@ export const Academics: React.FC<AcademicsProps> = ({
   };
 
   // Structured Grouped Sidebar Items
-  const isEnquiryActive = academicsData.admissionEnquiry?.isActive !== false;
   const sidebarItems: SidebarItem[] = [
     // ADMISSIONS GROUP
     { id: 'course', label: 'Courses Offered', icon: GraduationCap, group: 'ADMISSIONS' },
@@ -565,9 +578,9 @@ export const Academics: React.FC<AcademicsProps> = ({
     { id: 'documents', label: 'Documents Required', icon: Paperclip, group: 'ADMISSIONS' },
     { id: 'fees', label: 'Fees Structure', icon: IndianRupee, group: 'ADMISSIONS' },
     ...(isEnquiryActive ? [{ id: 'contact', label: 'Admission Enquiry', icon: Phone, group: 'ADMISSIONS' }] : []),
-    { id: 'portal', label: 'Admission Portal 2026–27', icon: FileText, badge: 'Online', group: 'ADMISSIONS' },
-    { id: 'prospectus', label: 'Admission Prospectus', icon: Download, group: 'ADMISSIONS' },
-    { id: 'track', label: 'Track Application Status', icon: Search, group: 'ADMISSIONS' },
+    ...(isPortalActive ? [{ id: 'portal', label: 'Admission Portal 2026–27', icon: FileText, badge: 'Online', group: 'ADMISSIONS' }] : []),
+    ...(academicsData.admissionProspectus?.isActive !== false ? [{ id: 'prospectus', label: 'Admission Prospectus', icon: Download, group: 'ADMISSIONS' }] : []),
+    ...(isTrackActive ? [{ id: 'track', label: 'Track Application Status', icon: Search, group: 'ADMISSIONS' }] : []),
 
     // ACADEMICS GROUP
     { id: 'overview', label: 'Program Overview', icon: Award, group: 'ACADEMICS' },
@@ -643,14 +656,16 @@ export const Academics: React.FC<AcademicsProps> = ({
             </div>
           </div>
 
-          <div className="pt-2">
-            <button
-              onClick={() => setActiveSidebarItem(academicsData.coursesOffered?.applyButtonUrl || 'portal')}
-              className="bg-[#0A2342] hover:bg-slate-900 text-amber-400 font-bold px-6 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow-md transition-all"
-            >
-              <FileText className="w-4 h-4" /> {academicsData.coursesOffered?.applyButtonText || 'Apply Online in Admission Portal 2026–27'}
-            </button>
-          </div>
+          {isPortalActive && (
+            <div className="pt-2">
+              <button
+                onClick={() => setActiveSidebarItem(academicsData.coursesOffered?.applyButtonUrl || 'portal')}
+                className="bg-[#0A2342] hover:bg-slate-900 text-amber-400 font-bold px-6 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow-md transition-all"
+              >
+                <FileText className="w-4 h-4" /> {academicsData.coursesOffered?.applyButtonText || 'Apply Online in Admission Portal 2026–27'}
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -937,7 +952,7 @@ export const Academics: React.FC<AcademicsProps> = ({
       )}
 
       {/* 1.8 ADMISSION PORTAL (3-STEP FORM) */}
-      {activeSidebarItem === 'portal' && (
+      {activeSidebarItem === 'portal' && isPortalActive && (
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-4 gap-2">
             <div>
@@ -1573,7 +1588,7 @@ export const Academics: React.FC<AcademicsProps> = ({
       )}
 
       {/* 1.10 TRACK APPLICATION STATUS */}
-      {activeSidebarItem === 'track' && (
+      {activeSidebarItem === 'track' && isTrackActive && (
         <div className="space-y-6">
           <div className="border-b border-slate-200 pb-4">
             <h2 className="text-2xl font-bold font-serif text-slate-900 flex items-center gap-2">

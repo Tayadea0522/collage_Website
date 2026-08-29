@@ -27,7 +27,8 @@
   },
   "overrides": {
     "rollup": "npm:@rollup/wasm-node@^4.62.3",
-    "esbuild": "^0.28.1"
+    "esbuild": "^0.28.1",
+    "nanoid": "^3.3.18"
   },
   "optionalDependencies": {
     "@rollup/wasm-node": "^4.62.3"

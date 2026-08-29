@@ -1,5 +1,6 @@
 import React from 'react';
 import { CollegeInfo } from '../types';
+import { getOptimizedImageUrl } from '../utils/imageUtils';
 import { 
   Award, 
   CheckCircle2, 
@@ -150,8 +151,10 @@ export const AboutUs: React.FC<AboutUsProps> = ({ collegeInfo, onNavigateTab }) 
             <div className="shrink-0 text-center space-y-2">
               <div className="relative inline-block">
                 <img
-                  src={collegeInfo.shaktikumarImage || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80"}
+                  src={getOptimizedImageUrl(collegeInfo.shaktikumarImage || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d", { width: 400, quality: 80 })}
                   alt="Late Shaktikumar Sancheti"
+                  loading="lazy"
+                  decoding="async"
                   className="w-40 h-40 sm:w-48 sm:h-48 rounded-2xl object-cover border-4 border-amber-400 shadow-lg"
                 />
                 <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-[#0A2342] text-amber-400 text-[10px] font-extrabold px-3 py-1 rounded-full whitespace-nowrap border border-amber-400 shadow">

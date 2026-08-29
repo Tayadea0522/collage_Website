@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Facility, FacilityPhoto } from '../types';
+import { getOptimizedImageUrl } from '../utils/imageUtils';
 import { 
   Building2, 
   Factory, 
@@ -259,8 +260,10 @@ export const Facilities: React.FC<FacilitiesProps> = ({ facilities, onNavigateTa
                       className="relative rounded-2xl overflow-hidden shadow-md group cursor-pointer border border-slate-200 bg-slate-900 h-72 sm:h-96"
                     >
                       <img
-                        src={activePhotos[0].url}
+                        src={getOptimizedImageUrl(activePhotos[0].url, { width: 900, quality: 80 })}
                         alt={activePhotos[0].title || fac.title}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/10 opacity-90 group-hover:opacity-100 transition-opacity" />
@@ -293,8 +296,10 @@ export const Facilities: React.FC<FacilitiesProps> = ({ facilities, onNavigateTa
                           >
                             <div className="relative h-48 sm:h-52 overflow-hidden bg-slate-900">
                               <img
-                                src={photo.url}
+                                src={getOptimizedImageUrl(photo.url, { width: 600, quality: 80 })}
                                 alt={photo.title || `${fac.title} photo ${pIdx + 1}`}
+                                loading="lazy"
+                                decoding="async"
                                 className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
                               />
                               <div className="absolute inset-0 bg-slate-950/20 group-hover:bg-slate-950/40 transition-colors" />
@@ -376,6 +381,7 @@ export const Facilities: React.FC<FacilitiesProps> = ({ facilities, onNavigateTa
               <img
                 src={activeLightbox.photos[activeLightbox.currentIndex]?.url}
                 alt={activeLightbox.photos[activeLightbox.currentIndex]?.title || 'Infrastructure Photo'}
+                decoding="async"
                 className="max-h-full max-w-full object-contain rounded shadow-2xl transition-all duration-300"
               />
 

@@ -23,6 +23,7 @@ interface InnerPageLayoutProps {
   activeItem: string;
   onSelectSidebarItem: (id: string) => void;
   onNavigateTab?: (tab: string) => void;
+  helplinePhone?: string;
   children: React.ReactNode;
 }
 
@@ -35,6 +36,7 @@ export const InnerPageLayout: React.FC<InnerPageLayoutProps> = ({
   activeItem,
   onSelectSidebarItem,
   onNavigateTab,
+  helplinePhone,
   children,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -233,8 +235,8 @@ export const InnerPageLayout: React.FC<InnerPageLayoutProps> = ({
               <p className="text-[11px] text-slate-600 leading-snug">
                 Contact LSSCDT Admission & Academic Cell for instant assistance.
               </p>
-              <div className="pt-1 text-xs font-mono font-bold text-[#0A2342]">
-                📞 +91 07267 222333
+              <div className="pt-1 text-xs font-mono font-bold text-[#0A2342] break-words">
+                📞 {helplinePhone || '+91 8625869560 / +91 9422880000'}
               </div>
             </div>
           </aside>

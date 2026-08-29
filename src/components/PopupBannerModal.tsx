@@ -80,6 +80,8 @@ export const PopupBannerModal: React.FC<PopupBannerModalProps> = ({
             <img
               src={popup.imageUrl}
               alt={popup.title || 'Announcement'}
+              loading="lazy"
+              decoding="async"
               onLoad={() => setImageLoading(false)}
               onError={() => {
                 setImageError(true);

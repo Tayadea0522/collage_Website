@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { CollegeInfo, Notice, DepartmentInfo, Facility, CollegeEvent } from '../types';
+import { getOptimizedImageUrl } from '../utils/imageUtils';
 import { 
   ArrowRight, 
   ChevronLeft, 
@@ -242,6 +243,8 @@ export const Home: React.FC<HomeProps> = ({
               src={banner.image}
               alt={banner.title || `Banner ${index + 1}`}
               referrerPolicy="no-referrer"
+              loading={index === 0 ? "eager" : "lazy"}
+              decoding="async"
               className="w-full h-full object-cover object-center"
             />
           </div>
@@ -345,9 +348,11 @@ export const Home: React.FC<HomeProps> = ({
                       <div className="absolute -inset-1.5 bg-gradient-to-r from-[#0A2342] to-[#D97706] rounded-3xl blur opacity-20 group-hover/img:opacity-35 transition duration-300"></div>
                       <div className="relative rounded-2xl overflow-hidden bg-slate-100 border-2 border-white shadow-xl aspect-[3/4] w-full">
                         <img
-                          src={leader.image}
+                          src={getOptimizedImageUrl(leader.image, { width: 400, quality: 80 })}
                           alt={leader.name}
                           referrerPolicy="no-referrer"
+                          loading="lazy"
+                          decoding="async"
                           className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
                         />
                       </div>

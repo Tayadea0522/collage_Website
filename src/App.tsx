@@ -20,20 +20,30 @@ import { supabase } from './supabaseClient.js';
 import { Header } from './components/Header';
 import { NoticeTicker } from './components/NoticeTicker';
 import { Footer } from './components/Footer';
-
 import { Home } from './components/Home';
-import { AboutUs } from './components/AboutUs';
-import { Academics } from './components/Academics';
-import { Departments } from './components/Departments';
-import { Facilities } from './components/Facilities';
-import { Faculties } from './components/Faculties';
-import { Admissions } from './components/Admissions';
-import { News } from './components/News';
-import { AdminPanel } from './components/AdminPanel';
-import { AdminAuthModal } from './components/AdminAuthModal';
-import { AdminLoginView } from './components/AdminLoginView';
 import { PopupBannerModal } from './components/PopupBannerModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { getOptimizedImageUrl } from './utils/imageUtils';
+
+// Code-split heavy subpages and admin bundle
+const AboutUs = React.lazy(() => import('./components/AboutUs').then(m => ({ default: m.AboutUs })));
+const Academics = React.lazy(() => import('./components/Academics').then(m => ({ default: m.Academics })));
+const Departments = React.lazy(() => import('./components/Departments').then(m => ({ default: m.Departments })));
+const Facilities = React.lazy(() => import('./components/Facilities').then(m => ({ default: m.Facilities })));
+const Faculties = React.lazy(() => import('./components/Faculties').then(m => ({ default: m.Faculties })));
+const News = React.lazy(() => import('./components/News').then(m => ({ default: m.News })));
+const AdminPanel = React.lazy(() => import('./components/AdminPanel').then(m => ({ default: m.AdminPanel })));
+const AdminAuthModal = React.lazy(() => import('./components/AdminAuthModal').then(m => ({ default: m.AdminAuthModal })));
+const AdminLoginView = React.lazy(() => import('./components/AdminLoginView').then(m => ({ default: m.AdminLoginView })));
+
+const PageLoadingFallback: React.FC = () => (
+  <div className="min-h-[50vh] flex flex-col items-center justify-center p-8 text-center space-y-4">
+    <div className="w-10 h-10 border-3 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+    <p className="text-xs font-semibold text-slate-500 font-sans tracking-wide">
+      Loading page content...
+    </p>
+  </div>
+);
 
 import { 
   X, 
@@ -415,6 +425,7 @@ export default function App() {
 
       {/* Main Page View Area */}
       <main className="flex-1">
+        <React.Suspense fallback={<PageLoadingFallback />}>
         {currentTab === 'home' && (
           <Home
             collegeInfo={collegeInfo}
@@ -532,7 +543,13 @@ export default function App() {
                   .map((item) => (
                     <div key={item.id} className="rounded-xl overflow-hidden border border-slate-200 shadow-sm group">
                       <div className="relative h-44 overflow-hidden">
-                        <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                        <img 
+                          src={getOptimizedImageUrl(item.image, { width: 600, quality: 80 })} 
+                          alt={item.title} 
+                          loading="lazy"
+                          decoding="async"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                        />
                         <span className="absolute top-2 left-2 bg-slate-950/80 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded">
                           {item.category}
                         </span>
@@ -756,6 +773,7 @@ export default function App() {
             )}
           </ErrorBoundary>
         )}
+        </React.Suspense>
       </main>
 
       {/* Footer Component */}
@@ -767,15 +785,17 @@ export default function App() {
 
       {/* MULTI-ADMIN AUTHENTICATION & RECOVERY MODAL */}
       <ErrorBoundary fallbackTitle="Admin Login could not be loaded.">
-        <AdminAuthModal
-          isOpen={adminModalOpen}
-          onClose={() => setAdminModalOpen(false)}
-          onLoginSuccess={(user: AdminUser) => {
-            setCurrentAdminUser(user);
-            setIsAdminLoggedIn(true);
-            setCurrentTab('admin');
-          }}
-        />
+        <React.Suspense fallback={null}>
+          <AdminAuthModal
+            isOpen={adminModalOpen}
+            onClose={() => setAdminModalOpen(false)}
+            onLoginSuccess={(user: AdminUser) => {
+              setCurrentAdminUser(user);
+              setIsAdminLoggedIn(true);
+              setCurrentTab('admin');
+            }}
+          />
+        </React.Suspense>
       </ErrorBoundary>
 
       {/* NOTICE DETAIL MODAL */}

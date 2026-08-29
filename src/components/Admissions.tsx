@@ -33,7 +33,10 @@ import {
   HelpCircle,
   Award,
   IndianRupee,
-  Layers
+  Layers,
+  Mail,
+  MessageSquare,
+  MapPin
 } from 'lucide-react';
 
 interface AdmissionsProps {
@@ -518,6 +521,7 @@ export const Admissions: React.FC<AdmissionsProps> = ({
     }
   };
 
+  const isEnquiryActive = collegeInfo.academicsData?.admissionEnquiry?.isActive !== false;
   const sidebarItems: SidebarItem[] = [
     { id: 'portal', label: 'Admission Portal 2026–27', icon: FileText, badge: 'Online' },
     { id: 'course', label: 'Course Offered', icon: GraduationCap },
@@ -527,7 +531,7 @@ export const Admissions: React.FC<AdmissionsProps> = ({
     { id: 'documents', label: 'Documents Required', icon: Paperclip },
     { id: 'fees', label: 'Fees Structure', icon: IndianRupee },
     { id: 'prospectus', label: 'Admission Prospectus', icon: Download },
-    { id: 'contact', label: 'Admission Enquiry', icon: Phone },
+    ...(isEnquiryActive ? [{ id: 'contact', label: 'Admission Enquiry', icon: Phone }] : []),
     { id: 'track', label: 'Track Application Status', icon: Search }
   ];
 
@@ -545,6 +549,7 @@ export const Admissions: React.FC<AdmissionsProps> = ({
       activeItem={activeSidebarItem}
       onSelectSidebarItem={handleSelectSidebar}
       onNavigateTab={onNavigateTab}
+      helplinePhone={collegeInfo.academicsData?.admissionEnquiry?.phoneNumbers || collegeInfo.phone}
     >
       {/* 1. ADMISSION PORTAL (FORM) */}
       {activeSidebarItem === 'portal' && (
@@ -1089,7 +1094,10 @@ export const Admissions: React.FC<AdmissionsProps> = ({
 
       {/* 5. ADMISSION PROCESS */}
       {activeSidebarItem === 'process' && (
-        <AdmissionProcessWorkflow admissionProcess={collegeInfo.admissionProcess} />
+        <AdmissionProcessWorkflow 
+          admissionProcess={collegeInfo.academicsData?.admissionProcess || collegeInfo.admissionProcess} 
+          helplinePhone={collegeInfo.academicsData?.admissionEnquiry?.phoneNumbers || collegeInfo.phone}
+        />
       )}
 
       {/* 6. DOCUMENTS REQUIRED */}
@@ -1196,28 +1204,97 @@ export const Admissions: React.FC<AdmissionsProps> = ({
       )}
 
       {/* 9. CONTACT / ENQUIRY */}
-      {activeSidebarItem === 'contact' && (
+      {activeSidebarItem === 'contact' && isEnquiryActive && (
         <div className="space-y-6">
           <div className="border-b border-slate-200 pb-4">
             <h2 className="text-2xl font-bold font-serif text-slate-900 flex items-center gap-2">
               <Phone className="w-6 h-6 text-amber-600" />
-              Admission Enquiry & Helpline
+              {collegeInfo.academicsData?.admissionEnquiry?.heading || 'Centralized Admission Counseling & Enquiry Cell'}
             </h2>
+            {collegeInfo.academicsData?.admissionEnquiry?.description ? (
+              <p className="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
+                {collegeInfo.academicsData.admissionEnquiry.description}
+              </p>
+            ) : collegeInfo.academicsData?.admissionEnquiry?.subtitle ? (
+              <p className="text-xs text-slate-600 mt-1">{collegeInfo.academicsData.admissionEnquiry.subtitle}</p>
+            ) : null}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-slate-700">
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-              <span className="font-bold text-[#0A2342] block text-sm">Admission Helpline Phone</span>
-              <p className="font-mono text-sm text-blue-900 font-bold">+91 07267 222333 / +91 94228 81234</p>
-              <p className="text-slate-500 text-[11px]">Timing: Monday to Saturday (10:00 AM – 5:00 PM)</p>
+              <span className="font-bold text-[#0A2342] block text-sm flex items-center gap-1.5">
+                <Phone className="w-4 h-4 text-amber-600" /> Admission Helpline Phone
+              </span>
+              <p className="font-mono text-sm text-blue-900 font-bold break-words">
+                {collegeInfo.academicsData?.admissionEnquiry?.phoneNumbers || collegeInfo.academicsData?.admissionEnquiry?.helplinePhone || collegeInfo.phone || '+91 8625869560 / +91 9422880000'}
+              </p>
+              <p className="text-slate-500 text-[11px]">
+                <span className="font-semibold text-slate-700">Working Hours: </span>
+                {collegeInfo.academicsData?.admissionEnquiry?.workingHours || 'Monday to Saturday: 9:30 AM to 5:30 PM (Except Public Holidays)'}
+              </p>
             </div>
 
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-              <span className="font-bold text-[#0A2342] block text-sm">Email & Address</span>
-              <p className="font-bold text-slate-800">admissions@cdtmalkapur.edu.in</p>
-              <p className="text-slate-600">Campus: CDTM Malkapur, NH-6, Buldhana District, Maharashtra - 443101</p>
+              <span className="font-bold text-[#0A2342] block text-sm flex items-center gap-1.5">
+                <Mail className="w-4 h-4 text-amber-600" /> Official Admissions Email
+              </span>
+              <p className="font-bold text-slate-800 break-words">
+                {collegeInfo.academicsData?.admissionEnquiry?.email || collegeInfo.academicsData?.admissionEnquiry?.helplineEmail || collegeInfo.email || 'admissions@lsscdt.edu.in'}
+              </p>
+              <p className="text-slate-600 leading-snug">
+                <span className="font-semibold text-slate-700">Campus Office: </span>
+                {collegeInfo.academicsData?.admissionEnquiry?.officeAddress || collegeInfo.address || 'Admission Counseling Cell, Administrative Building, LSSCDT Campus, Dasarkhed MIDC Road, Malkapur – 443101, Dist. Buldhana (M.S.)'}
+              </p>
             </div>
           </div>
+
+          {/* WhatsApp Action Card if WhatsApp number or link is configured */}
+          {(collegeInfo.academicsData?.admissionEnquiry?.whatsappNumber || collegeInfo.academicsData?.admissionEnquiry?.whatsappLink) && (
+            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="space-y-1 text-center sm:text-left">
+                <div className="flex items-center justify-center sm:justify-start gap-1.5 text-emerald-900 font-bold text-sm">
+                  <MessageSquare className="w-4 h-4 text-emerald-600" />
+                  <span>WhatsApp Admission Support</span>
+                </div>
+                <p className="text-xs text-emerald-800">
+                  Connect directly with our admission counselor on WhatsApp for quick inquiries and guidance.
+                </p>
+                {collegeInfo.academicsData.admissionEnquiry.whatsappNumber && (
+                  <p className="text-xs font-mono font-bold text-emerald-900">
+                    +{collegeInfo.academicsData.admissionEnquiry.whatsappNumber.replace(/[^0-9]/g, '')}
+                  </p>
+                )}
+              </div>
+              <a
+                href={
+                  collegeInfo.academicsData.admissionEnquiry.whatsappLink ||
+                  `https://wa.me/${collegeInfo.academicsData.admissionEnquiry.whatsappNumber?.replace(/[^0-9]/g, '')}?text=Hello%20LSSCDT%20Admissions,%20I%20would%20like%20to%20know%20more%20about%20B.Tech%20Dairy%20Technology%20admissions.`
+                }
+                target="_blank"
+                rel="noreferrer"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 py-2.5 rounded-lg shadow inline-flex items-center gap-1.5 shrink-0 transition-colors"
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span>Chat on WhatsApp</span>
+              </a>
+            </div>
+          )}
+
+          {collegeInfo.academicsData?.admissionEnquiry?.coordinators && collegeInfo.academicsData.admissionEnquiry.coordinators.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-sm font-bold text-[#0A2342] font-serif">Admission Nodal Officers & Counselors:</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                {collegeInfo.academicsData.admissionEnquiry.coordinators.filter(c => c.isActive !== false).map((c, idx) => (
+                  <div key={c.id || idx} className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-0.5">
+                    <span className="font-bold text-slate-900 block">{c.name}</span>
+                    <span className="text-slate-600 text-[11px] block">{c.designation}</span>
+                    <span className="font-mono text-blue-900 font-semibold block">{c.phone}</span>
+                    {c.email && <span className="text-slate-500 text-[11px] block">{c.email}</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

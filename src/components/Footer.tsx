@@ -85,6 +85,8 @@ const CompactLinkBox: React.FC<{ item: InstitutionalLink }> = ({ item }) => {
             alt={`${item.name} Logo`}
             onError={handleError}
             referrerPolicy="no-referrer"
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-contain"
           />
         ) : (
@@ -161,6 +163,8 @@ export const Footer: React.FC<FooterProps> = ({
                   src={collegeInfo.logoImage} 
                   alt={collegeInfo.name} 
                   referrerPolicy="no-referrer"
+                  loading="lazy"
+                  decoding="async"
                   className="w-12 h-12 object-contain bg-white/10 rounded-lg p-1"
                 />
               )}

@@ -5,6 +5,21 @@ import { supabaseStorageService } from './supabaseStorageService';
 
 const MIGRATION_KEY = 'lsscdt_storage_migration_v3';
 
+// In-flight promise deduplication map to prevent redundant simultaneous network requests
+const inFlightRequests: Map<string, Promise<any>> = new Map();
+
+function deduplicateInFlight<T>(key: string, fetcher: () => Promise<T>): Promise<T> {
+  const existing = inFlightRequests.get(key);
+  if (existing) {
+    return existing as Promise<T>;
+  }
+  const promise = fetcher().finally(() => {
+    inFlightRequests.delete(key);
+  });
+  inFlightRequests.set(key, promise);
+  return promise;
+}
+
 export const cleanObsoleteLocalStorage = (): void => {
   try {
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
@@ -1070,44 +1085,46 @@ export const storageService = {
 
   // --- Fetch All Data directly from Supabase ---
   fetchAllFromSupabase: async () => {
-    cleanObsoleteLocalStorage();
+    return deduplicateInFlight('fetchAllFromSupabase', async () => {
+      cleanObsoleteLocalStorage();
 
-    const [
-      collegeInfo,
-      notices,
-      events,
-      faculty,
-      departments,
-      facilities,
-      gallery,
-      downloads,
-      popupBanner,
-      applications
-    ] = await Promise.all([
-      storageService.fetchCollegeInfo(),
-      storageService.fetchNotices(),
-      storageService.fetchEvents(),
-      storageService.fetchFaculty(),
-      storageService.fetchDepartments(),
-      storageService.fetchFacilities(),
-      storageService.fetchGallery(),
-      storageService.fetchDownloads(),
-      storageService.fetchPopupBanner(),
-      storageService.fetchApplications()
-    ]);
+      const [
+        collegeInfo,
+        notices,
+        events,
+        faculty,
+        departments,
+        facilities,
+        gallery,
+        downloads,
+        popupBanner,
+        applications
+      ] = await Promise.all([
+        storageService.fetchCollegeInfo(),
+        storageService.fetchNotices(),
+        storageService.fetchEvents(),
+        storageService.fetchFaculty(),
+        storageService.fetchDepartments(),
+        storageService.fetchFacilities(),
+        storageService.fetchGallery(),
+        storageService.fetchDownloads(),
+        storageService.fetchPopupBanner(),
+        storageService.fetchApplications()
+      ]);
 
-    return {
-      collegeInfo,
-      notices,
-      events,
-      faculty,
-      departments,
-      facilities,
-      gallery,
-      downloads,
-      popupBanner,
-      applications
-    };
+      return {
+        collegeInfo,
+        notices,
+        events,
+        faculty,
+        departments,
+        facilities,
+        gallery,
+        downloads,
+        popupBanner,
+        applications
+      };
+    });
   },
 
   syncFromSupabase: async (): Promise<boolean> => {

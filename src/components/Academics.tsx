@@ -33,7 +33,11 @@ import {
   HelpCircle,
   Award,
   IndianRupee,
-  Layers
+  Layers,
+  Mail,
+  MessageSquare,
+  MapPin,
+  Clock
 } from 'lucide-react';
 
 interface AcademicsProps {
@@ -551,6 +555,7 @@ export const Academics: React.FC<AcademicsProps> = ({
   };
 
   // Structured Grouped Sidebar Items
+  const isEnquiryActive = academicsData.admissionEnquiry?.isActive !== false;
   const sidebarItems: SidebarItem[] = [
     // ADMISSIONS GROUP
     { id: 'course', label: 'Courses Offered', icon: GraduationCap, group: 'ADMISSIONS' },
@@ -559,7 +564,7 @@ export const Academics: React.FC<AcademicsProps> = ({
     { id: 'process', label: 'Admission Process', icon: FileCheck, group: 'ADMISSIONS' },
     { id: 'documents', label: 'Documents Required', icon: Paperclip, group: 'ADMISSIONS' },
     { id: 'fees', label: 'Fees Structure', icon: IndianRupee, group: 'ADMISSIONS' },
-    { id: 'contact', label: 'Admission Enquiry', icon: Phone, group: 'ADMISSIONS' },
+    ...(isEnquiryActive ? [{ id: 'contact', label: 'Admission Enquiry', icon: Phone, group: 'ADMISSIONS' }] : []),
     { id: 'portal', label: 'Admission Portal 2026–27', icon: FileText, badge: 'Online', group: 'ADMISSIONS' },
     { id: 'prospectus', label: 'Admission Prospectus', icon: Download, group: 'ADMISSIONS' },
     { id: 'track', label: 'Track Application Status', icon: Search, group: 'ADMISSIONS' },
@@ -585,6 +590,7 @@ export const Academics: React.FC<AcademicsProps> = ({
       activeItem={activeSidebarItem}
       onSelectSidebarItem={handleSelectSidebar}
       onNavigateTab={onNavigateTab}
+      helplinePhone={academicsData.admissionEnquiry?.phoneNumbers || collegeInfo?.phone}
     >
       {/* ======================================================== */}
       {/* 1. ADMISSIONS GROUP SECTIONS */}
@@ -734,7 +740,10 @@ export const Academics: React.FC<AcademicsProps> = ({
 
       {/* 1.4 ADMISSION PROCESS */}
       {activeSidebarItem === 'process' && (
-        <AdmissionProcessWorkflow admissionProcess={academicsData.admissionProcess} />
+        <AdmissionProcessWorkflow 
+          admissionProcess={academicsData.admissionProcess} 
+          helplinePhone={academicsData.admissionEnquiry?.phoneNumbers || collegeInfo?.phone}
+        />
       )}
 
       {/* 1.5 DOCUMENTS REQUIRED */}
@@ -833,31 +842,81 @@ export const Academics: React.FC<AcademicsProps> = ({
       )}
 
       {/* 1.7 ADMISSION ENQUIRY */}
-      {activeSidebarItem === 'contact' && (
+      {activeSidebarItem === 'contact' && isEnquiryActive && (
         <div className="space-y-6">
           <div className="border-b border-slate-200 pb-4">
             <h2 className="text-2xl font-bold font-serif text-slate-900 flex items-center gap-2">
               <Phone className="w-6 h-6 text-amber-600" />
-              {academicsData.admissionEnquiry?.heading || 'Admission Enquiry & Helpline'}
+              {academicsData.admissionEnquiry?.heading || 'Centralized Admission Counseling & Enquiry Cell'}
             </h2>
-            {academicsData.admissionEnquiry?.subtitle && (
+            {academicsData.admissionEnquiry?.description ? (
+              <p className="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
+                {academicsData.admissionEnquiry.description}
+              </p>
+            ) : academicsData.admissionEnquiry?.subtitle ? (
               <p className="text-xs text-slate-600 mt-1">{academicsData.admissionEnquiry.subtitle}</p>
-            )}
+            ) : null}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-slate-700">
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-              <span className="font-bold text-[#0A2342] block text-sm">Admission Helpline Phone</span>
-              <p className="font-mono text-sm text-blue-900 font-bold">{academicsData.admissionEnquiry?.helplinePhone || '+91 07267 222333 / +91 94228 81234'}</p>
-              <p className="text-slate-500 text-[11px]">Timing: {academicsData.admissionEnquiry?.workingHours || 'Monday to Saturday (10:00 AM – 5:00 PM)'}</p>
+              <span className="font-bold text-[#0A2342] block text-sm flex items-center gap-1.5">
+                <Phone className="w-4 h-4 text-amber-600" /> Admission Helpline Phone
+              </span>
+              <p className="font-mono text-sm text-blue-900 font-bold break-words">
+                {academicsData.admissionEnquiry?.phoneNumbers || academicsData.admissionEnquiry?.helplinePhone || collegeInfo?.phone || '+91 8625869560 / +91 9422880000'}
+              </p>
+              <p className="text-slate-500 text-[11px]">
+                <span className="font-semibold text-slate-700">Working Hours: </span>
+                {academicsData.admissionEnquiry?.workingHours || 'Monday to Saturday: 9:30 AM to 5:30 PM (Except Public Holidays)'}
+              </p>
             </div>
 
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-              <span className="font-bold text-[#0A2342] block text-sm">Email & Address</span>
-              <p className="font-bold text-slate-800">{academicsData.admissionEnquiry?.helplineEmail || 'admissions@cdtmalkapur.edu.in'}</p>
-              <p className="text-slate-600">{academicsData.admissionEnquiry?.officeAddress || 'Campus: CDTM Malkapur, NH-6, Buldhana District, Maharashtra - 443101'}</p>
+              <span className="font-bold text-[#0A2342] block text-sm flex items-center gap-1.5">
+                <Mail className="w-4 h-4 text-amber-600" /> Official Admissions Email
+              </span>
+              <p className="font-bold text-slate-800 break-words">
+                {academicsData.admissionEnquiry?.email || academicsData.admissionEnquiry?.helplineEmail || collegeInfo?.email || 'admissions@lsscdt.edu.in'}
+              </p>
+              <p className="text-slate-600 leading-snug">
+                <span className="font-semibold text-slate-700">Campus Office: </span>
+                {academicsData.admissionEnquiry?.officeAddress || collegeInfo?.address || 'Admission Counseling Cell, Administrative Building, LSSCDT Campus, Dasarkhed MIDC Road, Malkapur – 443101, Dist. Buldhana (M.S.)'}
+              </p>
             </div>
           </div>
+
+          {/* WhatsApp Action Card if WhatsApp number or link is configured */}
+          {(academicsData.admissionEnquiry?.whatsappNumber || academicsData.admissionEnquiry?.whatsappLink) && (
+            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="space-y-1 text-center sm:text-left">
+                <div className="flex items-center justify-center sm:justify-start gap-1.5 text-emerald-900 font-bold text-sm">
+                  <MessageSquare className="w-4 h-4 text-emerald-600" />
+                  <span>WhatsApp Admission Support</span>
+                </div>
+                <p className="text-xs text-emerald-800">
+                  Connect directly with our admission counselor on WhatsApp for quick inquiries and guidance.
+                </p>
+                {academicsData.admissionEnquiry.whatsappNumber && (
+                  <p className="text-xs font-mono font-bold text-emerald-900">
+                    +{academicsData.admissionEnquiry.whatsappNumber.replace(/[^0-9]/g, '')}
+                  </p>
+                )}
+              </div>
+              <a
+                href={
+                  academicsData.admissionEnquiry.whatsappLink ||
+                  `https://wa.me/${academicsData.admissionEnquiry.whatsappNumber?.replace(/[^0-9]/g, '')}?text=Hello%20LSSCDT%20Admissions,%20I%20would%20like%20to%20know%20more%20about%20B.Tech%20Dairy%20Technology%20admissions.`
+                }
+                target="_blank"
+                rel="noreferrer"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 py-2.5 rounded-lg shadow inline-flex items-center gap-1.5 shrink-0 transition-colors"
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span>Chat on WhatsApp</span>
+              </a>
+            </div>
+          )}
 
           {academicsData.admissionEnquiry?.coordinators && academicsData.admissionEnquiry.coordinators.length > 0 && (
             <div className="space-y-3">
@@ -1668,6 +1727,8 @@ export const Academics: React.FC<AcademicsProps> = ({
                   <img
                     src={academicsData.programOverview?.entryExitImageUrl || academicsData.programOverview?.entryExitOptions?.imageUrl || '/entry-and-exit-options.svg'}
                     alt="Entry and Exit options for the UG program in Dairy Technology"
+                    loading="lazy"
+                    decoding="async"
                     className="w-full max-w-xl h-auto object-contain rounded-lg"
                   />
                 </div>

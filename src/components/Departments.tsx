@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { DepartmentInfo } from '../types';
+import { getOptimizedImageUrl } from '../utils/imageUtils';
 import { Microscope, CheckCircle2, User, BookOpen, Building2 } from 'lucide-react';
 import { InnerPageLayout, SidebarItem } from './InnerPageLayout';
 
@@ -104,8 +105,10 @@ export const Departments: React.FC<DepartmentsProps> = ({ departments, onNavigat
             {/* Right Col: Image & Stats */}
             <div className="space-y-4">
               <img
-                src={selectedDept.image}
+                src={getOptimizedImageUrl(selectedDept.image, { width: 600, quality: 80 })}
                 alt={selectedDept.name}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-52 object-cover rounded-xl shadow border border-slate-200"
               />
               <div className="bg-[#0A2342] text-white p-5 rounded-xl shadow space-y-2.5 text-xs">

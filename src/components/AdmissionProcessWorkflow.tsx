@@ -14,6 +14,7 @@ import { AdmissionProcessData, AdmissionProcessStep } from '../types';
 
 interface AdmissionProcessWorkflowProps {
   admissionProcess?: AdmissionProcessData;
+  helplinePhone?: string;
 }
 
 const defaultIntroText = "Online centralized admission process is conducted by Maharashtra Council of Agriculture Education & Research (MCAER), Pune and CET Cell after the declaration of results of MHT-CET/NEET/JEE and the procedure of admission is as follows:";
@@ -78,7 +79,7 @@ const defaultSteps: AdmissionProcessStep[] = [
   }
 ];
 
-export const AdmissionProcessWorkflow: React.FC<AdmissionProcessWorkflowProps> = ({ admissionProcess }) => {
+export const AdmissionProcessWorkflow: React.FC<AdmissionProcessWorkflowProps> = ({ admissionProcess, helplinePhone }) => {
   const shouldReduceMotion = useReducedMotion();
 
   const introText = admissionProcess?.introText || defaultIntroText;
@@ -247,7 +248,7 @@ export const AdmissionProcessWorkflow: React.FC<AdmissionProcessWorkflowProps> =
           </div>
         </div>
         <div className="shrink-0 text-xs font-bold text-[#0A2342] bg-white px-4 py-2 rounded-xl border border-amber-300 shadow-sm">
-          Helpline: +91 8625869560
+          Helpline: {helplinePhone || '+91 8625869560 / +91 9422880000'}
         </div>
       </div>
 

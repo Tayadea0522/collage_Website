@@ -135,6 +135,8 @@ export const Header: React.FC<HeaderProps> = ({
                   src={leftLogoUrl}
                   alt="College Left Logo"
                   referrerPolicy="no-referrer"
+                  loading="eager"
+                  decoding="async"
                   className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-200"
                 />
               ) : (
@@ -195,6 +197,8 @@ export const Header: React.FC<HeaderProps> = ({
                   src={rightLogoUrl}
                   alt="College Right Logo"
                   referrerPolicy="no-referrer"
+                  loading="eager"
+                  decoding="async"
                   className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-200"
                 />
               ) : (
@@ -214,6 +218,8 @@ export const Header: React.FC<HeaderProps> = ({
                   src={leftLogoUrl}
                   alt="Left Logo"
                   referrerPolicy="no-referrer"
+                  loading="eager"
+                  decoding="async"
                   className="h-20 w-auto max-w-[150px] object-contain"
                 />
               </div>
@@ -222,6 +228,8 @@ export const Header: React.FC<HeaderProps> = ({
                   src={rightLogoUrl}
                   alt="Right Logo"
                   referrerPolicy="no-referrer"
+                  loading="eager"
+                  decoding="async"
                   className="h-20 w-auto max-w-[150px] object-contain"
                 />
               </div>

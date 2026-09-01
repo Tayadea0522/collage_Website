@@ -1411,7 +1411,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               LSSCDT Admin
             </h2>
             <p className="text-xs text-slate-500 font-medium mt-0.5">
-              Super Administrator
+              {currentAdminUser?.name || 'Akshay Jamode'} ({currentAdminUser?.role || 'Super Admin'})
             </p>
           </div>
 
@@ -1468,7 +1468,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </h1>
           </div>
           <div className="text-xs text-slate-500 font-medium">
-            Welcome, <span className="font-bold text-[#0A2342]">Super Administrator</span>
+            Welcome, <span className="font-bold text-[#0A2342]">{currentAdminUser?.name || 'Akshay Jamode'}</span> <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300/60 ml-1.5">{currentAdminUser?.role || 'Super Admin'}</span>
           </div>
         </div>
 
@@ -4812,8 +4812,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
             const isCurrentAdmin =
               (currentId && currentId === targetId) ||
-              (currentUsername && currentUsername === targetUsername) ||
-              (currentEmail && currentEmail === targetEmail) ||
               (currentAuthId && targetAuthId && currentAuthId === targetAuthId);
 
             if (isCurrentAdmin) {
@@ -4821,8 +4819,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               return;
             }
 
-            const superAdmins = adminUsersList.filter(user => user.role === 'Super Admin');
-            if (u.role === 'Super Admin' && superAdmins.length <= 1) {
+            const otherSuperAdmins = adminUsersList.filter(user => user.role === 'Super Admin' && user.id !== u.id);
+            if (u.role === 'Super Admin' && otherSuperAdmins.length === 0) {
               alert("Cannot delete the last remaining Super Admin account.");
               return;
             }
@@ -4886,8 +4884,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 /* Administrators List Cards */
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {adminUsersList.map((u) => {
-                    const isSelf = currentAdminUser?.email?.toLowerCase() === u.email?.toLowerCase() ||
-                                  currentAdminUser?.username?.toLowerCase() === u.username?.toLowerCase();
+                    const isSelf = (currentAdminUser?.id && currentAdminUser.id === u.id) ||
+                                  (currentAdminUser?.auth_user_id && u.auth_user_id && currentAdminUser.auth_user_id === u.auth_user_id);
 
                     return (
                       <div key={u.id} className="bg-[#F0F4F8] p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3 relative">

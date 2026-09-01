@@ -61,7 +61,7 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
     let targetEmail = trimmedIdent;
     if (!trimmedIdent.includes('@')) {
       if (trimmedIdent.toLowerCase() === 'admin') {
-        targetEmail = 'akshayjamode21@gmail.com';
+        targetEmail = 'akshayjamode121@gmail.com';
       } else {
         try {
           const { data: dbAdmin } = await supabase
@@ -377,7 +377,7 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
                       id="admin-recovery-ident"
                       type="text"
                       required
-                      placeholder="e.g. admin or akshayjamode21@gmail.com"
+                      placeholder="e.g. admin or akshayjamode121@gmail.com"
                       value={recoveryIdentifier}
                       onChange={(e) => setRecoveryIdentifier(e.target.value)}
                       className="w-full p-2.5 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-amber-500 font-mono text-slate-900"

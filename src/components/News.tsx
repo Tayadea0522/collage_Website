@@ -148,26 +148,26 @@ export const News: React.FC<NewsProps> = ({ notices, onSelectNotice }) => {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
+                  <div className="flex flex-wrap items-center gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
+                    <button
+                      onClick={() => onSelectNotice(n)}
+                      className="bg-[#0A2342] hover:bg-[#D97706] text-white hover:text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all shadow cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Read Details</span>
+                    </button>
                     {pdfUrl && (
                       <a
                         href={pdfUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-sm"
-                        title="Download PDF attachment"
+                        className="bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-300 font-bold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-xs"
+                        title="Download or view attached PDF"
                       >
-                        <FileDown className="w-3.5 h-3.5 text-red-600" />
-                        <span className="hidden sm:inline">PDF</span>
+                        <FileDown className="w-3.5 h-3.5 text-amber-700" />
+                        <span>Download PDF</span>
                       </a>
                     )}
-                    <button
-                      onClick={() => onSelectNotice(n)}
-                      className="bg-[#0A2342] hover:bg-[#D97706] text-white hover:text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all shadow"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Read Details</span>
-                    </button>
                   </div>
                 </div>
               );

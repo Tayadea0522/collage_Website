@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { CollegeInfo, Notice, DepartmentInfo, FacultyMember, AdmissionApplication, GalleryItem, CollegeEvent, AdminUser, DownloadableDocument, NoticeAttachment, PopupBanner, AdmissionProcessStep, AdmissionProcessData, Facility } from '../types';
 import { storageService } from '../services/storageService';
@@ -391,6 +391,33 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [isUploadingNoticePdf, setIsUploadingNoticePdf] = useState<boolean>(false);
   const [noticePdfError, setNoticePdfError] = useState<string>('');
   const [existingNoticeAttachment, setExistingNoticeAttachment] = useState<NoticeAttachment | undefined>(undefined);
+  const noticeFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleNoticeFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNoticePdfError('');
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate that it is actually a PDF
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      setNoticePdfError('Invalid file format. Only PDF documents (.pdf) are allowed.');
+      e.target.value = '';
+      setSelectedNoticePdf(null);
+      return;
+    }
+
+    // Validate maximum size: 10 MB
+    const maxBytes = 10 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      setNoticePdfError(`File size (${sizeMB} MB) exceeds maximum allowed limit of 10 MB.`);
+      e.target.value = '';
+      setSelectedNoticePdf(null);
+      return;
+    }
+
+    setSelectedNoticePdf(file);
+  };
 
   const handleOpenNoticeEdit = (notice: Notice) => {
     setEditingNotice(notice);
@@ -404,6 +431,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setExistingNoticeAttachment(notice.attachment);
     setSelectedNoticePdf(null);
     setNoticePdfError('');
+    if (noticeFileInputRef.current) noticeFileInputRef.current.value = '';
   };
 
   const handleCancelNoticeEdit = () => {
@@ -418,6 +446,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setExistingNoticeAttachment(undefined);
     setSelectedNoticePdf(null);
     setNoticePdfError('');
+    if (noticeFileInputRef.current) noticeFileInputRef.current.value = '';
   };
 
   const handleSaveNoticeSubmit = async (e: React.FormEvent) => {
@@ -430,10 +459,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }
 
     let attachment: NoticeAttachment | undefined = existingNoticeAttachment;
+    let oldStoragePathToDelete: string | null = null;
 
     if (selectedNoticePdf) {
       if (selectedNoticePdf.size > 10 * 1024 * 1024) {
-        setNoticePdfError('Attachment PDF size exceeds 10 MB limit.');
+        setNoticePdfError('Attachment PDF size exceeds maximum allowed 10 MB limit.');
         return;
       }
       if (selectedNoticePdf.type !== 'application/pdf' && !selectedNoticePdf.name.toLowerCase().endsWith('.pdf')) {
@@ -442,16 +472,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       }
 
       setIsUploadingNoticePdf(true);
-      const uploadRes = await supabaseStorageService.uploadWebsiteDocument('notices', selectedNoticePdf);
+      // 1. Upload the new PDF successfully to existing Supabase Storage
+      const uploadRes = await supabaseStorageService.uploadWebsiteDocument('news', selectedNoticePdf);
       setIsUploadingNoticePdf(false);
 
       if (uploadRes.error) {
+        // If upload fails: do NOT delete existing PDF, show actual error
         setNoticePdfError(`PDF upload failed: ${uploadRes.error}`);
         return;
       }
 
+      // 2. Confirm new storage path and prepare for safe replacement
       if (existingNoticeAttachment?.storagePath && existingNoticeAttachment.storagePath !== uploadRes.storagePath) {
-        await supabaseStorageService.deleteWebsiteDocument(existingNoticeAttachment.storagePath);
+        oldStoragePathToDelete = existingNoticeAttachment.storagePath;
       }
 
       attachment = {
@@ -479,20 +512,64 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       updated = [item, ...noticeList];
     }
 
+    // 3. Update the news record in Supabase
     setNoticeList(updated);
     await storageService.saveNotices(updated);
+
+    // 4. Only then remove the obsolete PDF from storage
+    if (oldStoragePathToDelete) {
+      try {
+        await supabaseStorageService.deleteWebsiteDocument(oldStoragePathToDelete);
+      } catch (delErr) {
+        console.warn('Cleanup of replaced PDF failed:', delErr);
+      }
+    }
+
     await onRefreshAll();
     handleCancelNoticeEdit();
     showToast(editingNotice ? 'Notice updated successfully!' : 'New notice published successfully!');
   };
 
   const handleRemoveNoticeAttachment = async () => {
-    if (existingNoticeAttachment?.storagePath) {
-      await supabaseStorageService.deleteWebsiteDocument(existingNoticeAttachment.storagePath);
+    if (!existingNoticeAttachment) {
+      setSelectedNoticePdf(null);
+      if (noticeFileInputRef.current) noticeFileInputRef.current.value = '';
+      return;
     }
+
+    if (!window.confirm(`Are you sure you want to remove the PDF attachment "${existingNoticeAttachment.fileName}" from this notice?`)) {
+      return;
+    }
+
+    const oldPath = existingNoticeAttachment.storagePath;
     setExistingNoticeAttachment(undefined);
     setSelectedNoticePdf(null);
-    showToast('Attachment removed.');
+    setNoticePdfError('');
+    if (noticeFileInputRef.current) noticeFileInputRef.current.value = '';
+
+    if (editingNotice) {
+      const updatedNotice: Notice = {
+        ...editingNotice,
+        attachment: undefined
+      };
+      const updated = noticeList.map(n => n.id === editingNotice.id ? updatedNotice : n);
+      setNoticeList(updated);
+      setEditingNotice(updatedNotice);
+      // Remove its database reference while keeping the news item itself
+      await storageService.saveNotices(updated);
+      // Remove the Storage file
+      if (oldPath) {
+        try {
+          await supabaseStorageService.deleteWebsiteDocument(oldPath);
+        } catch (err) {
+          console.warn('Error deleting PDF from storage:', err);
+        }
+      }
+      await onRefreshAll();
+      showToast('PDF attachment removed successfully.');
+    } else {
+      showToast('Attachment removed.');
+    }
   };
 
   const handleDeleteNotice = async (id: string) => {
@@ -4078,40 +4155,137 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
 
                 {/* Notice Attachment PDF Field */}
-                <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-2">
-                  <label className="block font-bold text-[#0A2342] flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-[#D97706]" />
-                    Attachment PDF (Optional)
-                  </label>
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-[#0A2342] flex items-center gap-1.5 text-xs">
+                      <FileText className="w-3.5 h-3.5 text-[#D97706]" />
+                      PDF Attachment (Optional)
+                    </label>
+                    <span className="text-[10px] text-slate-400">PDF only • Max 10 MB</span>
+                  </div>
 
+                  {/* Hidden file input */}
+                  <input
+                    ref={noticeFileInputRef}
+                    type="file"
+                    accept="application/pdf,.pdf"
+                    onChange={handleNoticeFileSelect}
+                    className="hidden"
+                  />
+
+                  {/* If editing existing news with an attached PDF */}
                   {existingNoticeAttachment && !selectedNoticePdf && (
-                    <div className="bg-amber-50 p-2.5 rounded-lg border border-amber-200 flex items-center justify-between gap-2 text-[11px]">
-                      <div className="truncate">
-                        <span className="font-bold text-slate-800 block truncate">{existingNoticeAttachment.fileName}</span>
-                        <span className="text-slate-500 font-mono">{existingNoticeAttachment.fileSize} PDF attached</span>
+                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2">
+                      <div className="text-[11px] font-bold text-slate-700">
+                        Current PDF:
                       </div>
-                      <button
-                        type="button"
-                        onClick={handleRemoveNoticeAttachment}
-                        className="text-red-600 hover:text-red-800 font-bold shrink-0 text-[10px] underline"
-                      >
-                        Remove
-                      </button>
+                      <div className="flex items-center justify-between gap-2 p-2 bg-white rounded border border-slate-200">
+                        <div className="flex items-center gap-2 truncate">
+                          <FileText className="w-4 h-4 text-red-600 shrink-0" />
+                          <span className="font-semibold text-slate-800 text-xs truncate" title={existingNoticeAttachment.fileName}>
+                            {existingNoticeAttachment.fileName}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-mono text-slate-500 shrink-0">
+                          {existingNoticeAttachment.fileSize}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-0.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNoticePdfError('');
+                            noticeFileInputRef.current?.click();
+                          }}
+                          className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+                        >
+                          <Upload className="w-3.5 h-3.5" /> Replace PDF
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleRemoveNoticeAttachment}
+                          className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Remove PDF
+                        </button>
+                      </div>
                     </div>
                   )}
 
-                  <input
-                    type="file"
-                    accept="application/pdf,.pdf"
-                    onChange={(e) => setSelectedNoticePdf(e.target.files?.[0] || null)}
-                    className="w-full p-1.5 rounded-lg border border-slate-300 text-xs bg-slate-50"
-                  />
-                  <p className="text-[10px] text-slate-500">Allowed format: PDF only. Maximum size: 10 MB.</p>
-
-                  {selectedNoticePdf && (
-                    <div className="bg-emerald-50 p-2 rounded-lg border border-emerald-200 text-[11px] flex justify-between items-center text-emerald-900">
-                      <span className="font-semibold truncate">{selectedNoticePdf.name}</span>
-                      <span className="font-mono font-bold">{(selectedNoticePdf.size / (1024 * 1024)).toFixed(2)} MB</span>
+                  {/* When no existing PDF or user selected a replacement PDF */}
+                  {(!existingNoticeAttachment || selectedNoticePdf) && (
+                    <div className="space-y-2">
+                      {!selectedNoticePdf ? (
+                        <div className="space-y-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNoticePdfError('');
+                              noticeFileInputRef.current?.click();
+                            }}
+                            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 rounded-lg text-xs font-bold transition-colors flex items-center gap-2 shadow-xs cursor-pointer"
+                          >
+                            <Upload className="w-3.5 h-3.5 text-amber-600" />
+                            [ Choose PDF ]
+                          </button>
+                          <p className="text-[10px] text-slate-500">
+                            Supported format: PDF only. Maximum file size: 10 MB.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-200 space-y-2">
+                          <div className="flex items-center justify-between text-[11px] text-emerald-800 font-bold">
+                            <span>{existingNoticeAttachment ? 'Replacement PDF Selected:' : 'Selected PDF:'}</span>
+                            <span className="font-mono text-[10px]">
+                              {(selectedNoticePdf.size / (1024 * 1024)).toFixed(2)} MB
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between gap-2 p-2 bg-white rounded border border-emerald-200">
+                            <div className="flex items-center gap-2 truncate">
+                              <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
+                              <span className="font-semibold text-slate-800 text-xs truncate">
+                                {selectedNoticePdf.name}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedNoticePdf(null);
+                                if (noticeFileInputRef.current) noticeFileInputRef.current.value = '';
+                              }}
+                              className="text-slate-400 hover:text-red-600 p-1 shrink-0"
+                              title="Cancel selection"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-2 text-[10px] text-emerald-700">
+                            <button
+                              type="button"
+                              onClick={() => noticeFileInputRef.current?.click()}
+                              className="font-bold underline hover:text-emerald-900 cursor-pointer"
+                            >
+                              Choose different PDF
+                            </button>
+                            {existingNoticeAttachment && (
+                              <>
+                                <span>•</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedNoticePdf(null);
+                                    if (noticeFileInputRef.current) noticeFileInputRef.current.value = '';
+                                  }}
+                                  className="font-bold underline text-slate-600 hover:text-slate-900 cursor-pointer"
+                                >
+                                  Keep current PDF
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

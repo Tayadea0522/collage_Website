@@ -368,7 +368,7 @@ export const supabaseStorageService = {
    * Upload a public website document (PDF for Downloads or Notice Attachments) to website_documents bucket
    */
   uploadWebsiteDocument: async (
-    folder: 'downloads' | 'notices',
+    folder: 'downloads' | 'notices' | 'news' | string,
     file: File,
     onProgress?: (percent: number) => void
   ): Promise<{ storagePath: string; publicUrl: string; fileName: string; fileSize: string; error?: string }> => {
@@ -452,9 +452,11 @@ export const supabaseStorageService = {
       const { data: pubData } = supabase.storage.from(uploadBucket).getPublicUrl(path);
       let publicUrl = pubData?.publicUrl || '';
 
-      if (!publicUrl) {
+      if (!publicUrl || uploadBucket === BUCKET_NAME) {
         const { data: signedData } = await supabase.storage.from(uploadBucket).createSignedUrl(path, 315360000);
-        publicUrl = signedData?.signedUrl || '';
+        if (signedData?.signedUrl) {
+          publicUrl = signedData.signedUrl;
+        }
       }
 
       if (onProgress) onProgress(100);

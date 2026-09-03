@@ -23,6 +23,7 @@ import { Footer } from './components/Footer';
 import { Home } from './components/Home';
 import { PopupBannerModal } from './components/PopupBannerModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { GalleryLightbox } from './components/GalleryLightbox';
 import { getOptimizedImageUrl } from './utils/imageUtils';
 
 // Code-split heavy subpages and admin bundle
@@ -61,7 +62,8 @@ import {
   Image as ImageIcon,
   Download,
   Eye,
-  FileCheck
+  FileCheck,
+  Maximize2
 } from 'lucide-react';
 
 export default function App() {
@@ -136,6 +138,7 @@ export default function App() {
 
   // Gallery Filter State
   const [galleryFilter, setGalleryFilter] = useState<string>('All');
+  const [selectedGalleryIndex, setSelectedGalleryIndex] = useState<number | null>(null);
 
   // Contact Enquiry Form State & Draft Persistence
   const [enquiryForm, setEnquiryForm] = useState(() => {
@@ -530,7 +533,10 @@ export default function App() {
                   {['All', 'Campus', 'Dairy Plant', 'Lab', 'Events'].map(cat => (
                     <button
                       key={cat}
-                      onClick={() => setGalleryFilter(cat)}
+                      onClick={() => {
+                        setGalleryFilter(cat);
+                        setSelectedGalleryIndex(null);
+                      }}
                       className={`px-3 py-1 rounded-lg font-bold transition-colors ${
                         galleryFilter === cat ? 'bg-amber-500 text-slate-950' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
@@ -541,29 +547,63 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {gallery
-                  .filter(item => galleryFilter === 'All' || item.category === galleryFilter)
-                  .map((item) => (
-                    <div key={item.id} className="rounded-xl overflow-hidden border border-slate-200 shadow-sm group">
-                      <div className="relative h-44 overflow-hidden">
-                        <img 
-                          src={getOptimizedImageUrl(item.image, { width: 600, quality: 80 })} 
-                          alt={item.title} 
-                          loading="lazy"
-                          decoding="async"
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                        />
-                        <span className="absolute top-2 left-2 bg-slate-950/80 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded">
-                          {item.category}
-                        </span>
-                      </div>
-                      <div className="p-3 bg-white">
-                        <div className="font-bold text-xs text-slate-900">{item.title}</div>
-                      </div>
+              {(() => {
+                const filteredGallery = gallery.filter(item => galleryFilter === 'All' || item.category === galleryFilter);
+                return (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {filteredGallery.map((item, index) => (
+                        <div 
+                          key={item.id}
+                          onClick={() => setSelectedGalleryIndex(index)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setSelectedGalleryIndex(index);
+                            }
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`Open photo ${item.title} in original full resolution`}
+                          className="rounded-xl overflow-hidden border border-slate-200 shadow-sm group cursor-pointer hover:border-amber-400 hover:shadow-md transition-all focus:outline-hidden focus:ring-2 focus:ring-amber-500"
+                        >
+                          <div className="relative h-44 overflow-hidden bg-slate-900">
+                            <img 
+                              src={getOptimizedImageUrl(item.image, { width: 600, quality: 80 })} 
+                              alt={item.title} 
+                              loading="lazy"
+                              decoding="async"
+                              className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500" 
+                            />
+                            <span className="absolute top-2 left-2 bg-slate-950/80 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded">
+                              {item.category}
+                            </span>
+                            <div className="absolute inset-0 bg-slate-950/0 group-hover:bg-slate-950/30 transition-colors flex items-center justify-center pointer-events-none">
+                              <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-slate-950/85 backdrop-blur-xs text-white text-[11px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg border border-slate-700/60">
+                                <Maximize2 className="w-3.5 h-3.5 text-amber-400" /> View Original
+                              </span>
+                            </div>
+                          </div>
+                          <div className="p-3 bg-white">
+                            <div className="font-bold text-xs text-slate-900 group-hover:text-amber-700 transition-colors">{item.title}</div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-              </div>
+
+                    {/* Fullscreen Lightbox for Original Resolution View */}
+                    {selectedGalleryIndex !== null && (
+                      <GalleryLightbox
+                        isOpen={selectedGalleryIndex !== null}
+                        items={filteredGallery}
+                        currentIndex={selectedGalleryIndex}
+                        onClose={() => setSelectedGalleryIndex(null)}
+                        onNavigate={(newIdx) => setSelectedGalleryIndex(newIdx)}
+                      />
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </div>
         )}

@@ -55,7 +55,8 @@ import {
   FileCheck,
   ArrowUp,
   ArrowDown,
-  ExternalLink
+  ExternalLink,
+  Tag
 } from 'lucide-react';
 
 interface AdminPanelProps {
@@ -1373,44 +1374,248 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
 
-  // 6. Gallery Manager State
+  // 6. Gallery Manager & Category CMS State
   const [galleryList, setGalleryList] = useState<GalleryItem[]>([...gallery]);
+  const [galleryCategories, setGalleryCategories] = useState<string[]>(() => {
+    const customCats = collegeInfo?.galleryCategories || [];
+    const defaultCats = ['Campus', 'Dairy Plant', 'Lab', 'Events'];
+    const photoCats = gallery.map(g => g.category).filter(Boolean);
+    const base = customCats.length > 0 ? customCats : defaultCats;
+    const combined = Array.from(new Set([...base, ...photoCats]))
+      .map(c => c.trim())
+      .filter(c => c && c.toLowerCase() !== 'all');
+    return combined.length > 0 ? combined : defaultCats;
+  });
+
+  // Category filter & search for admin photo list
+  const [adminGalleryCategoryFilter, setAdminGalleryCategoryFilter] = useState<string>('All');
+  const [adminGallerySearch, setAdminGallerySearch] = useState<string>('');
+
+  // Category Modals State
+  const [isAddingCategory, setIsAddingCategory] = useState<boolean>(false);
+  const [newCategoryName, setNewCategoryName] = useState<string>('');
+  const [categoryActionLoading, setCategoryActionLoading] = useState<boolean>(false);
+  const [categoryActionError, setCategoryActionError] = useState<string>('');
+
+  const [editingCategoryOldName, setEditingCategoryOldName] = useState<string | null>(null);
+  const [editingCategoryNewName, setEditingCategoryNewName] = useState<string>('');
+
+  const [deletingCategoryName, setDeletingCategoryName] = useState<string | null>(null);
+  const [reassignTargetCategory, setReassignTargetCategory] = useState<string>('');
+
+  // Photo Add Form State
   const [newGallery, setNewGallery] = useState<Partial<GalleryItem>>({
     title: '',
     category: 'Campus',
-    image: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=800&q=80',
+    description: '',
+    image: '',
+    isActive: true,
     date: new Date().getFullYear().toString()
   });
 
+  // Photo Edit Modal State
+  const [editingPhoto, setEditingPhoto] = useState<GalleryItem | null>(null);
+  const [isSavingPhoto, setIsSavingPhoto] = useState<boolean>(false);
+
+  // Synchronize state when props update
+  useEffect(() => {
+    setGalleryList([...gallery]);
+  }, [gallery]);
+
+  useEffect(() => {
+    const customCats = collegeInfo?.galleryCategories || [];
+    const defaultCats = ['Campus', 'Dairy Plant', 'Lab', 'Events'];
+    const photoCats = gallery.map(g => g.category).filter(Boolean);
+    const base = customCats.length > 0 ? customCats : defaultCats;
+    const combined = Array.from(new Set([...base, ...photoCats]))
+      .map(c => c.trim())
+      .filter(c => c && c.toLowerCase() !== 'all');
+    setGalleryCategories(combined.length > 0 ? combined : defaultCats);
+  }, [collegeInfo?.galleryCategories, gallery]);
+
+  // CATEGORY ACTIONS
+  const handleCreateCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newCategoryName.trim();
+    if (!trimmed) {
+      setCategoryActionError('Please enter a category name.');
+      return;
+    }
+    if (trimmed.toLowerCase() === 'all') {
+      setCategoryActionError('"All" is a protected system filter and cannot be used as a category name.');
+      return;
+    }
+    if (galleryCategories.some(c => c.toLowerCase() === trimmed.toLowerCase())) {
+      setCategoryActionError(`Category "${trimmed}" already exists.`);
+      return;
+    }
+
+    try {
+      setCategoryActionLoading(true);
+      setCategoryActionError('');
+      const updatedCategories = [...galleryCategories, trimmed];
+      await storageService.saveGalleryCategories(updatedCategories);
+      setGalleryCategories(updatedCategories);
+      await onRefreshAll();
+      setIsAddingCategory(false);
+      setNewCategoryName('');
+      showToast(`Category "${trimmed}" created successfully!`);
+    } catch (err: any) {
+      setCategoryActionError(err.message || 'Failed to save category to Supabase.');
+    } finally {
+      setCategoryActionLoading(false);
+    }
+  };
+
+  const handleRenameCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCategoryOldName) return;
+    const trimmed = editingCategoryNewName.trim();
+    if (!trimmed) {
+      setCategoryActionError('Please enter a new category name.');
+      return;
+    }
+    if (trimmed.toLowerCase() === 'all') {
+      setCategoryActionError('"All" is a protected system filter and cannot be used as a category name.');
+      return;
+    }
+    if (
+      trimmed.toLowerCase() !== editingCategoryOldName.toLowerCase() &&
+      galleryCategories.some(c => c.toLowerCase() === trimmed.toLowerCase())
+    ) {
+      setCategoryActionError(`Category "${trimmed}" already exists.`);
+      return;
+    }
+
+    try {
+      setCategoryActionLoading(true);
+      setCategoryActionError('');
+      const { categories: updatedCategories, updatedCount } = await storageService.renameGalleryCategory(
+        editingCategoryOldName,
+        trimmed
+      );
+      setGalleryCategories(updatedCategories);
+      setGalleryList(prev =>
+        prev.map(p => (p.category === editingCategoryOldName ? { ...p, category: trimmed } : p))
+      );
+      await onRefreshAll();
+      setEditingCategoryOldName(null);
+      setEditingCategoryNewName('');
+      showToast(`Category renamed to "${trimmed}". Updated ${updatedCount} photo(s).`);
+    } catch (err: any) {
+      setCategoryActionError(err.message || 'Failed to rename category.');
+    } finally {
+      setCategoryActionLoading(false);
+    }
+  };
+
+  const handleDeleteCategory = async () => {
+    if (!deletingCategoryName) return;
+
+    const affectedPhotos = galleryList.filter(p => p.category === deletingCategoryName);
+    if (affectedPhotos.length > 0 && !reassignTargetCategory) {
+      setCategoryActionError('Please select a target category to reassign photos.');
+      return;
+    }
+
+    try {
+      setCategoryActionLoading(true);
+      setCategoryActionError('');
+      const { categories: remainingCategories, reassignedCount } = await storageService.deleteGalleryCategory(
+        deletingCategoryName,
+        affectedPhotos.length > 0 ? reassignTargetCategory : undefined
+      );
+
+      setGalleryCategories(remainingCategories);
+      if (reassignedCount > 0) {
+        setGalleryList(prev =>
+          prev.map(p =>
+            p.category === deletingCategoryName ? { ...p, category: reassignTargetCategory } : p
+          )
+        );
+      }
+      await onRefreshAll();
+      showToast(
+        affectedPhotos.length > 0
+          ? `Category "${deletingCategoryName}" deleted. ${reassignedCount} photo(s) moved to "${reassignTargetCategory}".`
+          : `Category "${deletingCategoryName}" deleted successfully.`
+      );
+      setDeletingCategoryName(null);
+      setReassignTargetCategory('');
+    } catch (err: any) {
+      setCategoryActionError(err.message || 'Failed to delete category.');
+    } finally {
+      setCategoryActionLoading(false);
+    }
+  };
+
+  // PHOTO ACTIONS
   const handleAddGalleryItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newGallery.title) return;
+    const selectedCategory = (newGallery.category || galleryCategories[0] || 'Campus').trim();
     const item: GalleryItem = {
       id: `g-${Date.now()}`,
-      title: newGallery.title,
-      category: (newGallery.category as GalleryItem['category']) || 'Campus',
+      title: newGallery.title.trim(),
+      category: selectedCategory,
+      description: newGallery.description || '',
       image: newGallery.image || 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=800&q=80',
-      date: newGallery.date || '2026'
+      isActive: newGallery.isActive !== undefined ? newGallery.isActive : true,
+      date: newGallery.date || new Date().getFullYear().toString()
     };
-    const updated = [item, ...galleryList];
-    setGalleryList(updated);
-    await storageService.saveGallery(updated);
-    await onRefreshAll();
-    setNewGallery({
-      title: '',
-      category: 'Campus',
-      image: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=800&q=80',
-      date: new Date().getFullYear().toString()
-    });
-    showToast('Gallery image added!');
+    try {
+      setIsSavingPhoto(true);
+      const updated = [item, ...galleryList];
+      setGalleryList(updated);
+      await storageService.saveGallery(updated);
+      await onRefreshAll();
+      setNewGallery({
+        title: '',
+        category: galleryCategories[0] || 'Campus',
+        description: '',
+        image: '',
+        isActive: true,
+        date: new Date().getFullYear().toString()
+      });
+      showToast('Gallery image added successfully!');
+    } catch (err: any) {
+      alert(`Error saving photo to Supabase: ${err.message || 'Unknown error'}`);
+    } finally {
+      setIsSavingPhoto(false);
+    }
   };
 
-  const handleDeleteGalleryItem = async (id: string) => {
-    await storageService.deleteGalleryItem(id);
-    const updated = galleryList.filter(g => g.id !== id);
-    setGalleryList(updated);
-    await onRefreshAll();
-    showToast('Gallery item removed.');
+  const handleSaveEditedPhoto = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPhoto || !editingPhoto.title) return;
+    try {
+      setIsSavingPhoto(true);
+      const updated = galleryList.map(p => (p.id === editingPhoto.id ? editingPhoto : p));
+      setGalleryList(updated);
+      await storageService.saveGallery(updated);
+      await onRefreshAll();
+      setEditingPhoto(null);
+      showToast(`Photo "${editingPhoto.title}" updated successfully!`);
+    } catch (err: any) {
+      alert(`Error updating photo: ${err.message || 'Unknown error'}`);
+    } finally {
+      setIsSavingPhoto(false);
+    }
+  };
+
+  const handleDeleteGalleryItem = async (id: string, title?: string) => {
+    if (!window.confirm(`Are you sure you want to delete the photo "${title || 'Untitled'}"?`)) {
+      return;
+    }
+    try {
+      await storageService.deleteGalleryItem(id);
+      const updated = galleryList.filter(g => g.id !== id);
+      setGalleryList(updated);
+      await onRefreshAll();
+      showToast('Gallery photo deleted.');
+    } catch (err: any) {
+      alert(`Error deleting photo: ${err.message || 'Unknown error'}`);
+    }
   };
 
   // Reset to Defaults
@@ -3175,89 +3380,635 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           />
         )}
 
-        {/* TAB 6: GALLERY MANAGER */}
+        {/* TAB 6: GALLERY MANAGER & CATEGORY CMS */}
         {activeTab === 'gallery' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <form onSubmit={handleAddGalleryItem} className="bg-[#F0F4F8] p-6 rounded-2xl border border-slate-200 space-y-4 h-fit">
-              <h3 className="font-bold text-[#0A2342] text-base font-serif border-b pb-2 flex items-center gap-2">
-                <Plus className="w-4 h-4 text-[#D97706]" /> Add Gallery Photo
-              </h3>
-
-              <div className="space-y-3 text-xs">
+          <div className="space-y-8">
+            {/* SECTION 1: CATEGORY MANAGEMENT */}
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-200 pb-4">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Title / Caption *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Modern Dairy Processing Plant"
-                    value={newGallery.title}
-                    onChange={(e) => setNewGallery({ ...newGallery, title: e.target.value })}
-                    className="w-full p-2.5 rounded-lg border border-slate-300 outline-none"
-                  />
+                  <h3 className="font-bold text-[#0A2342] text-lg font-serif flex items-center gap-2">
+                    <Tag className="w-5 h-5 text-amber-500" /> Gallery Categories
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Manage categories for organizing and filtering photos on the public website.
+                  </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddingCategory(true);
+                    setNewCategoryName('');
+                    setCategoryActionError('');
+                  }}
+                  className="bg-[#0A2342] hover:bg-slate-900 text-amber-400 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-colors shadow-xs shrink-0"
+                >
+                  <Plus className="w-4 h-4" /> Add New Category
+                </button>
+              </div>
 
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Upload Photo from Device</label>
-                  <div className="space-y-2">
-                    {newGallery.image && (
-                      <div className="relative w-full h-32 rounded-lg overflow-hidden border border-slate-300">
-                        <img src={newGallery.image} alt="Preview" className="w-full h-full object-cover" />
+              <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50/50">
+                <div className="divide-y divide-slate-200">
+                  {galleryCategories.map((cat) => {
+                    const photoCount = galleryList.filter(g => g.category === cat).length;
+                    return (
+                      <div
+                        key={cat}
+                        className="p-3.5 sm:px-4 flex items-center justify-between hover:bg-white transition-colors gap-3"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
+                          <span className="font-bold text-sm text-slate-900 truncate">{cat}</span>
+                          <span className="bg-slate-200 text-slate-700 text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0">
+                            {photoCount} {photoCount === 1 ? 'photo' : 'photos'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingCategoryOldName(cat);
+                              setEditingCategoryNewName(cat);
+                              setCategoryActionError('');
+                            }}
+                            className="p-1.5 text-slate-600 hover:text-[#0A2342] hover:bg-slate-100 rounded-lg transition-colors flex items-center gap-1 text-xs font-semibold"
+                            title={`Rename category ${cat}`}
+                          >
+                            <Edit3 className="w-3.5 h-3.5 text-blue-600" />
+                            <span className="hidden sm:inline">Edit</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDeletingCategoryName(cat);
+                              const otherCats = galleryCategories.filter(c => c !== cat);
+                              setReassignTargetCategory(otherCats[0] || '');
+                              setCategoryActionError('');
+                            }}
+                            className="p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1 text-xs font-semibold"
+                            title={`Delete category ${cat}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Delete</span>
+                          </button>
+                        </div>
                       </div>
-                    )}
-                    <div className="flex gap-2">
+                    );
+                  })}
+                </div>
+              </div>
+              <p className="text-[11px] text-slate-500 italic">
+                * Note: &quot;All&quot; is a protected system filter that is automatically provided on the public gallery to display every photograph.
+              </p>
+            </div>
+
+            {/* SECTION 2: PHOTO MANAGEMENT */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* ADD PHOTO FORM */}
+              <form onSubmit={handleAddGalleryItem} className="bg-[#F0F4F8] p-6 rounded-2xl border border-slate-200 space-y-4 h-fit">
+                <h3 className="font-bold text-[#0A2342] text-base font-serif border-b pb-2 flex items-center gap-2">
+                  <Plus className="w-4 h-4 text-[#D97706]" /> Add Gallery Photo
+                </h3>
+
+                <div className="space-y-3 text-xs">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Title / Caption *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Modern Dairy Processing Plant"
+                      value={newGallery.title}
+                      onChange={(e) => setNewGallery({ ...newGallery, title: e.target.value })}
+                      className="w-full p-2.5 rounded-lg border border-slate-300 outline-none bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Category *</label>
+                    <select
+                      value={newGallery.category || galleryCategories[0] || 'Campus'}
+                      onChange={(e) => setNewGallery({ ...newGallery, category: e.target.value })}
+                      className="w-full p-2.5 rounded-lg border border-slate-300 outline-none bg-white font-medium"
+                    >
+                      {galleryCategories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Description (Optional)</label>
+                    <textarea
+                      rows={2}
+                      placeholder="Optional brief description of the photo..."
+                      value={newGallery.description || ''}
+                      onChange={(e) => setNewGallery({ ...newGallery, description: e.target.value })}
+                      className="w-full p-2.5 rounded-lg border border-slate-300 outline-none bg-white resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Upload Photo from Device / Cloud URL *</label>
+                    <div className="space-y-2">
+                      {newGallery.image && (
+                        <div className="relative w-full h-32 rounded-lg overflow-hidden border border-slate-300 bg-slate-900">
+                          <img src={newGallery.image} alt="Preview" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          required
+                          placeholder="Image URL or upload file"
+                          value={newGallery.image || ''}
+                          onChange={(e) => setNewGallery({ ...newGallery, image: e.target.value })}
+                          className="w-full p-2.5 rounded-lg border border-slate-300 outline-none text-xs bg-white"
+                        />
+                        <label className="cursor-pointer bg-[#0A2342] text-amber-400 font-bold px-3 py-2 rounded-lg text-xs flex items-center shrink-0 hover:bg-slate-900 transition-colors">
+                          <Upload className="w-4 h-4 mr-1" />
+                          <span>Upload File</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              if (e.target.files?.[0]) {
+                                handleImageFileUpload(e.target.files[0], (url) => setNewGallery(prev => ({ ...prev, image: url })));
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-2 cursor-pointer bg-white p-2.5 rounded-lg border border-slate-200">
+                      <input
+                        type="checkbox"
+                        checked={newGallery.isActive !== false}
+                        onChange={(e) => setNewGallery({ ...newGallery, isActive: e.target.checked })}
+                        className="w-4 h-4 accent-amber-600 rounded"
+                      />
+                      <div>
+                        <span className="font-bold text-slate-800">Visible on Public Gallery</span>
+                        <p className="text-[10px] text-slate-500 font-normal">Uncheck to hide this photo without deleting it</p>
+                      </div>
+                    </label>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSavingPhoto}
+                    className="w-full bg-[#D97706] hover:bg-amber-600 text-slate-950 font-bold py-2.5 rounded-lg text-xs transition-colors shadow-xs disabled:opacity-50"
+                  >
+                    {isSavingPhoto ? 'Saving to Supabase...' : 'Add to Gallery'}
+                  </button>
+                </div>
+              </form>
+
+              {/* PHOTO LIST & CARDS */}
+              <div className="lg:col-span-2 space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-2">
+                  <h3 className="font-bold text-slate-900 text-base font-serif">
+                    Website Photos ({galleryList.length})
+                  </h3>
+                  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                    <div className="relative flex-1 sm:w-44">
+                      <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />
                       <input
                         type="text"
-                        placeholder="Image URL or upload file"
-                        value={newGallery.image || ''}
-                        onChange={(e) => setNewGallery({ ...newGallery, image: e.target.value })}
-                        className="w-full p-2.5 rounded-lg border border-slate-300 outline-none text-xs bg-white"
+                        placeholder="Search photos..."
+                        value={adminGallerySearch}
+                        onChange={(e) => setAdminGallerySearch(e.target.value)}
+                        className="w-full pl-8 pr-2.5 py-1.5 rounded-lg border border-slate-300 text-xs bg-white outline-none"
                       />
-                      <label className="cursor-pointer bg-[#0A2342] text-amber-400 font-bold px-3 py-2 rounded-lg text-xs flex items-center shrink-0 hover:bg-slate-900 transition-colors">
-                        <Upload className="w-4 h-4 mr-1" />
-                        <span>Upload File</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                              handleImageFileUpload(e.target.files[0], (url) => setNewGallery(prev => ({ ...prev, image: url })));
-                            }
-                          }}
-                        />
-                      </label>
                     </div>
+                    <select
+                      value={adminGalleryCategoryFilter}
+                      onChange={(e) => setAdminGalleryCategoryFilter(e.target.value)}
+                      className="p-1.5 rounded-lg border border-slate-300 text-xs bg-white font-semibold outline-none"
+                    >
+                      <option value="All">All Categories</option>
+                      {galleryCategories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
-                <button
-                  type="submit"
-                  className="w-full bg-[#D97706] text-slate-950 font-bold py-2.5 rounded-lg text-xs"
-                >
-                  Add to Gallery
-                </button>
+                {(() => {
+                  const filtered = galleryList.filter(item => {
+                    const matchCategory = adminGalleryCategoryFilter === 'All' || item.category === adminGalleryCategoryFilter;
+                    const matchSearch = !adminGallerySearch || 
+                      item.title.toLowerCase().includes(adminGallerySearch.toLowerCase()) ||
+                      (item.description && item.description.toLowerCase().includes(adminGallerySearch.toLowerCase()));
+                    return matchCategory && matchSearch;
+                  });
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-300 text-slate-500 text-xs">
+                        No photos found matching the selected filter.
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                      {filtered.map((g) => (
+                        <div key={g.id} className="relative bg-white rounded-xl overflow-hidden border border-slate-200 shadow-xs flex flex-col group">
+                          <div className="relative h-36 bg-slate-900 overflow-hidden">
+                            <img src={g.image} alt={g.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            <span className="absolute top-2 left-2 bg-slate-950/80 backdrop-blur-xs text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded shadow-xs">
+                              {g.category}
+                            </span>
+                            {g.isActive === false && (
+                              <span className="absolute top-2 right-2 bg-red-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-xs flex items-center gap-1">
+                                <EyeOff className="w-3 h-3" /> Hidden
+                              </span>
+                            )}
+                          </div>
+                          <div className="p-2.5 bg-white flex-1 flex flex-col justify-between text-xs gap-2">
+                            <div>
+                              <div className="font-bold text-slate-900 truncate" title={g.title}>{g.title}</div>
+                              {g.description && (
+                                <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">{g.description}</p>
+                              )}
+                            </div>
+                            <div className="flex items-center justify-between border-t border-slate-100 pt-2">
+                              <span className="text-[10px] text-slate-400">{g.date || '2026'}</span>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingPhoto({ ...g })}
+                                  className="p-1 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                  title="Edit Photo"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteGalleryItem(g.id, g.title)}
+                                  className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                                  title="Delete Photo"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
-            </form>
+            </div>
 
-            <div className="lg:col-span-2 space-y-4">
-              <h3 className="font-bold text-slate-900 text-base font-serif border-b pb-2">
-                Website Gallery ({galleryList.length})
-              </h3>
+            {/* MODAL 1: ADD CATEGORY */}
+            {isAddingCategory && (
+              <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 border border-slate-200">
+                  <div className="flex justify-between items-center border-b pb-3">
+                    <h4 className="font-bold text-slate-900 text-base font-serif flex items-center gap-2">
+                      <Tag className="w-4 h-4 text-amber-500" /> Create New Gallery Category
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingCategory(false)}
+                      className="text-slate-400 hover:text-slate-600 p-1"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {galleryList.map((g) => (
-                  <div key={g.id} className="relative bg-slate-900 rounded-xl overflow-hidden border border-slate-200">
-                    <img src={g.image} alt={g.title} className="w-full h-36 object-cover" />
-                    <div className="p-2 bg-slate-900 text-white flex justify-between items-center text-xs">
-                      <span className="font-bold truncate">{g.title}</span>
-                      <button onClick={() => handleDeleteGalleryItem(g.id)} className="text-red-400 hover:text-red-300">
-                        <Trash2 className="w-3.5 h-3.5" />
+                  <form onSubmit={handleCreateCategory} className="space-y-4 text-xs">
+                    {categoryActionError && (
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <span>{categoryActionError}</span>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Category Name *</label>
+                      <input
+                        type="text"
+                        required
+                        autoFocus
+                        placeholder="e.g. Research, Achievements, Convocation"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        className="w-full p-2.5 rounded-lg border border-slate-300 outline-none text-sm"
+                      />
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        Enter a unique name. Note: &quot;All&quot; is reserved by the system.
+                      </p>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2 border-t">
+                      <button
+                        type="button"
+                        onClick={() => setIsAddingCategory(false)}
+                        className="px-4 py-2 rounded-lg border border-slate-300 font-bold text-slate-700 hover:bg-slate-100"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={categoryActionLoading}
+                        className="px-4 py-2 rounded-lg bg-[#0A2342] text-amber-400 font-bold hover:bg-slate-900 disabled:opacity-50 flex items-center gap-1.5"
+                      >
+                        {categoryActionLoading ? 'Saving...' : 'Create Category'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* MODAL 2: EDIT / RENAME CATEGORY */}
+            {editingCategoryOldName && (
+              <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 border border-slate-200">
+                  <div className="flex justify-between items-center border-b pb-3">
+                    <h4 className="font-bold text-slate-900 text-base font-serif flex items-center gap-2">
+                      <Edit3 className="w-4 h-4 text-blue-600" /> Rename Gallery Category
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => setEditingCategoryOldName(null)}
+                      className="text-slate-400 hover:text-slate-600 p-1"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleRenameCategory} className="space-y-4 text-xs">
+                    {categoryActionError && (
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <span>{categoryActionError}</span>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Current Name</label>
+                      <input
+                        type="text"
+                        disabled
+                        value={editingCategoryOldName}
+                        className="w-full p-2.5 rounded-lg border border-slate-200 bg-slate-100 text-slate-500 font-medium"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">New Category Name *</label>
+                      <input
+                        type="text"
+                        required
+                        autoFocus
+                        value={editingCategoryNewName}
+                        onChange={(e) => setEditingCategoryNewName(e.target.value)}
+                        className="w-full p-2.5 rounded-lg border border-slate-300 outline-none text-sm font-semibold"
+                      />
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        All photos currently assigned to &quot;{editingCategoryOldName}&quot; ({galleryList.filter(g => g.category === editingCategoryOldName).length} photos) will automatically be updated in Supabase.
+                      </p>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2 border-t">
+                      <button
+                        type="button"
+                        onClick={() => setEditingCategoryOldName(null)}
+                        className="px-4 py-2 rounded-lg border border-slate-300 font-bold text-slate-700 hover:bg-slate-100"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={categoryActionLoading}
+                        className="px-4 py-2 rounded-lg bg-[#0A2342] text-amber-400 font-bold hover:bg-slate-900 disabled:opacity-50"
+                      >
+                        {categoryActionLoading ? 'Renaming...' : 'Save Category Name'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* MODAL 3: DELETE CATEGORY WITH SAFE REASSIGNMENT */}
+            {deletingCategoryName && (
+              <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 border border-slate-200">
+                  <div className="flex justify-between items-center border-b pb-3">
+                    <h4 className="font-bold text-red-600 text-base font-serif flex items-center gap-2">
+                      <Trash2 className="w-4 h-4" /> Delete Category &quot;{deletingCategoryName}&quot;
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => setDeletingCategoryName(null)}
+                      className="text-slate-400 hover:text-slate-600 p-1"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-4 text-xs">
+                    {categoryActionError && (
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <span>{categoryActionError}</span>
+                      </div>
+                    )}
+
+                    {(() => {
+                      const countInCat = galleryList.filter(g => g.category === deletingCategoryName).length;
+                      const otherCats = galleryCategories.filter(c => c !== deletingCategoryName);
+
+                      if (countInCat > 0) {
+                        return (
+                          <div className="space-y-3">
+                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-900">
+                              <p className="font-bold flex items-center gap-1.5 mb-1">
+                                <AlertCircle className="w-4 h-4 text-amber-600" />
+                                {countInCat} {countInCat === 1 ? 'photo is' : 'photos are'} assigned to this category
+                              </p>
+                              <p className="text-[11px] text-amber-800">
+                                To protect your photos from being lost, please choose a target category to reassign them to before deleting.
+                              </p>
+                            </div>
+
+                            <div>
+                              <label className="block font-bold text-slate-700 mb-1">
+                                Move {countInCat} {countInCat === 1 ? 'photo' : 'photos'} to: *
+                              </label>
+                              <select
+                                value={reassignTargetCategory}
+                                onChange={(e) => setReassignTargetCategory(e.target.value)}
+                                className="w-full p-2.5 rounded-lg border border-slate-300 outline-none bg-white font-bold"
+                              >
+                                {otherCats.map(c => (
+                                  <option key={c} value={c}>{c}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <p className="text-slate-600 text-sm">
+                          Are you sure you want to delete the category &quot;{deletingCategoryName}&quot;? There are currently no photos assigned to it.
+                        </p>
+                      );
+                    })()}
+
+                    <div className="flex justify-end gap-2 pt-2 border-t">
+                      <button
+                        type="button"
+                        onClick={() => setDeletingCategoryName(null)}
+                        className="px-4 py-2 rounded-lg border border-slate-300 font-bold text-slate-700 hover:bg-slate-100"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDeleteCategory}
+                        disabled={categoryActionLoading}
+                        className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold disabled:opacity-50"
+                      >
+                        {categoryActionLoading ? 'Deleting...' : 'Confirm & Delete'}
                       </button>
                     </div>
                   </div>
-                ))}
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* MODAL 4: EDIT PHOTO */}
+            {editingPhoto && (
+              <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4 border border-slate-200 max-h-[90vh] overflow-y-auto">
+                  <div className="flex justify-between items-center border-b pb-3">
+                    <h4 className="font-bold text-slate-900 text-base font-serif flex items-center gap-2">
+                      <Edit3 className="w-4 h-4 text-amber-500" /> Edit Gallery Photo
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => setEditingPhoto(null)}
+                      className="text-slate-400 hover:text-slate-600 p-1"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleSaveEditedPhoto} className="space-y-4 text-xs">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Title / Caption *</label>
+                      <input
+                        type="text"
+                        required
+                        value={editingPhoto.title}
+                        onChange={(e) => setEditingPhoto({ ...editingPhoto, title: e.target.value })}
+                        className="w-full p-2.5 rounded-lg border border-slate-300 outline-none text-sm font-semibold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Category *</label>
+                      <select
+                        value={editingPhoto.category}
+                        onChange={(e) => setEditingPhoto({ ...editingPhoto, category: e.target.value })}
+                        className="w-full p-2.5 rounded-lg border border-slate-300 outline-none bg-white font-bold"
+                      >
+                        {galleryCategories.map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Description</label>
+                      <textarea
+                        rows={2}
+                        value={editingPhoto.description || ''}
+                        onChange={(e) => setEditingPhoto({ ...editingPhoto, description: e.target.value })}
+                        className="w-full p-2.5 rounded-lg border border-slate-300 outline-none bg-white resize-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Photo Preview & Image URL</label>
+                      <div className="space-y-2">
+                        {editingPhoto.image && (
+                          <div className="relative w-full h-36 rounded-lg overflow-hidden border border-slate-300 bg-slate-900">
+                            <img src={editingPhoto.image} alt="Preview" className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            required
+                            value={editingPhoto.image}
+                            onChange={(e) => setEditingPhoto({ ...editingPhoto, image: e.target.value })}
+                            className="w-full p-2.5 rounded-lg border border-slate-300 outline-none text-xs bg-white"
+                          />
+                          <label className="cursor-pointer bg-[#0A2342] text-amber-400 font-bold px-3 py-2 rounded-lg text-xs flex items-center shrink-0 hover:bg-slate-900 transition-colors">
+                            <Upload className="w-4 h-4 mr-1" />
+                            <span>Replace</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                if (e.target.files?.[0]) {
+                                  handleImageFileUpload(e.target.files[0], (url) => setEditingPhoto(prev => prev ? { ...prev, image: url } : null));
+                                }
+                              }}
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="flex items-center gap-2 cursor-pointer bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                        <input
+                          type="checkbox"
+                          checked={editingPhoto.isActive !== false}
+                          onChange={(e) => setEditingPhoto({ ...editingPhoto, isActive: e.target.checked })}
+                          className="w-4 h-4 accent-amber-600 rounded"
+                        />
+                        <div>
+                          <span className="font-bold text-slate-800">Visible on Public Website</span>
+                          <p className="text-[10px] text-slate-500 font-normal">Uncheck to hide this photo from visitors</p>
+                        </div>
+                      </label>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2 border-t">
+                      <button
+                        type="button"
+                        onClick={() => setEditingPhoto(null)}
+                        className="px-4 py-2 rounded-lg border border-slate-300 font-bold text-slate-700 hover:bg-slate-100"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSavingPhoto}
+                        className="px-4 py-2 rounded-lg bg-[#0A2342] text-amber-400 font-bold hover:bg-slate-900 disabled:opacity-50 flex items-center gap-1.5"
+                      >
+                        {isSavingPhoto ? 'Saving...' : 'Save Photo Changes'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

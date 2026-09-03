@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   CollegeInfo, 
   Notice, 
@@ -139,6 +139,18 @@ export default function App() {
   // Gallery Filter State
   const [galleryFilter, setGalleryFilter] = useState<string>('All');
   const [selectedGalleryIndex, setSelectedGalleryIndex] = useState<number | null>(null);
+
+  // Dynamic Gallery Categories: single source of truth from collegeInfo (Supabase) + existing photos
+  const dynamicGalleryCategories = useMemo(() => {
+    const customCats = collegeInfo?.galleryCategories || [];
+    const defaultCats = ['Campus', 'Dairy Plant', 'Lab', 'Events'];
+    const photoCats = gallery.map(g => g.category).filter(Boolean);
+    const base = customCats.length > 0 ? customCats : defaultCats;
+    const combined = Array.from(new Set([...base, ...photoCats]))
+      .map(c => c.trim())
+      .filter(c => c && c.toLowerCase() !== 'all');
+    return combined.length > 0 ? combined : defaultCats;
+  }, [collegeInfo?.galleryCategories, gallery]);
 
   // Contact Enquiry Form State & Draft Persistence
   const [enquiryForm, setEnquiryForm] = useState(() => {
@@ -529,16 +541,16 @@ export default function App() {
                   Campus & Dairy Plant Gallery
                 </h2>
                 
-                <div className="flex gap-1 text-xs">
-                  {['All', 'Campus', 'Dairy Plant', 'Lab', 'Events'].map(cat => (
+                <div className="flex flex-wrap gap-1.5 text-xs">
+                  {['All', ...dynamicGalleryCategories].map(cat => (
                     <button
                       key={cat}
                       onClick={() => {
                         setGalleryFilter(cat);
                         setSelectedGalleryIndex(null);
                       }}
-                      className={`px-3 py-1 rounded-lg font-bold transition-colors ${
-                        galleryFilter === cat ? 'bg-amber-500 text-slate-950' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      className={`px-3 py-1 rounded-lg font-bold transition-colors whitespace-nowrap ${
+                        galleryFilter === cat ? 'bg-amber-500 text-slate-950 shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
                     >
                       {cat}
@@ -548,7 +560,32 @@ export default function App() {
               </div>
 
               {(() => {
-                const filteredGallery = gallery.filter(item => galleryFilter === 'All' || item.category === galleryFilter);
+                const filteredGallery = gallery
+                  .filter(item => item.isActive !== false)
+                  .filter(item => galleryFilter === 'All' || item.category === galleryFilter);
+
+                if (filteredGallery.length === 0) {
+                  return (
+                    <div className="p-12 text-center bg-slate-50 rounded-xl border border-dashed border-slate-300 space-y-3">
+                      <p className="text-slate-600 text-sm">
+                        No photos found in category &quot;{galleryFilter}&quot;.
+                      </p>
+                      {galleryFilter !== 'All' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setGalleryFilter('All');
+                            setSelectedGalleryIndex(null);
+                          }}
+                          className="px-4 py-2 bg-[#0A2342] text-amber-400 font-bold rounded-lg text-xs hover:bg-slate-900 transition-colors"
+                        >
+                          View All Photos
+                        </button>
+                      )}
+                    </div>
+                  );
+                }
+
                 return (
                   <>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

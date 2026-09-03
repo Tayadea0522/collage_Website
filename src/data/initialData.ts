@@ -152,7 +152,8 @@ export const initialCollegeInfo: CollegeInfo = {
       }
     ]
   },
-  academicsData: initialAcademicsData
+  academicsData: initialAcademicsData,
+  galleryCategories: ["Campus", "Dairy Plant", "Lab", "Events"]
 };
 
 export const initialNotices: Notice[] = [

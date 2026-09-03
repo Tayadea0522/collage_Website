@@ -982,7 +982,18 @@ export const storageService = {
     try {
       const { data, error } = await supabase.from('gallery').select('*');
       if (error || !data) return [];
-      return data.map(row => ({ ...(row.data || row), id: row.id || row.data?.id }));
+      return data.map(row => {
+        const itemData = row.data || {};
+        return {
+          id: row.id || itemData.id,
+          title: row.title || itemData.title || '',
+          category: row.category || itemData.category || 'Campus',
+          image: itemData.image || row.image || '',
+          date: itemData.date || row.date || '2026',
+          description: itemData.description || '',
+          isActive: itemData.isActive !== undefined ? itemData.isActive : true
+        };
+      });
     } catch {
       return [];
     }
@@ -1010,9 +1021,13 @@ export const storageService = {
         data: g,
         updated_at: new Date().toISOString()
       })));
-      if (error) console.warn('Supabase gallery save warning:', error.message);
+      if (error) {
+        console.warn('Supabase gallery save warning:', error.message);
+        throw new Error(`Failed to save gallery: ${error.message}`);
+      }
     } catch (err) {
       console.warn('saveGallery exception:', err);
+      throw err;
     }
     return await storageService.fetchGallery();
   },
@@ -1020,11 +1035,145 @@ export const storageService = {
   deleteGalleryItem: async (id: string): Promise<GalleryItem[]> => {
     try {
       const { error } = await supabase.from('gallery').delete().eq('id', id);
-      if (error) console.warn('Supabase deleteGalleryItem error:', error.message);
+      if (error) {
+        console.warn('Supabase deleteGalleryItem error:', error.message);
+        throw new Error(`Failed to delete gallery item: ${error.message}`);
+      }
     } catch (err) {
       console.warn('deleteGalleryItem exception:', err);
+      throw err;
     }
     return await storageService.fetchGallery();
+  },
+
+  // --- Gallery Categories Management ---
+  fetchGalleryCategories: async (): Promise<string[]> => {
+    try {
+      // 1. Fetch from college_info
+      const collegeInfo = await storageService.fetchCollegeInfo();
+      const customCats = collegeInfo?.galleryCategories || [];
+      const defaultCats = ['Campus', 'Dairy Plant', 'Lab', 'Events'];
+
+      // 2. Fetch all existing photos to ensure no existing photo category is orphaned
+      const galleryItems = await storageService.fetchGallery();
+      const photoCats = galleryItems.map(g => g.category).filter(Boolean);
+
+      const base = customCats.length > 0 ? customCats : defaultCats;
+      const combined = Array.from(new Set([...base, ...photoCats]))
+        .map(c => c.trim())
+        .filter(c => c && c.toLowerCase() !== 'all');
+
+      return combined.length > 0 ? combined : defaultCats;
+    } catch (err) {
+      console.warn('fetchGalleryCategories error:', err);
+      return ['Campus', 'Dairy Plant', 'Lab', 'Events'];
+    }
+  },
+
+  saveGalleryCategories: async (categories: string[]): Promise<string[]> => {
+    try {
+      const cleaned = Array.from(
+        new Set(
+          categories
+            .map(c => c.trim())
+            .filter(c => c && c.toLowerCase() !== 'all')
+        )
+      );
+      const current = await storageService.fetchCollegeInfo();
+      const updated = {
+        ...current,
+        galleryCategories: cleaned
+      };
+      await storageService.saveCollegeInfo(updated);
+      return cleaned;
+    } catch (err) {
+      console.error('saveGalleryCategories error:', err);
+      throw err;
+    }
+  },
+
+  renameGalleryCategory: async (
+    oldName: string, 
+    newName: string
+  ): Promise<{ categories: string[]; updatedCount: number }> => {
+    const trimmedNew = newName.trim();
+    if (!trimmedNew) {
+      throw new Error('Category name cannot be empty.');
+    }
+    if (trimmedNew.toLowerCase() === 'all') {
+      throw new Error('"All" is a protected system filter and cannot be used as a category name.');
+    }
+    if (oldName === trimmedNew) {
+      const currentCats = await storageService.fetchGalleryCategories();
+      return { categories: currentCats, updatedCount: 0 };
+    }
+
+    // 1. Fetch current categories and replace
+    const currentCategories = await storageService.fetchGalleryCategories();
+    const updatedCategories = currentCategories.map(c => (c === oldName ? trimmedNew : c));
+    const dedupedCategories = Array.from(new Set(updatedCategories));
+
+    // 2. Update photos in Supabase gallery table that use this category
+    const galleryItems = await storageService.fetchGallery();
+    let updatedCount = 0;
+    const updatedGallery = galleryItems.map(item => {
+      if (item.category === oldName) {
+        updatedCount++;
+        return {
+          ...item,
+          category: trimmedNew
+        };
+      }
+      return item;
+    });
+
+    if (updatedCount > 0) {
+      await storageService.saveGallery(updatedGallery);
+    }
+
+    // 3. Save updated categories in Supabase college_info
+    await storageService.saveGalleryCategories(dedupedCategories);
+
+    return { categories: dedupedCategories, updatedCount };
+  },
+
+  deleteGalleryCategory: async (
+    categoryToDelete: string, 
+    reassignToCategory?: string
+  ): Promise<{ categories: string[]; reassignedCount: number }> => {
+    if (categoryToDelete.toLowerCase() === 'all') {
+      throw new Error('"All" is a protected system filter and cannot be deleted.');
+    }
+
+    const galleryItems = await storageService.fetchGallery();
+    const affectedPhotos = galleryItems.filter(item => item.category === categoryToDelete);
+
+    if (affectedPhotos.length > 0 && !reassignToCategory) {
+      throw new Error(
+        `This category is currently assigned to ${affectedPhotos.length} photos. Please reassign these photos to another category before deleting.`
+      );
+    }
+
+    let reassignedCount = 0;
+    if (affectedPhotos.length > 0 && reassignToCategory) {
+      const updatedGallery = galleryItems.map(item => {
+        if (item.category === categoryToDelete) {
+          reassignedCount++;
+          return {
+            ...item,
+            category: reassignToCategory
+          };
+        }
+        return item;
+      });
+      await storageService.saveGallery(updatedGallery);
+    }
+
+    const currentCategories = await storageService.fetchGalleryCategories();
+    const remainingCategories = currentCategories.filter(c => c !== categoryToDelete);
+    await storageService.saveGalleryCategories(remainingCategories);
+
+    return { categories: remainingCategories, reassignedCount };
   },
 
   // --- Popup Banner ---

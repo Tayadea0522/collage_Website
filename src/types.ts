@@ -626,6 +626,7 @@ export interface CollegeInfo {
   }[];
   admissionProcess?: AdmissionProcessData;
   academicsData?: AcademicsData;
+  galleryCategories?: string[];
 }
 
 export interface PlacementPartner {
@@ -637,9 +638,11 @@ export interface PlacementPartner {
 export interface GalleryItem {
   id: string;
   title: string;
-  category: 'Campus' | 'Dairy Plant' | 'Lab' | 'Events' | 'Sports';
+  category: string;
   image: string;
   date: string;
+  description?: string;
+  isActive?: boolean;
 }
 
 export interface AdminUser {

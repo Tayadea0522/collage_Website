@@ -538,7 +538,7 @@ export default function App() {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-3">
                 <h2 className="text-2xl font-bold font-serif text-slate-900 flex items-center gap-2">
                   <ImageIcon className="w-6 h-6 text-blue-600" />
-                  Campus & Dairy Plant Gallery
+                  Gallery
                 </h2>
                 
                 <div className="flex flex-wrap gap-1.5 text-xs">

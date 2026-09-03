@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Users, GraduationCap, Briefcase, BookOpen, Mail, Phone, Search, Crown, Sparkles } from 'lucide-react';
+import { Users, GraduationCap, Briefcase, BookOpen, Mail, Phone, Search, Crown, Sparkles, User } from 'lucide-react';
 import { FacultyMember } from '../types';
 import { storageService } from '../services/storageService';
+import { parseQualifications } from './admin/EditFacultyModal';
 
 interface FacultiesProps {
   faculty?: FacultyMember[];
@@ -12,7 +13,8 @@ export const Faculties: React.FC<FacultiesProps> = ({ faculty: propsFaculty }) =
   const [searchQuery, setSearchQuery] = useState('');
   const [hodOnlyFilter, setHodOnlyFilter] = useState(false);
 
-  const allFaculty = propsFaculty || [];
+  // Exclude inactive / hidden faculty from public view
+  const allFaculty = (propsFaculty || []).filter(f => f.isActive !== false);
 
   const filteredFaculty = allFaculty.filter((f) => {
     // Dept match
@@ -29,7 +31,7 @@ export const Faculties: React.FC<FacultiesProps> = ({ faculty: propsFaculty }) =
       const matchName = f.name?.toLowerCase().includes(q);
       const matchDesig = f.designation?.toLowerCase().includes(q);
       const matchDept = f.department?.toLowerCase().includes(q);
-      const matchQual = f.qualification?.toLowerCase().includes(q);
+      const matchQual = f.qualification?.toLowerCase().includes(q) || (f.qualifications && f.qualifications.some(x => x.toLowerCase().includes(q)));
       const matchSpec = f.specialization?.toLowerCase().includes(q);
       return matchName || matchDesig || matchDept || matchQual || matchSpec;
     }
@@ -117,70 +119,95 @@ export const Faculties: React.FC<FacultiesProps> = ({ faculty: propsFaculty }) =
 
       {/* Faculty Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredFaculty.map((f) => (
-          <div
-            key={f.id}
-            className={`bg-white rounded-2xl border p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden ${
-              f.isHOD ? 'border-amber-400/80 ring-1 ring-amber-400/40 bg-gradient-to-b from-amber-50/30 to-white' : 'border-slate-200'
-            }`}
-          >
-            {f.isHOD && (
-              <div className="absolute top-0 right-0 bg-[#0A2342] text-amber-300 text-[10px] font-extrabold px-3 py-1 rounded-bl-xl border-l border-b border-amber-400/40 flex items-center gap-1 shadow-2xs">
-                <Crown className="w-3 h-3 text-amber-400" /> HOD
-              </div>
-            )}
+        {filteredFaculty.map((f) => {
+          const quals = parseQualifications(f.qualification, f.qualifications).filter(Boolean);
+          return (
+            <div
+              key={f.id}
+              className={`bg-white rounded-2xl border p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden ${
+                f.isHOD ? 'border-amber-400/80 ring-1 ring-amber-400/40 bg-gradient-to-b from-amber-50/30 to-white' : 'border-slate-200'
+              }`}
+            >
+              {f.isHOD && (
+                <div className="absolute top-0 right-0 bg-[#0A2342] text-amber-300 text-[10px] font-extrabold px-3 py-1 rounded-bl-xl border-l border-b border-amber-400/40 flex items-center gap-1 shadow-2xs">
+                  <Crown className="w-3 h-3 text-amber-400" /> HOD
+                </div>
+              )}
 
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 w-fit inline-block">
-                  {f.department || 'Teaching Faculty'}
-                </span>
-                <h3 className="text-xl font-extrabold text-[#0A2342] font-serif pt-1">{f.name}</h3>
-                <div className="text-xs font-bold text-[#D97706]">{f.designation}</div>
-              </div>
-
-              <div className="space-y-2 text-xs text-slate-700 border-t border-slate-100 pt-3">
-                {f.qualification && (
-                  <div className="flex items-start gap-2">
-                    <GraduationCap className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                    <div><strong className="text-slate-900">Qualification:</strong> {f.qualification}</div>
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  {f.image ? (
+                    <img
+                      src={f.image}
+                      alt={f.name}
+                      className="w-16 h-16 rounded-2xl object-cover border border-slate-200 shadow-2xs shrink-0"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 text-slate-400">
+                      <User className="w-7 h-7 text-slate-300" />
+                    </div>
+                  )}
+                  <div className="space-y-1 flex-1 min-w-0">
+                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200 w-fit inline-block truncate max-w-full">
+                      {f.department || 'Teaching Faculty'}
+                    </span>
+                    <h3 className="text-lg font-extrabold text-[#0A2342] font-serif leading-snug">{f.name}</h3>
+                    <div className="text-xs font-bold text-[#D97706]">{f.designation}</div>
                   </div>
-                )}
+                </div>
 
-                {f.experience && (
-                  <div className="flex items-start gap-2">
-                    <Briefcase className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                    <div><strong className="text-slate-900">Experience:</strong> {f.experience}</div>
-                  </div>
-                )}
+                <div className="space-y-2 text-xs text-slate-700 border-t border-slate-100 pt-3">
+                  {quals.length > 0 && (
+                    <div className="flex items-start gap-2">
+                      <GraduationCap className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="text-slate-900">Qualification:</strong>
+                        <div className="mt-0.5 space-y-0.5">
+                          {quals.map((q, idx) => (
+                            <div key={idx} className="text-slate-700">
+                              {quals.length > 1 ? `${idx + 1}) ` : ''}{q}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
-                {f.specialization && (
-                  <div className="flex items-start gap-2">
-                    <BookOpen className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                    <div><strong className="text-slate-900">Specialization:</strong> {f.specialization}</div>
-                  </div>
-                )}
+                  {f.experience && (
+                    <div className="flex items-start gap-2">
+                      <Briefcase className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div><strong className="text-slate-900">Experience:</strong> {f.experience}</div>
+                    </div>
+                  )}
+
+                  {f.specialization && (
+                    <div className="flex items-start gap-2">
+                      <BookOpen className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div><strong className="text-slate-900">Specialization:</strong> {f.specialization}</div>
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {(f.email || f.phone) && (
+                <div className="pt-3 border-t border-slate-100 mt-4 text-xs text-slate-600 space-y-1 font-mono">
+                  {f.email && (
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <a href={`mailto:${f.email}`} className="hover:text-blue-900 hover:underline truncate">{f.email}</a>
+                    </div>
+                  )}
+                  {f.phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span>{f.phone}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-
-            {(f.email || f.phone) && (
-              <div className="pt-3 border-t border-slate-100 mt-4 text-xs text-slate-600 space-y-1 font-mono">
-                {f.email && (
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-3.5 h-3.5 text-slate-400" />
-                    <a href={`mailto:${f.email}`} className="hover:text-blue-900 hover:underline">{f.email}</a>
-                  </div>
-                )}
-                {f.phone && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-3.5 h-3.5 text-slate-400" />
-                    <span>{f.phone}</span>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {filteredFaculty.length === 0 && (

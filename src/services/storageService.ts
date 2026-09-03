@@ -467,7 +467,38 @@ export const storageService = {
   },
   getFaculty: (): FacultyMember[] => initialFaculty,
 
-  saveFaculty: async (faculty: FacultyMember[]): Promise<FacultyMember[]> => {
+  saveFacultyMember: async (member: FacultyMember): Promise<{ data: FacultyMember[]; error?: string }> => {
+    try {
+      let processed = { ...member };
+      if (isInvalidOrPrivateUrl(processed.image)) {
+        const cloudUrl = await supabaseStorageService.uploadImage(processed.image, 'faculty');
+        if (cloudUrl && !isInvalidOrPrivateUrl(cloudUrl)) {
+          processed.image = cloudUrl;
+        }
+      }
+
+      const { error } = await supabase.from('faculty').upsert([{
+        id: processed.id,
+        name: processed.name,
+        department: processed.department || '',
+        data: processed,
+        updated_at: new Date().toISOString()
+      }]);
+
+      if (error) {
+        console.error('Supabase saveFacultyMember error:', error.message);
+        return { data: await storageService.fetchFaculty(), error: error.message };
+      }
+
+      const freshList = await storageService.fetchFaculty();
+      return { data: freshList };
+    } catch (err: any) {
+      console.error('saveFacultyMember exception:', err);
+      return { data: await storageService.fetchFaculty(), error: err.message || 'Error saving faculty member' };
+    }
+  },
+
+  saveFaculty: async (faculty: FacultyMember[]): Promise<{ data: FacultyMember[]; error?: string }> => {
     try {
       const processed = await Promise.all(
         faculty.map(async f => {
@@ -484,25 +515,35 @@ export const storageService = {
       const { error } = await supabase.from('faculty').upsert(processed.map(f => ({
         id: f.id,
         name: f.name,
-        department: f.department,
+        department: f.department || '',
         data: f,
         updated_at: new Date().toISOString()
       })));
-      if (error) console.warn('Supabase faculty save warning:', error.message);
-    } catch (err) {
-      console.warn('saveFaculty exception:', err);
+      if (error) {
+        console.error('Supabase faculty save warning:', error.message);
+        return { data: await storageService.fetchFaculty(), error: error.message };
+      }
+    } catch (err: any) {
+      console.error('saveFaculty exception:', err);
+      return { data: await storageService.fetchFaculty(), error: err.message || 'Error saving faculty' };
     }
-    return await storageService.fetchFaculty();
+    const fresh = await storageService.fetchFaculty();
+    return { data: fresh };
   },
 
-  deleteFaculty: async (id: string): Promise<FacultyMember[]> => {
+  deleteFaculty: async (id: string): Promise<{ data: FacultyMember[]; error?: string }> => {
     try {
       const { error } = await supabase.from('faculty').delete().eq('id', id);
-      if (error) console.warn('Supabase deleteFaculty error:', error.message);
-    } catch (err) {
-      console.warn('deleteFaculty exception:', err);
+      if (error) {
+        console.error('Supabase deleteFaculty error:', error.message);
+        return { data: await storageService.fetchFaculty(), error: error.message };
+      }
+    } catch (err: any) {
+      console.error('deleteFaculty exception:', err);
+      return { data: await storageService.fetchFaculty(), error: err.message || 'Error deleting faculty' };
     }
-    return await storageService.fetchFaculty();
+    const fresh = await storageService.fetchFaculty();
+    return { data: fresh };
   },
 
   // --- Departments ---

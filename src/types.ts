@@ -28,6 +28,8 @@ export interface FacultyMember {
   phone?: string;
   image: string;
   isHOD?: boolean;
+  isActive?: boolean;
+  qualifications?: string[];
 }
 
 export interface DepartmentInfo {

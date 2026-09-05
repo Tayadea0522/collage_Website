@@ -7,6 +7,11 @@ import { printApplicationSlip, downloadApplicationSlip } from '../utils/printUti
 import { InnerPageLayout, SidebarItem } from './InnerPageLayout';
 import { AdmissionProcessWorkflow } from './AdmissionProcessWorkflow';
 import { 
+  normalizeAcademicsSection, 
+  getAcademicsSectionSlug, 
+  getAcademicsSectionFromUrl 
+} from '../utils/academicsNavigation';
+import { 
   Sparkles, 
   CheckCircle2, 
   FileText, 
@@ -46,6 +51,7 @@ interface AcademicsProps {
   onRefreshApplications?: () => void;
   onNavigateTab?: (tab: string) => void;
   initialSection?: string;
+  onSectionChange?: (section: string) => void;
 }
 
 interface UploadedDoc {
@@ -61,7 +67,6 @@ interface UploadedDoc {
 
 const ADMISSION_DRAFT_KEY = 'lsscdt_admission_form_draft';
 const ADMISSION_STEP_KEY = 'lsscdt_admission_form_step';
-const ACADEMICS_SIDEBAR_KEY = 'lsscdt_academics_sidebar_tab';
 
 const initialDefaultFormData = {
   fullName: '',
@@ -112,28 +117,42 @@ export const Academics: React.FC<AcademicsProps> = ({
   applications = [],
   onRefreshApplications = () => {},
   onNavigateTab,
-  initialSection
+  initialSection,
+  onSectionChange
 }) => {
   const [activeSidebarItem, setActiveSidebarItem] = useState<string>(() => {
-    if (initialSection) return initialSection;
-    try {
-      const saved = sessionStorage.getItem(ACADEMICS_SIDEBAR_KEY);
-      if (saved) return saved;
-    } catch (e) {}
-    return 'overview';
+    if (initialSection) return normalizeAcademicsSection(initialSection);
+    const fromUrl = getAcademicsSectionFromUrl();
+    if (fromUrl) return fromUrl;
+    return 'course'; // Strict default: Courses Offered
   });
+
+  // Clear legacy sessionStorage so stale tabs never hijack the default
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem('lsscdt_academics_sidebar_tab');
+    } catch (e) {}
+  }, []);
 
   useEffect(() => {
     if (initialSection) {
-      setActiveSidebarItem(initialSection);
+      setActiveSidebarItem(normalizeAcademicsSection(initialSection));
     }
   }, [initialSection]);
 
   const handleSelectSidebar = (item: string) => {
-    setActiveSidebarItem(item);
-    try {
-      sessionStorage.setItem(ACADEMICS_SIDEBAR_KEY, item);
-    } catch (e) {}
+    const normalized = normalizeAcademicsSection(item);
+    setActiveSidebarItem(normalized);
+    if (onSectionChange) {
+      onSectionChange(normalized);
+    }
+    if (typeof window !== 'undefined') {
+      const slug = getAcademicsSectionSlug(normalized);
+      const targetUrl = slug === 'courses-offered' ? '/academics' : `/academics?section=${slug}`;
+      if (window.location.pathname + window.location.search !== targetUrl) {
+        window.history.pushState({}, '', targetUrl);
+      }
+    }
   };
 
   // Dynamic Academics & Admissions Content from Admin CMS
@@ -597,7 +616,7 @@ export const Academics: React.FC<AcademicsProps> = ({
       breadcrumbPath={[
         { label: 'Home', tab: 'home' },
         { label: 'Academics' },
-        { label: sidebarItems.find(s => s.id === activeSidebarItem)?.label || 'Program Overview' }
+        { label: sidebarItems.find(s => s.id === activeSidebarItem)?.label || 'Courses Offered' }
       ]}
       sidebarItems={sidebarItems}
       activeItem={activeSidebarItem}

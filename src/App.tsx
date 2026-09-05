@@ -25,6 +25,11 @@ import { PopupBannerModal } from './components/PopupBannerModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { GalleryLightbox } from './components/GalleryLightbox';
 import { getOptimizedImageUrl } from './utils/imageUtils';
+import { 
+  normalizeAcademicsSection, 
+  getAcademicsSectionSlug, 
+  getAcademicsSectionFromUrl 
+} from './utils/academicsNavigation';
 
 // Code-split heavy subpages and admin bundle
 const AboutUs = React.lazy(() => import('./components/AboutUs').then(m => ({ default: m.AboutUs })));
@@ -80,13 +85,27 @@ export default function App() {
   };
 
   const [currentTab, setCurrentTabState] = useState<string>(getInitialTab);
+  const [academicsSection, setAcademicsSection] = useState<string>(() => {
+    const fromUrl = getAcademicsSectionFromUrl();
+    return fromUrl || 'course';
+  });
 
-  const setCurrentTab = (tab: string) => {
+  const setCurrentTab = (tab: string, section?: string) => {
     setCurrentTabState(tab);
     if (typeof window !== 'undefined') {
-      const newPath = tab === 'home' ? '/' : `/${tab}`;
-      if (window.location.pathname !== newPath) {
-        window.history.pushState({}, '', newPath);
+      if (tab === 'academics') {
+        const targetSection = section ? normalizeAcademicsSection(section) : 'course';
+        setAcademicsSection(targetSection);
+        const query = targetSection === 'course' ? '' : `?section=${getAcademicsSectionSlug(targetSection)}`;
+        const newPath = `/academics${query}`;
+        if (window.location.pathname + window.location.search !== newPath) {
+          window.history.pushState({}, '', newPath);
+        }
+      } else {
+        const newPath = tab === 'home' ? '/' : `/${tab}`;
+        if (window.location.pathname !== newPath) {
+          window.history.pushState({}, '', newPath);
+        }
       }
     }
   };
@@ -99,6 +118,11 @@ export default function App() {
       else if (path === 'admin' || path.startsWith('admin/')) setCurrentTabState('admin');
       else if (path) setCurrentTabState(path);
       else setCurrentTabState('home');
+
+      if (path === 'academics') {
+        const fromUrl = getAcademicsSectionFromUrl();
+        setAcademicsSection(fromUrl || 'course');
+      }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -479,8 +503,11 @@ export default function App() {
             initialSection={
               currentTab === 'admissions' 
                 ? (collegeInfo?.academicsData?.admissionPortal?.isActive ? 'portal' : 'course') 
-                : undefined
+                : academicsSection
             }
+            onSectionChange={(newSection) => {
+              setAcademicsSection(newSection);
+            }}
           />
         )}
 

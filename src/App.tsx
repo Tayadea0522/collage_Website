@@ -105,6 +105,7 @@ export default function App() {
   }, []);
   
   // Data State
+  const [isDataLoading, setIsDataLoading] = useState<boolean>(true);
   const [collegeInfo, setCollegeInfo] = useState<CollegeInfo>(storageService.getCollegeInfo());
   const [notices, setNotices] = useState<Notice[]>(storageService.getNotices());
   const [events, setEvents] = useState<CollegeEvent[]>(storageService.getEvents());
@@ -322,6 +323,10 @@ export default function App() {
       setApplications(data.applications);
       setPopupBanner(data.popupBanner);
       checkAndShowPopup(data.popupBanner);
+      setIsDataLoading(false);
+    }).catch(err => {
+      console.warn('fetchAllFromSupabase failed:', err);
+      setIsDataLoading(false);
     });
 
     return () => {
@@ -429,6 +434,7 @@ export default function App() {
         isAdminLoggedIn={isAdminLoggedIn}
         currentAdminName={currentAdminUser?.name || 'Administrator'}
         onLogoutAdmin={handleAdminLogout}
+        isDataLoading={isDataLoading}
       />
 
       {/* Ticker for Latest Alerts */}
@@ -453,6 +459,7 @@ export default function App() {
             isAdmin={isAdminLoggedIn}
             onUpdateCollegeInfo={(updated) => setCollegeInfo(updated)}
             onRequestAdminLogin={() => setAdminModalOpen(true)}
+            isDataLoading={isDataLoading}
           />
         )}
 
@@ -560,6 +567,22 @@ export default function App() {
               </div>
 
               {(() => {
+                if (isDataLoading) {
+                  return (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
+                        <div key={n} className="rounded-xl overflow-hidden border border-slate-200 bg-slate-100 animate-pulse h-56 flex flex-col">
+                          <div className="h-44 bg-slate-200" />
+                          <div className="p-3 space-y-2">
+                            <div className="h-3 bg-slate-200 rounded w-3/4" />
+                            <div className="h-2.5 bg-slate-200 rounded w-1/2" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }
+
                 const filteredGallery = gallery
                   .filter(item => item.isActive !== false)
                   .filter(item => galleryFilter === 'All' || item.category === galleryFilter);

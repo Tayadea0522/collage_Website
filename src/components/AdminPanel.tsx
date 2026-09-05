@@ -352,7 +352,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       id: `b-${Date.now()}`,
       title: 'New College Banner',
       subtitle: 'ICAR Approved B.Tech (Dairy Technology) Program',
-      image: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80',
+      image: '',
       ctaText: 'Apply Now'
     };
     const updated = { ...infoForm, heroBanners: [...(infoForm.heroBanners || []), newBanner] };
@@ -822,7 +822,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     description: '',
     labsStr: '',
     keySubjectsStr: '',
-    image: 'https://images.unsplash.com/photo-1527153857715-3908f2bae5e8?auto=format&fit=crop&w=800&q=80',
+    image: '',
     isActive: true,
     displayOrder: 1
   });
@@ -894,7 +894,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       description: '',
       labsStr: '',
       keySubjectsStr: '',
-      image: 'https://images.unsplash.com/photo-1527153857715-3908f2bae5e8?auto=format&fit=crop&w=800&q=80',
+      image: '',
       isActive: true,
       displayOrder: deptList.length + 1
     });
@@ -917,7 +917,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       description: dept.description,
       labsStr: (dept.labs || []).join(', '),
       keySubjectsStr: (dept.keySubjects || []).join(', '),
-      image: dept.image || 'https://images.unsplash.com/photo-1527153857715-3908f2bae5e8?auto=format&fit=crop&w=800&q=80',
+      image: dept.image || '',
       isActive: dept.isActive ?? true,
       displayOrder: dept.displayOrder || 1
     });
@@ -955,7 +955,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }
 
     if (!finalImageUrl) {
-      finalImageUrl = 'https://images.unsplash.com/photo-1527153857715-3908f2bae5e8?auto=format&fit=crop&w=800&q=80';
+      finalImageUrl = '';
     }
 
     const labs = deptForm.labsStr.split(',').map(s => s.trim()).filter(Boolean);
@@ -1636,7 +1636,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       title: newGallery.title.trim(),
       category: selectedCategory,
       description: newGallery.description || '',
-      image: newGallery.image || 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=800&q=80',
+      image: newGallery.image || '',
       isActive: newGallery.isActive !== undefined ? newGallery.isActive : true,
       date: newGallery.date || new Date().getFullYear().toString()
     };
@@ -3063,9 +3063,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             src={deptImageLocalPreview || deptForm.image}
                             alt="Department Banner Preview"
                             className="w-full h-44 object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1527153857715-3908f2bae5e8?auto=format&fit=crop&w=800&q=80';
-                            }}
                           />
                           <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950/80 to-transparent p-2 flex items-center justify-between text-[11px] text-white">
                             <span className="truncate">
@@ -5124,12 +5121,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       <div>
                         <label className="font-bold text-slate-700 text-xs block mb-1">Photo Preview & Upload</label>
                         <div className="flex items-center gap-4 bg-white p-3 rounded-xl border border-slate-200">
-                          <img
-                            src={infoForm.presidentImage || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80"}
-                            alt={infoForm.presidentName || "President"}
-                            referrerPolicy="no-referrer"
-                            className="w-20 h-24 rounded-lg object-cover bg-slate-100 border border-slate-200 shrink-0"
-                          />
+                          {infoForm.presidentImage ? (
+                            <img
+                              src={infoForm.presidentImage}
+                              alt={infoForm.presidentName || "President"}
+                              referrerPolicy="no-referrer"
+                              className="w-20 h-24 rounded-lg object-cover bg-slate-100 border border-slate-200 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-20 h-24 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 text-slate-300">
+                              <Users className="w-8 h-8 stroke-1" />
+                            </div>
+                          )}
                           <div className="flex-1 space-y-2">
                             <input
                               type="text"
@@ -5224,12 +5227,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       <div>
                         <label className="font-bold text-slate-700 text-xs block mb-1">Photo Preview & Upload</label>
                         <div className="flex items-center gap-4 bg-white p-3 rounded-xl border border-slate-200">
-                          <img
-                            src={infoForm.secretaryImage || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80"}
-                            alt={infoForm.secretaryName}
-                            referrerPolicy="no-referrer"
-                            className="w-20 h-24 rounded-lg object-cover bg-slate-100 border border-slate-200 shrink-0"
-                          />
+                          {infoForm.secretaryImage ? (
+                            <img
+                              src={infoForm.secretaryImage}
+                              alt={infoForm.secretaryName}
+                              referrerPolicy="no-referrer"
+                              className="w-20 h-24 rounded-lg object-cover bg-slate-100 border border-slate-200 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-20 h-24 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 text-slate-300">
+                              <Users className="w-8 h-8 stroke-1" />
+                            </div>
+                          )}
                           <div className="flex-1 space-y-2">
                             <input
                               type="text"
@@ -5326,12 +5335,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       <div>
                         <label className="font-bold text-slate-700 text-xs block mb-1">Photo Preview & Upload</label>
                         <div className="flex items-center gap-4 bg-white p-3 rounded-xl border border-slate-200">
-                          <img
-                            src={infoForm.deanImage || "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=300&q=80"}
-                            alt={infoForm.deanName}
-                            referrerPolicy="no-referrer"
-                            className="w-20 h-24 rounded-lg object-cover bg-slate-100 border border-slate-200 shrink-0"
-                          />
+                          {infoForm.deanImage ? (
+                            <img
+                              src={infoForm.deanImage}
+                              alt={infoForm.deanName}
+                              referrerPolicy="no-referrer"
+                              className="w-20 h-24 rounded-lg object-cover bg-slate-100 border border-slate-200 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-20 h-24 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 text-slate-300">
+                              <Users className="w-8 h-8 stroke-1" />
+                            </div>
+                          )}
                           <div className="flex-1 space-y-2">
                             <input
                               type="text"
@@ -5428,12 +5443,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       <div>
                         <label className="font-bold text-slate-700 text-xs block mb-1">Photo Preview & Upload</label>
                         <div className="flex items-center gap-4 bg-white p-3 rounded-xl border border-slate-200">
-                          <img
-                            src={infoForm.adminOfficerImage || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80"}
-                            alt={infoForm.adminOfficerName || "Administrative Officer"}
-                            referrerPolicy="no-referrer"
-                            className="w-20 h-24 rounded-lg object-cover bg-slate-100 border border-slate-200 shrink-0"
-                          />
+                          {infoForm.adminOfficerImage ? (
+                            <img
+                              src={infoForm.adminOfficerImage}
+                              alt={infoForm.adminOfficerName || "Administrative Officer"}
+                              referrerPolicy="no-referrer"
+                              className="w-20 h-24 rounded-lg object-cover bg-slate-100 border border-slate-200 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-20 h-24 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 text-slate-300">
+                              <Users className="w-8 h-8 stroke-1" />
+                            </div>
+                          )}
                           <div className="flex-1 space-y-2">
                             <input
                               type="text"

@@ -20,6 +20,7 @@ interface HeaderProps {
   isAdminLoggedIn: boolean;
   currentAdminName?: string;
   onLogoutAdmin?: () => void;
+  isDataLoading?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -29,7 +30,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAdmin,
   isAdminLoggedIn,
   currentAdminName = 'Administrator',
-  onLogoutAdmin
+  onLogoutAdmin,
+  isDataLoading = false
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -52,8 +54,8 @@ export const Header: React.FC<HeaderProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const leftLogoUrl = collegeInfo.leftLogoImage || collegeInfo.logoImage || '/logo.svg';
-  const rightLogoUrl = collegeInfo.rightLogoImage || '/logo.svg';
+  const leftLogoUrl = collegeInfo.leftLogoImage || collegeInfo.logoImage || (isDataLoading ? '' : '/logo.svg');
+  const rightLogoUrl = collegeInfo.rightLogoImage || (isDataLoading ? '' : '/logo.svg');
 
   const mainName = collegeInfo.name?.includes('College of Dairy Technology')
     ? collegeInfo.name.replace('College of Dairy Technology', '').trim()
@@ -132,7 +134,11 @@ export const Header: React.FC<HeaderProps> = ({
               className="w-28 h-28 sm:w-36 sm:h-36 lg:w-44 lg:h-44 flex items-center justify-start shrink-0 cursor-pointer group"
               title="Return to Home"
             >
-              {leftLogoUrl ? (
+              {isDataLoading && !collegeInfo.leftLogoImage && !collegeInfo.logoImage ? (
+                <div className="w-24 h-24 sm:w-32 sm:h-32 lg:w-36 lg:h-36 rounded-2xl bg-slate-100 animate-pulse flex items-center justify-center text-slate-300">
+                  <GraduationCap className="w-12 h-12 sm:w-16 sm:h-16 opacity-40" />
+                </div>
+              ) : leftLogoUrl ? (
                 <img
                   src={leftLogoUrl}
                   alt="College Left Logo"
@@ -194,7 +200,11 @@ export const Header: React.FC<HeaderProps> = ({
               className="w-28 h-28 sm:w-36 sm:h-36 lg:w-44 lg:h-44 flex items-center justify-end shrink-0 cursor-pointer group"
               title="Return to Home"
             >
-              {rightLogoUrl ? (
+              {isDataLoading && !collegeInfo.rightLogoImage ? (
+                <div className="w-24 h-24 sm:w-32 sm:h-32 lg:w-36 lg:h-36 rounded-2xl bg-slate-100 animate-pulse flex items-center justify-center text-slate-300">
+                  <GraduationCap className="w-12 h-12 sm:w-16 sm:h-16 opacity-40" />
+                </div>
+              ) : rightLogoUrl ? (
                 <img
                   src={rightLogoUrl}
                   alt="College Right Logo"
@@ -216,24 +226,36 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="md:hidden flex flex-col items-center gap-3.5 py-1">
             <div className="flex items-center justify-between w-full px-2">
               <div onClick={() => handleNavClick('home')} className="cursor-pointer">
-                <img
-                  src={leftLogoUrl}
-                  alt="Left Logo"
-                  referrerPolicy="no-referrer"
-                  loading="eager"
-                  decoding="async"
-                  className="h-20 w-auto max-w-[150px] object-contain"
-                />
+                {isDataLoading && !collegeInfo.leftLogoImage && !collegeInfo.logoImage ? (
+                  <div className="h-20 w-20 rounded-xl bg-slate-100 animate-pulse flex items-center justify-center text-slate-300">
+                    <GraduationCap className="w-8 h-8 opacity-40" />
+                  </div>
+                ) : leftLogoUrl ? (
+                  <img
+                    src={leftLogoUrl}
+                    alt="Left Logo"
+                    referrerPolicy="no-referrer"
+                    loading="eager"
+                    decoding="async"
+                    className="h-20 w-auto max-w-[150px] object-contain"
+                  />
+                ) : null}
               </div>
               <div onClick={() => handleNavClick('home')} className="cursor-pointer">
-                <img
-                  src={rightLogoUrl}
-                  alt="Right Logo"
-                  referrerPolicy="no-referrer"
-                  loading="eager"
-                  decoding="async"
-                  className="h-20 w-auto max-w-[150px] object-contain"
-                />
+                {isDataLoading && !collegeInfo.rightLogoImage ? (
+                  <div className="h-20 w-20 rounded-xl bg-slate-100 animate-pulse flex items-center justify-center text-slate-300">
+                    <GraduationCap className="w-8 h-8 opacity-40" />
+                  </div>
+                ) : rightLogoUrl ? (
+                  <img
+                    src={rightLogoUrl}
+                    alt="Right Logo"
+                    referrerPolicy="no-referrer"
+                    loading="eager"
+                    decoding="async"
+                    className="h-20 w-auto max-w-[150px] object-contain"
+                  />
+                ) : null}
               </div>
             </div>
 

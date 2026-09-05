@@ -6,9 +6,9 @@ export const initialCollegeInfo: CollegeInfo = {
   shortName: "LSSCDT",
   tagline: "College of Dairy Technology",
   trustName: "Late. Madanlalji - Kisanlalji Sancheti Seva Samiti, Malkapur (Registration No. Maharashtra 2563/Date. 14/07/92 buldhana F2652/Date. 20/01/93)",
-  logoImage: "/logo.svg",
-  leftLogoImage: "/logo.svg",
-  rightLogoImage: "/logo.svg",
+  logoImage: "",
+  leftLogoImage: "",
+  rightLogoImage: "",
   affiliation: "Affiliated to Maharashtra Animal & Fishery Sciences University (MAFSU), Nagpur ( मपाविवि/प.वि./शा./स.शा.अ.(60)/ नस्ती क्र. 281/739/26 17/07/2026)",
   approval: "Approved by the State Government of Maharashtra (DAHD-12024/73/2026-AH(1696785) 16/07/2026)",
   location: "Malkapur, Maharashtra",
@@ -22,30 +22,30 @@ export const initialCollegeInfo: CollegeInfo = {
   deanEducation: "Ph.D., M.Tech (Dairy Technology)",
   deanInstitution: "Late Shaktikumar Sancheti College of Dairy Technology, Malkapur",
   deanMessage: "Welcome to Late Shaktikumar Sancheti College of Dairy Technology. Our institution is committed to providing world-class education in dairy science and technology. We nurture students to become skilled professionals who contribute to India's dairy industry.",
-  deanImage: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=300&q=80",
+  deanImage: "",
   
   secretaryName: "Suresh Kisanlal Sancheti",
   secretaryDesignation: "Secretary",
   secretaryEducation: "B.Com., M.B.A. (Management)",
   secretaryInstitution: "Late Shaktikumar Sancheti College of Dairy Technology, Malkapur",
   secretaryMessage: "It is our commitment to build an institution that not only imparts technical knowledge but also shapes the character and values of our students. LSSCDT stands as a symbol of our dedication to rural development and the dairy industry of India.",
-  secretaryImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80",
+  secretaryImage: "",
   
   adminOfficerName: "Shri S. D. Lokhande",
   adminOfficerDesignation: "Administrative Officer",
   adminOfficerEducation: "M.Sc., D.B.M.",
   adminOfficerInstitution: "Late Shaktikumar Sancheti College of Dairy Technology, Malkapur",
   adminOfficerMessage: "Our administrative department is dedicated to ensuring smooth operational management, transparent governance, student guidance, and providing a supportive ecosystem for academic and professional excellence.",
-  adminOfficerImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80",
+  adminOfficerImage: "",
 
   presidentName: "Shri Madanlalji Sancheti",
   presidentDesignation: "President",
   presidentEducation: "B.A., Philanthropist & Social Leader",
   presidentInstitution: "Late Shaktikumar Sancheti College of Dairy Technology, Malkapur",
   presidentMessage: "Our mission is to build a modern center of excellence in dairy technology that empowers students with cutting-edge knowledge, practical skills, and moral values to lead and transform the dairy sector.",
-  presidentImage: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+  presidentImage: "",
   
-  shaktikumarImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+  shaktikumarImage: "",
   shaktikumarMessage: "A visionary philanthropist and dedicated patron of education, Late Shri Shaktikumar Sancheti believed that knowledge is the greatest gift one can give to society. This institution stands as a lasting tribute to his unwavering commitment to rural development and the empowerment of India's dairy sector.",
   
   aboutText1: "Late Shaktikumar Sancheti College of Dairy Technology was established in memory of Late Shri Shaktikumar Sancheti, a visionary philanthropist who believed in the power of education. The college was founded with the mission to develop skilled dairy professionals.",
@@ -67,29 +67,7 @@ export const initialCollegeInfo: CollegeInfo = {
     "Establish strong industry-academia ties with top dairy cooperatives and corporates.",
     "Drive rural economic growth through extension services and skill development."
   ],
-  heroBanners: [
-    {
-      id: "b1",
-      title: "Late Shaktikumar Sancheti College of Dairy Technology",
-      subtitle: "Late Madanlal Kisanlal Sancheti Seva Samiti Malkapur (B.Tech Dairy Technology)",
-      image: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1600&q=80",
-      ctaText: "Apply Now"
-    },
-    {
-      id: "b2",
-      title: "State-of-the-Art 500 LPD Dairy Processing Plant",
-      subtitle: "Hands-On Practical Learning for Future Dairy Industry Leaders",
-      image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1600&q=80",
-      ctaText: "Explore Campus"
-    },
-    {
-      id: "b3",
-      title: "100% Placement Record with Amul, Mother Dairy & Nestlé",
-      subtitle: "Empowering Rural Youth with Global Technical Careers",
-      image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1600&q=80",
-      ctaText: "View Placements"
-    }
-  ],
+  heroBanners: [],
   admissionProcess: {
     introText: "Online centralized admission process is conducted by Maharashtra Council of Agriculture Education & Research (MCAER), Pune and CET Cell after the declaration of results of MHT-CET/NEET/JEE and the procedure of admission is as follows:",
     capRegistrationUrl: "https://cetcell.mahacet.org/",
@@ -210,7 +188,7 @@ export const initialDepartments: DepartmentInfo[] = [
     description: "Focuses on liquid milk processing, market milk, ice cream, cheese, butter, milk powders, and traditional indigenous dairy product technology.",
     labs: ["Market Milk Processing Lab", "Ice Cream & Confectionery Lab", "Sensory Evaluation Room", "Cheese & Butter Processing Room"],
     keySubjects: ["Market Milk", "Traditional Dairy Products", "Fat-Rich Dairy Products", "Condensed & Dried Milks", "Packaging Technology"],
-    image: "https://images.unsplash.com/photo-1527153857715-3908f2bae5e8?auto=format&fit=crop&w=800&q=80"
+    image: ""
   },
   {
     id: "de",
@@ -220,7 +198,7 @@ export const initialDepartments: DepartmentInfo[] = [
     description: "Covers dairy machinery design, refrigeration, boiler operations, heat exchangers, fluid mechanics, and automated CAD plant layout.",
     labs: ["Boiler & Refrigeration Lab", "Dairy Machinery Workshop", "Fluid Mechanics Lab", "CAD Plant Layout Lab"],
     keySubjects: ["Fluid Mechanics", "Thermodynamics", "Refrigeration & Air Conditioning", "Dairy Process Engineering", "Dairy Plant Design"],
-    image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80"
+    image: ""
   },
   {
     id: "dc",
@@ -230,7 +208,7 @@ export const initialDepartments: DepartmentInfo[] = [
     description: "Conducts advanced chemical analysis of milk constituents, milk protein isolation, fatty acid profiles, and adulteration testing.",
     labs: ["Chemical QC Lab", "Advanced Instrumental Analysis Room", "Nutritional Biochemistry Lab"],
     keySubjects: ["Physical Chemistry of Milk", "Milk Constituents Chemistry", "Chemical Quality Assurance", "Food Chemistry"],
-    image: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=800&q=80"
+    image: ""
   },
   {
     id: "dm",
@@ -240,7 +218,7 @@ export const initialDepartments: DepartmentInfo[] = [
     description: "Specializes in fermentation technology, starter cultures for Dahi/Lassi/Shrikhand, pathogen testing, and probiotic cultures.",
     labs: ["Starter Culture Lab", "Microbiological QC Room", "Pathogen Isolation & Biosafety Cabinet"],
     keySubjects: ["Fundamentals of Microbiology", "Starter Cultures & Fermented Milks", "Microbiological Quality Assurance"],
-    image: "https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=800&q=80"
+    image: ""
   },
   {
     id: "dbm",
@@ -250,7 +228,7 @@ export const initialDepartments: DepartmentInfo[] = [
     description: "Teaches milk procurement logistics, supply chain management, financial planning, marketing, and entrepreneurship.",
     labs: ["Agri-Business Simulation Lab", "Communication & Language Kiosk"],
     keySubjects: ["Milk Procurement & Supply Chain", "Dairy Economics", "Marketing & Export", "Financial Management"],
-    image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=800&q=80"
+    image: ""
   }
 ];
 
@@ -265,7 +243,7 @@ export const initialFaculty: FacultyMember[] = [
     specialization: "Membrane Processing & Dairy Tech Innovation",
     email: "dean@lsscdt.edu.in",
     phone: "+91 8625869560",
-    image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=600&q=80",
+    image: "",
     isHOD: false
   },
   {
@@ -277,7 +255,7 @@ export const initialFaculty: FacultyMember[] = [
     experience: "18 Years",
     specialization: "UHT Processing & Cheese Tech",
     email: "skshinde@lsscdt.edu.in",
-    image: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=600&q=80",
+    image: "",
     isHOD: true
   },
   {
@@ -289,7 +267,7 @@ export const initialFaculty: FacultyMember[] = [
     experience: "16 Years",
     specialization: "Evaporation & Thermal Engineering",
     email: "abkulkarni@lsscdt.edu.in",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80",
+    image: "",
     isHOD: true
   },
   {
@@ -301,7 +279,7 @@ export const initialFaculty: FacultyMember[] = [
     experience: "15 Years",
     specialization: "Adulteration Detection & HPLC",
     email: "mvpatil@lsscdt.edu.in",
-    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80",
+    image: "",
     isHOD: true
   }
 ];
@@ -314,33 +292,8 @@ export const initialFacilities: Facility[] = [
     isActive: true,
     description: "Our expansive 35-acre green academic campus at Malkapur houses state-of-the-art pilot dairy processing plants, accredited testing laboratories, smart multimedia classrooms, modern student hostels, a central digital library, and vast sports arenas.",
     features: ["35-Acre Eco-Friendly Green Campus", "Pilot Dairy Processing Plants", "Advanced Labs", "Digital Smart Learning Theatres", "Hostels & Student Activity Complex"],
-    image: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80",
-    photos: [
-      {
-        id: "p-ov-1",
-        url: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80",
-        title: "Main Academic Building & Campus Entrance",
-        caption: "Main administrative and academic complex with landscaped gardens and modern architecture.",
-        displayOrder: 1,
-        isActive: true
-      },
-      {
-        id: "p-ov-2",
-        url: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80",
-        title: "Campus Aerial View & Learning Quadrangles",
-        caption: "Spacious academic blocks and outdoor student gathering courtyards.",
-        displayOrder: 2,
-        isActive: true
-      },
-      {
-        id: "p-ov-3",
-        url: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1200&q=80",
-        title: "Student Convocation & Academic Walkways",
-        caption: "Dedicated pedestrian avenues connecting all departmental blocks.",
-        displayOrder: 3,
-        isActive: true
-      }
-    ]
+    image: "",
+    photos: []
   },
   {
     id: "fac-plant",
@@ -349,33 +302,8 @@ export const initialFacilities: Facility[] = [
     isActive: true,
     description: "State-of-the-art pilot processing plant with commercial-grade processing lines for milk pasteurization, homogenisation, cream separation, paneer, ghee, butter, ice cream, and curd/lassi manufacturing.",
     features: ["500 LPD Milk Pasteurization & Homogenizer", "Paneer & Cheese Processing Vats", "Cream Separator & Stainless Steel Ghee Kettle", "Automatic Pouch Packaging & Cold Storage Room"],
-    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1200&q=80",
-    photos: [
-      {
-        id: "p-plant-1",
-        url: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1200&q=80",
-        title: "Automated Pasteurization & Processing Line",
-        caption: "Sanitary stainless steel pipelines and plate heat exchangers for milk processing.",
-        displayOrder: 1,
-        isActive: true
-      },
-      {
-        id: "p-plant-2",
-        url: "https://images.unsplash.com/photo-1527153857715-3908f2bae5e8?auto=format&fit=crop&w=1200&q=80",
-        title: "Cream Separation & Butter Churning Unit",
-        caption: "High-speed centrifugal cream separation equipment and temperature-controlled storage tanks.",
-        displayOrder: 2,
-        isActive: true
-      },
-      {
-        id: "p-plant-3",
-        url: "https://images.unsplash.com/photo-1584905066893-7d5c142ba4e1?auto=format&fit=crop&w=1200&q=80",
-        title: "Packaging & Cold Storage Section",
-        caption: "Hygienic automatic pouch packing machines and zero-degree cold rooms.",
-        displayOrder: 3,
-        isActive: true
-      }
-    ]
+    image: "",
+    photos: []
   },
   {
     id: "fac-lab",
@@ -384,33 +312,8 @@ export const initialFacilities: Facility[] = [
     isActive: true,
     description: "Fully equipped modern quality testing and analytical research laboratories with Gerber centrifuges, FTIR milk analyzers, HPLC systems, spectrophotometers, laminar airflows, and autoclave chambers.",
     features: ["FTIR Milk Spectroscopy & Milko-Scan", "Microbiology Biosafety Cabinets & Incubators", "Chemical Titration & Adulteration Testing Benches", "Sensory Evaluation & Quality Assurance Lab"],
-    image: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=1200&q=80",
-    photos: [
-      {
-        id: "p-lab-1",
-        url: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=1200&q=80",
-        title: "Dairy Chemistry & Analytical Benches",
-        caption: "Precision titration apparatus and digital spectrophotometers for milk constituent analysis.",
-        displayOrder: 1,
-        isActive: true
-      },
-      {
-        id: "p-lab-2",
-        url: "https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=1200&q=80",
-        title: "Microbiology & Starter Culture Lab",
-        caption: "Sterile laminar airflow hoods and culture incubation facilities for probiotic research.",
-        displayOrder: 2,
-        isActive: true
-      },
-      {
-        id: "p-lab-3",
-        url: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80",
-        title: "Instrumentation & Chromatography Suite",
-        caption: "High-performance analytical instruments for dairy product quality certification.",
-        displayOrder: 3,
-        isActive: true
-      }
-    ]
+    image: "",
+    photos: []
   },
   {
     id: "fac-lib",
@@ -419,33 +322,8 @@ export const initialFacilities: Facility[] = [
     isActive: true,
     description: "Comprehensive learning resource center housing thousands of reference textbooks, scientific dairy and food journals, ICAR e-learning modules, digital reading terminals, and quiet study carrels.",
     features: ["12,000+ Printed Reference Books & Bound Journals", "CeRA & ICAR E-Journal Online Database Access", "Digital Computer Reading Terminals", "Air-Conditioned Quiet Study & Research Zones"],
-    image: "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1200&q=80",
-    photos: [
-      {
-        id: "p-lib-1",
-        url: "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1200&q=80",
-        title: "Main Library Reading Hall",
-        caption: "Spacious reading hall with natural lighting and curated dairy technology reference stacks.",
-        displayOrder: 1,
-        isActive: true
-      },
-      {
-        id: "p-lib-2",
-        url: "https://images.unsplash.com/photo-1568667256549-094345857637?auto=format&fit=crop&w=1200&q=80",
-        title: "Digital E-Resource Center & Terminals",
-        caption: "High-speed networked computer kiosks for accessing online research papers and e-books.",
-        displayOrder: 2,
-        isActive: true
-      },
-      {
-        id: "p-lib-3",
-        url: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=1200&q=80",
-        title: "Reference Stacks & Journal Archive",
-        caption: "Extensive collection of national and international dairy science publications.",
-        displayOrder: 3,
-        isActive: true
-      }
-    ]
+    image: "",
+    photos: []
   },
   {
     id: "fac-hostel",
@@ -454,33 +332,8 @@ export const initialFacilities: Facility[] = [
     isActive: true,
     description: "Separate, secure student residential complexes for Boys and Girls with solar hot water systems, study rooms, 24/7 CCTV surveillance, Wi-Fi connectivity, backup power generators, and a hygienic dining mess.",
     features: ["Separate Boys & Girls Multi-Storey Hostels", "Solar Water Heating & RO Purified Drinking Water", "Hygienic Pure Vegetarian Dining Mess", "24/7 CCTV Security & Resident Wardens"],
-    image: "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=1200&q=80",
-    photos: [
-      {
-        id: "p-hostel-1",
-        url: "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=1200&q=80",
-        title: "Student Residential Rooms",
-        caption: "Well-ventilated twin-sharing rooms with individual study tables and storage wardrobes.",
-        displayOrder: 1,
-        isActive: true
-      },
-      {
-        id: "p-hostel-2",
-        url: "https://images.unsplash.com/photo-1567521464027-f127ff144326?auto=format&fit=crop&w=1200&q=80",
-        title: "Hygienic Campus Dining Mess",
-        caption: "Nutritious and delicious vegetarian breakfast, lunch, and dinner served in a spotless hall.",
-        displayOrder: 2,
-        isActive: true
-      },
-      {
-        id: "p-hostel-3",
-        url: "https://images.unsplash.com/photo-1590402494682-cd3fb53b1f70?auto=format&fit=crop&w=1200&q=80",
-        title: "Common Recreation & Study Lounge",
-        caption: "Hostel recreation room with indoor games, television, and study desks.",
-        displayOrder: 3,
-        isActive: true
-      }
-    ]
+    image: "",
+    photos: []
   },
   {
     id: "fac-sports",
@@ -489,33 +342,8 @@ export const initialFacilities: Facility[] = [
     isActive: true,
     description: "Spacious outdoor sports fields and modern indoor sports facilities equipped for volleyball, cricket, badminton, table tennis, yoga, athletics, and a well-equipped fitness gymnasium.",
     features: ["Outdoor Volleyball, Cricket & Football Grounds", "Indoor Badminton Courts & Table Tennis Arena", "Modern Gymnasium with Cardio & Strength Machines", "Annual Inter-College Sports & Athletic Meets"],
-    image: "https://images.unsplash.com/photo-1526676037777-05a232554f77?auto=format&fit=crop&w=1200&q=80",
-    photos: [
-      {
-        id: "p-sports-1",
-        url: "https://images.unsplash.com/photo-1526676037777-05a232554f77?auto=format&fit=crop&w=1200&q=80",
-        title: "College Sports Grounds & Athletics Track",
-        caption: "Lush outdoor grounds host to daily sports practices and inter-collegiate tournaments.",
-        displayOrder: 1,
-        isActive: true
-      },
-      {
-        id: "p-sports-2",
-        url: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1200&q=80",
-        title: "Student Fitness Center & Gymnasium",
-        caption: "Equipped with modern fitness machines, free weights, and cross-training gear.",
-        displayOrder: 2,
-        isActive: true
-      },
-      {
-        id: "p-sports-3",
-        url: "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=1200&q=80",
-        title: "Indoor Badminton & Sports Arena",
-        caption: "Well-lit indoor arena with standard badminton courts and table tennis tables.",
-        displayOrder: 3,
-        isActive: true
-      }
-    ]
+    image: "",
+    photos: []
   },
   {
     id: "fac-smartroom",
@@ -524,17 +352,8 @@ export const initialFacilities: Facility[] = [
     isActive: true,
     description: "Tech-enabled interactive classrooms with digital smart touchboards, high-definition projectors, acoustic sound systems, and video conferencing capabilities.",
     features: ["Interactive Smart Touchboards", "HD Projector & Sound System", "E-Learning & Virtual Lectures", "Ergonomic Air-Conditioned Seating"],
-    image: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=800&q=80",
-    photos: [
-      {
-        id: "p-smart-1",
-        url: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=800&q=80",
-        title: "Interactive Smart Classroom",
-        caption: "Multimedia lecture hall with interactive smart display and ergonomic seating.",
-        displayOrder: 1,
-        isActive: true
-      }
-    ]
+    image: "",
+    photos: []
   },
   {
     id: "fac-bus",
@@ -543,17 +362,8 @@ export const initialFacilities: Facility[] = [
     isActive: true,
     description: "Dedicated college bus fleet providing comfortable and safe daily transport connecting the campus with Malkapur city, railway station, bus stand, and surrounding routes.",
     features: ["Multiple Daily Commute Routes", "Safe Experienced Drivers", "GPS Fleet Tracking", "Punctual Morning & Evening Pickups"],
-    image: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80",
-    photos: [
-      {
-        id: "p-bus-1",
-        url: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80",
-        title: "Campus Transportation Fleet",
-        caption: "Safe daily transit buses covering key student pickup routes.",
-        displayOrder: 1,
-        isActive: true
-      }
-    ]
+    image: "",
+    photos: []
   },
   {
     id: "fac-medical",
@@ -562,17 +372,8 @@ export const initialFacilities: Facility[] = [
     isActive: true,
     description: "On-campus medical first-aid care center equipped with essential emergency medicines, regular visiting doctor facility, and emergency transport tie-ups.",
     features: ["First-Aid Care Unit", "Visiting Qualified Doctor", "24/7 Emergency Ambulance Tie-up", "Annual Health Checkup Camps"],
-    image: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=800&q=80",
-    photos: [
-      {
-        id: "p-med-1",
-        url: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=800&q=80",
-        title: "First Aid & Health Center",
-        caption: "Well-equipped health desk and basic emergency medical care.",
-        displayOrder: 1,
-        isActive: true
-      }
-    ]
+    image: "",
+    photos: []
   },
   {
     id: "fac-canteen",
@@ -581,17 +382,8 @@ export const initialFacilities: Facility[] = [
     isActive: true,
     description: "Hygienic campus canteen serving fresh, delicious vegetarian meals, snacks, beverages, and fresh dairy items like lassi and peda made on campus.",
     features: ["Fresh & Hygienic Veg Food", "Campus Fresh Dairy Snacks & Drinks", "Clean Dining Space", "Affordable Student Pricing"],
-    image: "https://images.unsplash.com/photo-1567521464027-f127ff144326?auto=format&fit=crop&w=800&q=80",
-    photos: [
-      {
-        id: "p-can-1",
-        url: "https://images.unsplash.com/photo-1567521464027-f127ff144326?auto=format&fit=crop&w=800&q=80",
-        title: "Campus Refreshment Canteen",
-        caption: "Clean dining space serving student meals, tea, and college dairy products.",
-        displayOrder: 1,
-        isActive: true
-      }
-    ]
+    image: "",
+    photos: []
   }
 ];
 
@@ -724,36 +516,7 @@ export const initialApplications: AdmissionApplication[] = [
   }
 ];
 
-export const initialGallery: GalleryItem[] = [
-  {
-    id: "g1",
-    title: "LSSCDT Building Facade Malkapur",
-    category: "Campus",
-    image: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=800&q=80",
-    date: "2026-05-10"
-  },
-  {
-    id: "g2",
-    title: "50,000 LPD Dairy Plant Practical Training",
-    category: "Dairy Plant",
-    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80",
-    date: "2026-04-18"
-  },
-  {
-    id: "g3",
-    title: "Advanced Instrument QC Testing",
-    category: "Lab",
-    image: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=800&q=80",
-    date: "2026-03-22"
-  },
-  {
-    id: "g4",
-    title: "Annual DairyFest Technical Exhibition",
-    category: "Events",
-    image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=800&q=80",
-    date: "2026-02-15"
-  }
-];
+export const initialGallery: GalleryItem[] = [];
 
 export const initialAdminUsers: AdminUser[] = [];
 
@@ -809,7 +572,7 @@ export const initialPopupBanner: PopupBanner = {
   isActive: true,
   title: "Admissions Open 2026-27 | B.Tech Dairy Technology",
   description: "Applications invited for B.Tech Dairy Technology (4-Year Degree) & Direct 2nd Year Lateral Entry. State Govt. approved & MAFSU Nagpur affiliated.",
-  imageUrl: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80",
+  imageUrl: "",
   buttonText: "Apply Online Now",
   buttonUrl: "#admissions",
   displayFrequency: "once_per_session",

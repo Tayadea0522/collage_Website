@@ -104,13 +104,19 @@ export const Departments: React.FC<DepartmentsProps> = ({ departments, onNavigat
 
             {/* Right Col: Image & Stats */}
             <div className="space-y-4">
-              <img
-                src={getOptimizedImageUrl(selectedDept.image, { width: 600, quality: 80 })}
-                alt={selectedDept.name}
-                loading="lazy"
-                decoding="async"
-                className="w-full h-52 object-cover rounded-xl shadow border border-slate-200"
-              />
+              {selectedDept.image ? (
+                <img
+                  src={getOptimizedImageUrl(selectedDept.image, { width: 600, quality: 80 })}
+                  alt={selectedDept.name}
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-52 object-cover rounded-xl shadow border border-slate-200"
+                />
+              ) : (
+                <div className="w-full h-52 bg-slate-100 rounded-xl shadow border border-slate-200 flex flex-col items-center justify-center text-slate-300 animate-pulse">
+                  <Building2 className="w-12 h-12 stroke-1" />
+                </div>
+              )}
               <div className="bg-[#0A2342] text-white p-5 rounded-xl shadow space-y-2.5 text-xs">
                 <h4 className="font-bold text-amber-400 font-serif text-xs uppercase tracking-wider">
                   Department Profile

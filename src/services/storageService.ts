@@ -199,10 +199,10 @@ export const storageService = {
         loadedInfo.trustName = initialCollegeInfo.trustName;
       }
       if (!loadedInfo.leftLogoImage) {
-        loadedInfo.leftLogoImage = loadedInfo.logoImage || initialCollegeInfo.leftLogoImage || '/logo.svg';
+        loadedInfo.leftLogoImage = loadedInfo.logoImage || initialCollegeInfo.leftLogoImage || '';
       }
       if (!loadedInfo.rightLogoImage) {
-        loadedInfo.rightLogoImage = initialCollegeInfo.rightLogoImage || '/logo.svg';
+        loadedInfo.rightLogoImage = initialCollegeInfo.rightLogoImage || '';
       }
       if (!loadedInfo.presidentName) {
         loadedInfo.presidentName = initialCollegeInfo.presidentName;

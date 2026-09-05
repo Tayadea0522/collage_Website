@@ -417,7 +417,7 @@ export const initialAcademicsData: AcademicsData = {
       "Dairy Entrepreneur / Dairy Processing Plant Owner",
       "Procurement & Supply Chain Logistics Specialist"
     ],
-    imageUrl: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1200&q=80",
+    imageUrl: "",
     entryExitImageUrl: "/entry-and-exit-options.svg",
     entryExitOptions: {
       title: "Entry and Exit Options",

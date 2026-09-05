@@ -115,6 +115,7 @@ interface HomeProps {
   isAdmin?: boolean;
   onUpdateCollegeInfo?: (updated: CollegeInfo) => void;
   onRequestAdminLogin?: () => void;
+  isDataLoading?: boolean;
 }
 
 export const Home: React.FC<HomeProps> = ({
@@ -125,7 +126,8 @@ export const Home: React.FC<HomeProps> = ({
   onSelectNotice,
   isAdmin = false,
   onUpdateCollegeInfo,
-  onRequestAdminLogin
+  onRequestAdminLogin,
+  isDataLoading = false
 }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [statsInView, setStatsInView] = useState(false);
@@ -181,7 +183,7 @@ export const Home: React.FC<HomeProps> = ({
       education: collegeInfo.presidentEducation || "B.A., Philanthropist & Social Leader",
       institution: collegeInfo.presidentInstitution || "Late Shaktikumar Sancheti College of Dairy Technology, Malkapur",
       message: collegeInfo.presidentMessage || "Our mission is to build a modern center of excellence in dairy technology that empowers students with cutting-edge knowledge, practical skills, and moral values to lead and transform the dairy sector.",
-      image: collegeInfo.presidentImage || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+      image: collegeInfo.presidentImage || "",
       badgeColor: "bg-[#0A2342] text-amber-400",
       accentBorder: "border-l-4 border-l-[#0A2342]",
       photoOnLeft: true
@@ -194,7 +196,7 @@ export const Home: React.FC<HomeProps> = ({
       education: collegeInfo.secretaryEducation || "B.Com., M.B.A. (Management)",
       institution: collegeInfo.secretaryInstitution || "Late Shaktikumar Sancheti College of Dairy Technology, Malkapur",
       message: collegeInfo.secretaryMessage || "It is our commitment to build an institution that not only imparts technical knowledge but also shapes the character and values of our students. LSSCDT stands as a symbol of our dedication to rural development and the dairy industry of India.",
-      image: collegeInfo.secretaryImage || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80",
+      image: collegeInfo.secretaryImage || "",
       badgeColor: "bg-indigo-900 text-amber-300",
       accentBorder: "border-l-4 border-l-indigo-900",
       photoOnLeft: false
@@ -207,7 +209,7 @@ export const Home: React.FC<HomeProps> = ({
       education: collegeInfo.deanEducation || "Ph.D., M.Tech (Dairy Technology)",
       institution: collegeInfo.deanInstitution || "Late Shaktikumar Sancheti College of Dairy Technology, Malkapur",
       message: collegeInfo.deanMessage || "Welcome to Late Shaktikumar Sancheti College of Dairy Technology. Our institution is committed to providing world-class education in dairy science and technology. We nurture students to become skilled professionals who contribute to India's dairy industry.",
-      image: collegeInfo.deanImage || "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=300&q=80",
+      image: collegeInfo.deanImage || "",
       badgeColor: "bg-[#D97706] text-white",
       accentBorder: "border-l-4 border-l-[#D97706]",
       photoOnLeft: true
@@ -220,7 +222,7 @@ export const Home: React.FC<HomeProps> = ({
       education: collegeInfo.adminOfficerEducation || "M.Sc., D.B.M.",
       institution: collegeInfo.adminOfficerInstitution || "Late Shaktikumar Sancheti College of Dairy Technology, Malkapur",
       message: collegeInfo.adminOfficerMessage || "Our administrative office is dedicated to providing seamless governance, student support, and operational excellence to foster a transparent and efficient academic environment.",
-      image: collegeInfo.adminOfficerImage || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80",
+      image: collegeInfo.adminOfficerImage || "",
       badgeColor: "bg-emerald-800 text-white",
       accentBorder: "border-l-4 border-l-emerald-800",
       photoOnLeft: false
@@ -232,23 +234,30 @@ export const Home: React.FC<HomeProps> = ({
       
       {/* 1. Hero Carousel Banner */}
       <section className="relative w-full h-[320px] sm:h-[450px] md:h-[540px] lg:h-[600px] bg-slate-950 overflow-hidden shadow-sm">
-        {banners.map((banner, index) => (
-          <div
-            key={banner.id || index}
-            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-              index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
-            }`}
-          >
-            <img
-              src={banner.image}
-              alt={banner.title || `Banner ${index + 1}`}
-              referrerPolicy="no-referrer"
-              loading={index === 0 ? "eager" : "lazy"}
-              decoding="async"
-              className="w-full h-full object-cover object-center"
-            />
+        {isDataLoading || banners.length === 0 || !banners.some(b => Boolean(b.image)) ? (
+          <div className="w-full h-full animate-pulse bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 flex flex-col items-center justify-center text-slate-500">
+            <Building2 className="w-16 h-16 opacity-30 mb-2" />
+            <span className="text-xs uppercase tracking-widest font-semibold opacity-40">Late Shaktikumar Sancheti College of Dairy Technology</span>
           </div>
-        ))}
+        ) : (
+          banners.filter(b => Boolean(b.image)).map((banner, index) => (
+            <div
+              key={banner.id || index}
+              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+              }`}
+            >
+              <img
+                src={banner.image}
+                alt={banner.title || `Banner ${index + 1}`}
+                referrerPolicy="no-referrer"
+                loading={index === 0 ? "eager" : "lazy"}
+                decoding="async"
+                className="w-full h-full object-cover object-center"
+              />
+            </div>
+          ))
+        )}
 
         {/* Carousel Nav Arrows */}
         {banners.length > 1 && (
@@ -347,14 +356,20 @@ export const Home: React.FC<HomeProps> = ({
                     <div className="relative group/img w-full max-w-[260px] sm:max-w-[280px]">
                       <div className="absolute -inset-1.5 bg-gradient-to-r from-[#0A2342] to-[#D97706] rounded-3xl blur opacity-20 group-hover/img:opacity-35 transition duration-300"></div>
                       <div className="relative rounded-2xl overflow-hidden bg-slate-100 border-2 border-white shadow-xl aspect-[3/4] w-full">
-                        <img
-                          src={getOptimizedImageUrl(leader.image, { width: 400, quality: 80 })}
-                          alt={leader.name}
-                          referrerPolicy="no-referrer"
-                          loading="lazy"
-                          decoding="async"
-                          className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
-                        />
+                        {!isDataLoading && leader.image ? (
+                          <img
+                            src={getOptimizedImageUrl(leader.image, { width: 400, quality: 80 })}
+                            alt={leader.name}
+                            referrerPolicy="no-referrer"
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-300 animate-pulse">
+                            <Users className="w-16 h-16 stroke-1 text-slate-300" />
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
